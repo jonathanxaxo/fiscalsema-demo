@@ -1,0 +1,18 @@
+{% extends "accounts/base.html" %}
+{% block title %}Compartilhar — Contrato {{ contract.number }}{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Somente leitura</span><h1>Compartilhar contrato {{ contract.number }}</h1><p>Conceda consulta sem permitir alterações operacionais.</p></div></header>
+  <p><strong>Permissão:</strong> Somente leitura.</p>
+  <p class="helptext">Se existir uma conta ativa, o acesso será vinculado. Para conta pendente ou inexistente, um convite ficará aguardando cadastro e aprovação administrativa, sem criar conta duplicada. O envio por e-mail depende do SMTP institucional.</p>
+  <form class="form-card" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.email.label_tag }}{{ form.email }}{{ form.email.errors }}
+    <p class="helptext">{{ form.email.help_text }}</p>
+    {{ form.confirm_regrant }} {{ form.confirm_regrant.label_tag }}
+    {{ form.confirm_regrant.errors }}
+    <p class="helptext">{{ form.confirm_regrant.help_text }}</p>
+    <button type="submit">Compartilhar</button>
+  </form>
+  <p class="actions"><a href="{% url 'contracts:access_list' contract.pk %}">Cancelar</a></p>
+{% endblock %}

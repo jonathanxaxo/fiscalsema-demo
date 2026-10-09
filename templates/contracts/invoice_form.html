@@ -1,0 +1,21 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Nota Fiscal da OS {{ work_order.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>{% if form.instance.pk %}Editar{% else %}Cadastrar{% endif %} Nota Fiscal da OS {{ work_order.number }}</h1>
+  <dl>
+    <dt>Valor da OS</dt><dd>R$ {{ invoice_position.work_order_value.value|localize }}</dd>
+    <dt>Total bruto já faturado</dt><dd>R$ {{ invoice_position.invoiced_gross_value.value|localize }}</dd>
+    <dt>Saldo faturável antes desta operação</dt><dd>R$ {{ invoice_position.billable_balance.value|localize }}</dd>
+  </dl>
+  <p class="helptext">O campo Valor bruto abaixo é a nova NF. Após salvar, a tela de detalhes mostrará o total antes, o total após a inclusão e o saldo faturável.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <p>{{ field.label_tag }} {{ field }} {{ field.errors }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}</p>
+    {% endfor %}
+    <button type="submit">Salvar Nota Fiscal</button>
+    <a href="{% url 'contracts:work_order_detail' work_order.contract_id work_order.pk %}">Cancelar</a>
+  </form>
+{% endblock %}

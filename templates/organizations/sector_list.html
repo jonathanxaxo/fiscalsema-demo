@@ -1,0 +1,25 @@
+{% extends "accounts/base.html" %}
+{% block title %}Setores — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Setores</h1>
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <p><a href="{% url 'organizations:sector_create' %}">Novo setor</a> · <a href="{% url 'organizations:organization_list' %}">Organizações</a> · {% if show_inactive %}<a href="{% url 'organizations:sector_list' %}">Mostrar ativos</a>{% else %}<a href="?inativos=1">Mostrar inativos</a>{% endif %}</p>
+  <table>
+    <thead><tr><th>Setor</th><th>Organização</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>
+      {% for sector in sectors %}
+        <tr>
+          <td>{{ sector.name }}</td><td>{{ sector.organization.name }}</td><td>{% if sector.is_active %}Ativo{% else %}Inativo{% endif %}</td>
+          <td>
+            <a href="{% url 'organizations:sector_update' sector.pk %}">Editar</a>
+            <form method="post" action="{% url 'organizations:sector_status' sector.pk %}" class="inline-form" onsubmit="return confirm('{% if sector.is_active %}Inativar este setor?{% else %}Reativar este setor?{% endif %}');">
+              {% csrf_token %}
+              <button type="submit">{% if sector.is_active %}Inativar{% else %}Reativar{% endif %}</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="4">Nenhum setor cadastrado.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="actions"><a href="{% url 'home' %}">Início</a></p>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "accounts/base.html" %}
+{% block title %}Solicitações de cadastro — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Solicitações de cadastro</h1>
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <form method="get">
+    <label for="status">Status</label>
+    <select id="status" name="status" onchange="this.form.submit()">
+      <option value="">Todos</option>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <p>
+    {% if show_archived %}
+      <a href="?status={{ selected_status|urlencode }}">Mostrar solicitações atuais</a>
+    {% else %}
+      <a href="?status={{ selected_status|urlencode }}&amp;arquivadas=1">Mostrar arquivadas</a>
+    {% endif %}
+  </p>
+  <table>
+    <thead><tr><th>Fiscal</th><th>Organização</th><th>Setor</th><th>Data</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for item in registration_requests %}
+        <tr>
+          <td><a href="{% url 'accounts_admin:registration_review' item.pk %}">{{ item.user.full_name }}</a><br>{{ item.user.email }}</td>
+          <td>{{ item.user.organization_name }}</td>
+          <td>{{ item.user.sector_name|default:"—" }}</td>
+          <td>{{ item.created_at|date:"d/m/Y H:i" }}</td>
+          <td>{{ item.get_status_display }}{% if item.archived_at %}<br>Arquivada{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Nenhuma solicitação encontrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="actions"><a href="{% url 'accounts_admin:fiscal_create' %}">Criar Fiscal diretamente</a> · <a href="{% url 'organizations:organization_list' %}">Organizações</a> · <a href="{% url 'home' %}">Início</a></p>
+{% endblock %}

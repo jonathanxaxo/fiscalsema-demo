@@ -1,0 +1,39 @@
+{% extends "accounts/base.html" %}
+{% block title %}Analisar cadastro — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Analisar cadastro</h1>
+  <p><strong>Nome:</strong> {{ registration_request.user.full_name }}</p>
+  <p><strong>E-mail:</strong> {{ registration_request.user.email }}</p>
+  <p><strong>Organização:</strong> {{ registration_request.user.organization_name }}</p>
+  <p><strong>Setor:</strong> {{ registration_request.user.sector_name|default:"—" }}</p>
+  <p><strong>Telefone:</strong> {{ registration_request.user.phone|default:"—" }}</p>
+  <p><strong>Status:</strong> {{ registration_request.get_status_display }}</p>
+  {% if registration_request.status == "PENDENTE" %}
+    {{ form.non_field_errors }}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="approve">
+      {{ form.organization.label_tag }}{{ form.organization }}{{ form.organization.errors }}
+      {{ form.sector.label_tag }}{{ form.sector }}{{ form.sector.errors }}
+      <button type="submit">Aprovar</button>
+    </form>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reject">
+      {{ form.rejection_reason.label_tag }}{{ form.rejection_reason }}{{ form.rejection_reason.errors }}
+      <button type="submit">Rejeitar</button>
+    </form>
+  {% else %}
+    <p class="notice">Esta solicitação já foi analisada.</p>
+    {% if registration_request.rejection_reason %}<p><strong>Motivo:</strong> {{ registration_request.rejection_reason }}</p>{% endif %}
+  {% endif %}
+  {% if not registration_request.archived_at %}
+    <form method="post" action="{% url 'accounts_admin:registration_archive' registration_request.pk %}" onsubmit="return confirm('Arquivar esta solicitação? O histórico será preservado.');">
+      {% csrf_token %}
+      <button type="submit">Arquivar solicitação</button>
+    </form>
+  {% else %}
+    <p class="notice">Solicitação arquivada.</p>
+  {% endif %}
+  <p class="actions"><a href="{% url 'accounts_admin:registration_list' %}">Voltar às solicitações</a> · <a href="{% url 'organizations:organization_list' %}">Organizações</a></p>
+{% endblock %}

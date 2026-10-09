@@ -1,0 +1,20 @@
+{% extends "accounts/base.html" %}
+{% block title %}Transferir contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Responsabilidade</span><h1>Transferir Fiscal responsável</h1><p>Formaliza a troca de titularidade com rastreabilidade.</p></div></header>
+  <div class="confirmation-panel">
+  <p><strong>Contrato:</strong> {{ contract.number }}</p>
+  <p><strong>Fiscal atual:</strong> {{ contract.responsible_fiscal.full_name }} — {{ contract.responsible_fiscal.email }}</p>
+  <p class="notice">O novo responsável deve ser um Fiscal ativo da mesma organização. As substituições temporárias vigentes ou pendentes serão revogadas, com auditoria preservada.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {{ field.label_tag }}{{ field }}{{ field.errors }}
+      {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+    {% endfor %}
+    <button type="submit">Confirmar transferência</button>
+  </form>
+  </div>
+  <p class="actions"><a href="{% url 'contracts:detail' contract.pk %}">Cancelar</a></p>
+{% endblock %}

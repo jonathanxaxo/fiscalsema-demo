@@ -1,0 +1,22 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Pagamento da NF {{ invoice.number }}/{{ invoice.series }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>{% if form.instance.pk %}Editar{% else %}Registrar{% endif %} pagamento da NF {{ invoice.number }}/{{ invoice.series }}</h1>
+  <dl>
+    <dt>Limite provisório</dt><dd>R$ {{ payment_position.provisional_payable_limit.value|localize }}</dd>
+    <dt>Total já pago</dt><dd>R$ {{ payment_position.paid_total.value|localize }}</dd>
+    <dt>Saldo provisório</dt><dd>R$ {{ payment_position.payment_balance.value|localize }}</dd>
+  </dl>
+  <p class="warning">O limite provisório é o menor valor entre o bruto e o aceito informado na NF. Isso não autoriza nem recomenda pagamento.</p>
+  <p class="helptext">Atesto, RAER e Termo de Homologação são referências obrigatórias. A fórmula oficial e o ciclo oficial de status ainda dependem de fonte documental.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <p>{{ field.label_tag }} {{ field }} {{ field.errors }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}</p>
+    {% endfor %}
+    <button type="submit">Salvar pagamento</button>
+    <a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk invoice.pk %}">Cancelar</a>
+  </form>
+{% endblock %}

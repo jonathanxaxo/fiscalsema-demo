@@ -1,0 +1,52 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Empenho {{ commitment.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Empenho {{ commitment.number }}</h1>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  {% with totals=commitment.movement_totals breakdown=commitment.movement_breakdown %}
+    <dl>
+      <dt>Contrato</dt><dd>{{ contract.number }}</dd>
+      <dt>Exercício financeiro</dt><dd>{{ commitment.fiscal_year }}</dd>
+      <dt>PED</dt><dd>{{ commitment.ped }}</dd>
+      <dt>Data</dt><dd>{{ commitment.commitment_date|date:"d/m/Y" }}</dd>
+      <dt>Fonte</dt><dd>{{ commitment.source }}</dd>
+      <dt>Valor inicial</dt><dd>R$ {{ commitment.initial_value|localize }}</dd>
+      <dt>Reforços</dt><dd>R$ {{ totals.0|localize }}</dd>
+      <dt>Anulações</dt><dd>R$ {{ breakdown.cancellations|localize }}</dd>
+      <dt>Estornos de saldo</dt><dd>R$ {{ breakdown.reversals|localize }}</dd>
+      <dt>Valor atual derivado</dt><dd>R$ {{ commitment.current_value|localize }}</dd>
+      <dt>Valor comprometido</dt><dd>R$ {{ financial_position.committed_value.value|localize }}</dd>
+      <dt>Saldo disponível</dt><dd>R$ {{ financial_position.available_balance.value|localize }}</dd>
+      <dt>Status</dt><dd>{% if commitment.is_active %}Ativo{% else %}Inativo{% endif %}</dd>
+      <dt>Novos rateios</dt><dd>{% if commitment.closed_for_new_allocations_at %}Encerrados por estorno em {{ commitment.closed_for_new_allocations_at|date:"d/m/Y" }}{% else %}Permitidos enquanto houver saldo e autorização{% endif %}</dd>
+      <dt>Observação</dt><dd>{{ commitment.notes|default:"—" }}</dd>
+    </dl>
+  {% endwith %}
+  <h2>Movimentações</h2>
+  <table>
+    <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Documento oficial</th><th>Responsável</th><th>Observação</th></tr></thead>
+    <tbody>
+      {% for movement in commitment.movements.all %}
+        <tr><td>{{ movement.movement_date|date:"d/m/Y" }}</td><td>{{ movement.get_movement_type_display }}</td><td>R$ {{ movement.amount|localize }}</td><td>{{ movement.document_reference|default:"—" }}</td><td>{{ movement.created_by|default:"—" }}</td><td>{{ movement.notes|default:"—" }}</td></tr>
+      {% empty %}<tr><td colspan="6">Nenhum reforço, anulação ou estorno registrado.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <h2>Rateios</h2>
+  <table>
+    <thead><tr><th>Data</th><th>OS</th><th>Valor</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for allocation in commitment.allocations.all %}
+        <tr><td>{{ allocation.allocation_date|date:"d/m/Y" }}</td><td><a href="{% url 'contracts:work_order_detail' contract.pk allocation.work_order_id %}">{{ allocation.work_order.number }}</a></td><td>R$ {{ allocation.amount|localize }}</td><td>{{ allocation.get_status_display }}</td></tr>
+      {% empty %}<tr><td colspan="4">Nenhum rateio registrado.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="helptext">O comprometido é derivado dos rateios ativos de OS com efeito financeiro confirmado; não existe campo de saldo editável.</p>
+  <p class="warning">Valores executado, faturado e pago permanecem separados e serão alimentados somente nas etapas correspondentes.</p>
+  <p class="actions">
+    {% if can_edit %}<a href="{% url 'contracts:commitment_update' contract.pk commitment.pk %}">Editar empenho</a> · {% endif %}
+    {% if can_add_movement %}<a href="{% url 'contracts:commitment_movement_create' contract.pk commitment.pk %}">Registrar reforço, anulação ou estorno</a> · {% endif %}
+    <a href="{% url 'contracts:commitment_list' contract.pk %}">Voltar</a>
+  </p>
+{% endblock %}

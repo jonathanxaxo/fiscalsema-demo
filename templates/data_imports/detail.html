@@ -1,0 +1,28 @@
+{% extends "accounts/base.html" %}
+{% block title %}Prévia da importação — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Prévia da importação</h1>
+  {% for message in messages %}<p class="{% if message.tags == 'error' %}warning{% else %}notice{% endif %}">{{ message }}</p>{% endfor %}
+  <dl>
+    <dt>Contrato</dt><dd>{{ contract.number }}</dd>
+    <dt>Arquivo</dt><dd>{{ spreadsheet_import.file_name }}</dd>
+    <dt>Tipo</dt><dd>{{ spreadsheet_import.get_entity_type_display }}</dd>
+    <dt>Aba</dt><dd>{{ spreadsheet_import.selected_sheet|default:"—" }}</dd>
+    <dt>Situação</dt><dd>{{ spreadsheet_import.get_status_display }}</dd>
+    <dt>SHA-256</dt><dd><code>{{ spreadsheet_import.content_sha256 }}</code></dd>
+  </dl>
+  {% if spreadsheet_import.preview %}
+    <p><strong>{{ spreadsheet_import.valid_rows }} válida(s)</strong> · {{ spreadsheet_import.duplicate_rows }} duplicada(s) ignorada(s) · {{ spreadsheet_import.error_rows }} com erro.</p>
+    <div style="overflow-x:auto"><table><thead><tr><th>Linha</th><th>Resultado</th><th>Dados normalizados</th><th>Erros/divergências</th></tr></thead><tbody>
+    {% for row in spreadsheet_import.preview %}<tr><td>{{ row.row_number }}</td><td><strong>{{ row.status }}</strong></td><td>{% for key,value in row.values.items %}<div><small>{{ key }}</small>: {{ value|default:"—" }}</div>{% endfor %}</td><td>{% for error in row.errors %}<div class="warning">{{ error }}</div>{% empty %}—{% endfor %}</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% endif %}
+  {% if spreadsheet_import.status == "PREVIA" %}
+    {% if spreadsheet_import.error_rows %}<p class="warning">Corrija a planilha e inicie uma nova importação. Nenhum registro foi gravado.</p>
+    {% elif spreadsheet_import.valid_rows %}<form method="post" action="{% url 'data_imports:confirm' contract.pk spreadsheet_import.pk %}">{% csrf_token %}<p class="warning"><strong>Confirmação final:</strong> esta ação criará {{ spreadsheet_import.valid_rows }} registro(s) novo(s). Duplicidades indicadas serão ignoradas.</p><button type="submit">Confirmar importação</button></form>{% endif %}
+    <p><a href="{% url 'data_imports:mapping' contract.pk spreadsheet_import.pk %}">Revisar mapeamento</a></p>
+  {% elif spreadsheet_import.status == "CONCLUIDO" %}
+    <p class="notice"><strong>Importação concluída:</strong> {{ spreadsheet_import.report.importados }} registro(s) criado(s); {{ spreadsheet_import.report.duplicados_ignorados }} duplicidade(s) ignorada(s).</p>
+  {% else %}<p><a href="{% url 'data_imports:mapping' contract.pk spreadsheet_import.pk %}">Mapear colunas</a></p>{% endif %}
+  <p><a href="{% url 'data_imports:upload' contract.pk %}">Voltar às importações</a> · <a href="{% url 'contracts:detail' contract.pk %}">Abrir contrato</a></p>
+{% endblock %}

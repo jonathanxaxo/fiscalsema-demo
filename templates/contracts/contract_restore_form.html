@@ -1,0 +1,16 @@
+{% extends "accounts/base.html" %}
+{% block title %}Restaurar contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Histórico preservado</span><h1>Restaurar contrato {{ contract.number }}</h1><p>Devolve o cadastro às telas operacionais.</p></div></header>
+  <div class="confirmation-panel">
+  <p><strong>Motivo do arquivamento:</strong> {{ contract.archive_reason }}</p>
+  <p class="notice">A restauração devolve o contrato às telas operacionais com o mesmo status e Fiscal responsável que possuía antes.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}{{ field.label_tag }}{{ field }}{{ field.errors }}{% endfor %}
+    <button type="submit">Confirmar restauração</button>
+  </form>
+  </div>
+  <p class="actions"><a href="{% url 'contracts:archived_list' %}">Cancelar</a></p>
+{% endblock %}

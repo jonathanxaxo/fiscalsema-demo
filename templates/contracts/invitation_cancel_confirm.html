@@ -1,0 +1,14 @@
+{% extends "accounts/base.html" %}
+{% block title %}Cancelar convite — Contrato {{ contract.number }}{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Ação sensível</span><h1>Cancelar convite pendente</h1><p>Impede a aceitação futura e mantém a auditoria.</p></div></header>
+  <div class="confirmation-panel confirmation-panel-danger">
+  <p>Você está cancelando o convite de <strong>{{ invitation.email }}</strong> para consultar o contrato <strong>{{ contract.number }}</strong>.</p>
+  <p class="warning">O convite deixará de ser aceito automaticamente. O histórico permanecerá registrado.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="button-link-danger" type="submit">Confirmar cancelamento</button>
+  </form>
+  </div>
+  <p class="actions"><a href="{% url 'contracts:access_list' contract.pk %}">Voltar sem cancelar</a></p>
+{% endblock %}

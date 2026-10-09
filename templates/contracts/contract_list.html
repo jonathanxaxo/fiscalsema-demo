@@ -1,0 +1,31 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Contratos — FiscalSema Light{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div><span class="eyebrow">Gestão contratual</span><h1>Contratos</h1><p>Consulte o painel, o cadastro e a situação de cada contrato no seu escopo.</p></div>
+    <div class="page-header-actions">
+      {% if can_create %}<a class="button-link" href="{% url 'contracts:create' %}">Cadastrar contrato</a>{% endif %}
+      <a class="button-link button-link-secondary" href="{% url 'contracts:archived_list' %}">Contratos arquivados</a>
+    </div>
+  </header>
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <table>
+    <thead><tr><th>Número</th><th>Fornecedor</th><th>Vigência</th><th>Valor atual</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>
+      {% for contract in contracts %}
+        <tr>
+          <td>{{ contract.number }}</td>
+          <td>{{ contract.supplier_name }}</td>
+          <td>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</td>
+          <td>R$ {{ contract.current_value|localize }}</td>
+          <td><span class="status-pill {% if contract.status == 'ATIVO' %}status-success{% elif contract.status == 'SUSPENSO' %}status-warning{% elif contract.status == 'CANCELADO' %}status-danger{% else %}status-neutral{% endif %}">{{ contract.get_status_display }}</span>{% if contract.pk in read_only_contract_ids %}<br><span class="status-pill status-neutral">Somente leitura</span>{% elif contract.pk in substitute_contract_ids %}<br><span class="status-pill status-warning">Fiscal substituto</span>{% endif %}</td>
+          <td><div class="row-actions"><a class="button-link button-link-small" href="{% url 'contracts:dashboard' contract.pk %}">Dashboard</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:detail' contract.pk %}">Abrir cadastro</a></div></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">Você ainda não possui contratos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="actions"><a href="{% url 'home' %}">Início</a></p>
+{% endblock %}

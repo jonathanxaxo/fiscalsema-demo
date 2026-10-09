@@ -1,0 +1,14 @@
+{% extends "accounts/base.html" %}
+{% block title %}Revogar acesso — Contrato {{ contract.number }}{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Ação sensível</span><h1>Revogar acesso</h1><p>Retira o compartilhamento sem apagar seu histórico.</p></div></header>
+  <div class="confirmation-panel confirmation-panel-danger">
+  <p>Você está revogando o acesso <strong>Somente leitura</strong> de <strong>{{ access.user.full_name }}</strong> ({{ access.user.email }}) ao contrato <strong>{{ contract.number }}</strong>.</p>
+  <p class="warning">O acesso será retirado imediatamente. O histórico da concessão e da revogação será preservado.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="button-link-danger" type="submit">Confirmar revogação</button>
+  </form>
+  </div>
+  <p class="actions"><a href="{% url 'contracts:access_list' contract.pk %}">Cancelar</a></p>
+{% endblock %}

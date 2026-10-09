@@ -1,0 +1,18 @@
+{% extends "accounts/base.html" %}
+{% block title %}Entrar — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Entrar</h1>
+  <p>Use sua conta individual. Nunca compartilhe sua senha.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.username.label_tag }}{{ form.username }}{{ form.username.errors }}
+    {{ form.password.label_tag }}{{ form.password }}{{ form.password.errors }}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <button type="submit">Entrar</button>
+  </form>
+  <p class="actions">
+    <a href="{% url 'accounts:password_reset' %}">Esqueci minha senha</a>
+    {% if public_registration_enabled %} · <a href="{% url 'accounts:register' %}">Cadastrar</a>{% endif %}
+  </p>
+{% endblock %}

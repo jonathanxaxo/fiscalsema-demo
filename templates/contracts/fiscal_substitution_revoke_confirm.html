@@ -1,0 +1,16 @@
+{% extends "accounts/base.html" %}
+{% block title %}Revogar substituição — FiscalSema Light{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Ação sensível</span><h1>Confirmar revogação da substituição</h1><p>Encerra imediatamente o acesso temporário.</p></div></header>
+  <div class="confirmation-panel confirmation-panel-danger">
+  <p><strong>Contrato:</strong> {{ contract.number }}</p>
+  <p><strong>Fiscal substituto:</strong> {{ substitution.substitute.full_name|default:substitution.email }}</p>
+  <p><strong>Período:</strong> {{ substitution.starts_on|date:"d/m/Y" }} a {{ substitution.ends_on|date:"d/m/Y" }}</p>
+  <p class="notice">A revogação retira imediatamente o acesso concedido por esta substituição e preserva todo o histórico.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="button-link-danger" type="submit">Revogar substituição</button>
+  </form>
+  </div>
+  <p class="actions"><a href="{% url 'contracts:access_list' contract.pk %}">Cancelar</a></p>
+{% endblock %}

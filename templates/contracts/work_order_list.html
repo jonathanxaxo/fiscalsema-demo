@@ -1,0 +1,29 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Ordens de serviço do contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Ordens de serviço do contrato {{ contract.number }}</h1>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  {% if can_create %}<p><a href="{% url 'contracts:work_order_create' contract.pk %}">Cadastrar OS</a></p>{% endif %}
+  <table>
+    <thead><tr><th>Número</th><th>Item</th><th>Ano civil</th><th>Ano contratual</th><th>Medida</th><th>Valor unitário</th><th>Total</th><th>Prazo</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>
+      {% for work_order in work_orders %}
+        <tr>
+          <td>{{ work_order.number }}</td>
+          <td>{{ work_order.item.number }}</td>
+          <td>{{ work_order.annual_period_context.calendar.label|default:"Fora da vigência" }}</td>
+          <td>{{ work_order.annual_period_context.contract.label|default:"Fora da vigência" }}</td>
+          <td>{{ work_order.measure|localize }} {{ work_order.unit_name }}</td>
+          <td>R$ {{ work_order.unit_value|localize }}</td>
+          <td>R$ {{ work_order.total_value|localize }}</td>
+          <td>{{ work_order.deadline|date:"d/m/Y"|default:"—" }}</td>
+          <td>{{ work_order.get_status_display }}</td>
+          <td><a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Abrir</a></td>
+        </tr>
+      {% empty %}<tr><td colspan="10">Nenhuma ordem de serviço cadastrada neste contrato.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="actions"><a href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a></p>
+{% endblock %}

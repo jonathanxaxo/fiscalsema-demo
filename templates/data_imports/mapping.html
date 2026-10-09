@@ -1,0 +1,13 @@
+{% extends "accounts/base.html" %}
+{% block title %}Mapear planilha — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Mapear colunas</h1>
+  <p><strong>{{ spreadsheet_import.file_name }}</strong> · {{ spreadsheet_import.get_entity_type_display }} · Contrato {{ contract.number }}</p>
+  <p class="notice">Selecione a aba e associe cada campo do sistema à coluna correspondente. Campos marcados como obrigatórios precisam ser mapeados.</p>
+  {% if sheet_names|length > 1 %}<p><strong>Abas identificadas:</strong> {% for name in sheet_names %}<a href="?sheet={{ name|urlencode }}">{{ name }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}{{ form.as_p }}
+    <button type="submit">Validar e gerar prévia</button>
+  </form>
+  <p><a href="{% url 'data_imports:upload' contract.pk %}">Cancelar e voltar</a></p>
+{% endblock %}

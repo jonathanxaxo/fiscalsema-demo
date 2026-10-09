@@ -1,0 +1,45 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Item {{ item.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Item {{ item.number }}</h1>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <dl>
+    <dt>Contrato</dt><dd>{{ contract.number }}</dd>
+    <dt>Código oficial</dt><dd>{{ item.external_code|default:"—" }}</dd>
+    <dt>Descrição</dt><dd>{{ item.description }}</dd>
+    <dt>Categoria</dt><dd>{{ item.category }}</dd>
+    <dt>Unidade</dt><dd>{{ item.unit_display }}</dd>
+    <dt>Quantidade operacional total</dt><dd>{{ item.contracted_quantity|localize }}</dd>
+    <dt>Referência por ano contratual</dt><dd>{% if item.annual_reference_quantity is not None %}{{ item.annual_reference_quantity|floatformat:"-7" }} {{ item.annual_reference_unit|default:item.unit_display }}{% else %}—{% endif %}</dd>
+    <dt>Limite de OS por ano contratual</dt><dd>{% if item.annual_operational_limit is not None %}{{ item.annual_operational_limit|floatformat:"-4" }} {{ item.unit_display }}{% else %}Pendente de definição na fonte oficial{% endif %}</dd>
+    <dt>Valor unitário</dt><dd>R$ {{ item.unit_value|localize }}</dd>
+    <dt>Valor total derivado</dt><dd>R$ {{ item.total_value|localize }}</dd>
+    <dt>Regra de cálculo</dt><dd>{{ item.calculation_rule|default:"—" }}</dd>
+    <dt>Fonte de referência</dt><dd>{{ item.source_reference|default:"—" }}</dd>
+    <dt>Quantidade utilizada</dt><dd>{{ financial_position.used_quantity.value|localize }}</dd>
+    <dt>Saldo quantitativo</dt><dd>{{ financial_position.quantity_balance.value|localize }}</dd>
+    <dt>Valor utilizado</dt><dd>R$ {{ financial_position.used_value.value|localize }}</dd>
+    <dt>Saldo financeiro</dt><dd>R$ {{ financial_position.financial_balance.value|localize }}</dd>
+    <dt>Status</dt><dd>{% if item.is_active %}Ativo{% else %}Inativo{% endif %}</dd>
+  </dl>
+  <h2>Composição da quantidade utilizada</h2>
+  <ul>
+    {% for evidence in financial_position.used_quantity.evidence %}
+      <li>{{ evidence.description }}: {{ evidence.value|localize }}</li>
+    {% empty %}<li>Nenhum registro de execução compõe a quantidade utilizada.</li>{% endfor %}
+  </ul>
+  <h2>Composição do valor utilizado</h2>
+  <ul>
+    {% for evidence in financial_position.used_value.evidence %}
+      <li>{{ evidence.description }}: R$ {{ evidence.value|localize }}</li>
+    {% empty %}<li>Nenhum registro de execução compõe o valor utilizado.</li>{% endfor %}
+  </ul>
+  <p class="helptext">Os saldos são derivados dos registros de execução e nunca armazenados como valores editáveis.</p>
+  <p class="helptext">O limite anual usa os aniversários da vigência. O fechamento oficial permanece no fim de cada ano civil.</p>
+  <p class="actions">
+    {% if can_edit %}<a href="{% url 'contracts:item_update' contract.pk item.pk %}">Editar</a> · {% endif %}
+    <a href="{% url 'contracts:item_list' contract.pk %}">Voltar</a>
+  </p>
+{% endblock %}

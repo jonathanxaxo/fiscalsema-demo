@@ -1,0 +1,61 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Prestação de contas — Contrato {{ contract.number }}{% endblock %}
+{% block content %}
+  <h1>Prestação de contas</h1>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  <p><strong>Contrato {{ contract.number }}</strong> — {{ contract.supplier_name }}</p>
+  <p class="warning">Consulta derivada dos registros cadastrados. Não representa atesto, homologação, liquidação nem recomendação de pagamento. As referências textuais não substituem a conferência dos documentos oficiais.</p>
+  <section aria-labelledby="referencias-anuais"><h2 id="referencias-anuais">Referências anuais</h2><p><strong>Fechamento oficial:</strong> {{ accountability.closing_rule }}.</p><p class="helptext">O ano contratual é uma classificação operacional por aniversário da vigência; não substitui o fechamento civil.</p><ul>{% for period in accountability.calendar_periods %}<li>{{ period.label }}: {{ period.start_date|date:"d/m/Y" }} a {{ period.end_date|date:"d/m/Y" }}</li>{% endfor %}</ul><ul>{% for period in accountability.contract_years %}<li>{{ period.label }}: {{ period.start_date|date:"d/m/Y" }} a {{ period.end_date|date:"d/m/Y" }}</li>{% endfor %}</ul></section>
+
+  <h2>Filtros dos registros</h2>
+  <form method="get" novalidate>
+    {{ filter_form.non_field_errors }}
+    {% for field in filter_form %}{{ field.label_tag }}{{ field.errors }}{{ field }}{% endfor %}
+    <button type="submit">Aplicar filtros</button>
+    {% if accountability.has_filters %}<a href="{% url 'contracts:accountability' contract.pk %}">Limpar</a>{% endif %}
+  </form>
+  <p class="helptext">O período usa a data própria de cada registro. A competência aplica-se apenas a execução, Nota Fiscal e pagamento. Os totais abaixo são sempre a posição consolidada do contrato; os filtros limitam os registros detalhados, sem simular posição histórica.</p>
+
+  <h2>Posição consolidada</h2>
+  <dl>
+    <dt>Contratado atual</dt><dd>R$ {{ contract.current_value|localize }}</dd>
+    <dt>Empenhado ativo</dt><dd>R$ {{ accountability.financial_position.total_committed_budget.value|localize }}</dd>
+    <dt>Comprometido</dt><dd>R$ {{ accountability.financial_position.committed_value.value|localize }}</dd>
+    <dt>Executado</dt><dd>R$ {{ accountability.financial_position.executed_value.value|localize }}</dd>
+    <dt>Faturado bruto</dt><dd>R$ {{ accountability.financial_position.invoiced_gross_value.value|localize }}</dd>
+    <dt>Pago registrado</dt><dd>R$ {{ accountability.financial_position.paid_value.value|localize }}</dd>
+    <dt>Saldo contratual</dt><dd>R$ {{ accountability.financial_position.contract_balance.value|localize }}</dd>
+  </dl>
+
+  <h2>Empenhos</h2>
+  <table><thead><tr><th>Número</th><th>Exercício</th><th>Data</th><th>Valor atual</th><th>Novos rateios</th></tr></thead><tbody>
+    {% for item in accountability.commitments %}<tr><td><a href="{% url 'contracts:commitment_detail' contract.pk item.pk %}">{{ item.number }}</a></td><td>{{ item.fiscal_year }}</td><td>{{ item.commitment_date|date:"d/m/Y" }}</td><td>R$ {{ item.current_value|localize }}</td><td>{% if item.closed_for_new_allocations_at %}Encerrados por estorno{% else %}Permitidos{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nenhum empenho corresponde aos filtros.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Ordens de Serviço</h2>
+  <table><thead><tr><th>OS</th><th>Abertura</th><th>Status</th><th>Valor</th></tr></thead><tbody>
+    {% for item in accountability.work_orders %}<tr><td><a href="{% url 'contracts:work_order_detail' contract.pk item.pk %}">{{ item.number }}</a></td><td>{{ item.opening_date|date:"d/m/Y" }}</td><td>{{ item.get_status_display }}</td><td>R$ {{ item.total_value|localize }}</td></tr>{% empty %}<tr><td colspan="4">Nenhuma OS corresponde aos filtros.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Execução</h2>
+  <table><thead><tr><th>OS</th><th>Data</th><th>Competência</th><th>Valor</th></tr></thead><tbody>
+    {% for item in accountability.executions %}<tr><td><a href="{% url 'contracts:work_order_detail' contract.pk item.work_order_id %}">{{ item.work_order.number }}</a></td><td>{{ item.execution_date|date:"d/m/Y" }}</td><td>{{ item.competence|default:"—" }}</td><td>R$ {{ item.executed_value|localize }}</td></tr>{% empty %}<tr><td colspan="4">Nenhuma execução corresponde aos filtros.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Notas Fiscais e conferência</h2>
+  <table><thead><tr><th>NF</th><th>Competência</th><th>Bruto</th><th>Resultado</th></tr></thead><tbody>
+    {% for item, check in accountability.invoice_checks %}<tr><td><a href="{% url 'contracts:invoice_detail' contract.pk item.work_order_id item.pk %}">{{ item.number }}/{{ item.series }}</a></td><td>{{ item.competence }}</td><td>R$ {{ item.gross_value|localize }}</td><td>{{ check.overall_status }}</td></tr>{% empty %}<tr><td colspan="4">Nenhuma Nota Fiscal corresponde aos filtros.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Pagamentos registrados</h2>
+  <table><thead><tr><th>NF</th><th>Data</th><th>Valor</th><th>Documentos referenciados</th></tr></thead><tbody>
+    {% for item in accountability.payments %}<tr><td><a href="{% url 'contracts:payment_detail' contract.pk item.invoice.work_order_id item.invoice_id item.pk %}">{{ item.invoice.number }}/{{ item.invoice.series }}</a></td><td>{{ item.payment_date|date:"d/m/Y" }}</td><td>R$ {{ item.amount|localize }}</td><td>Atesto, RAER e Termo de Homologação informados; conferência documental pendente.</td></tr>{% empty %}<tr><td colspan="4">Nenhum pagamento corresponde aos filtros.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <p class="actions">
+    {% if can_export %}<a href="{% url 'contracts:export_csv' contract.pk %}{% if export_query %}?{{ export_query }}{% endif %}">Exportar CSV</a> · {% endif %}
+    <a href="{% url 'contracts:report' contract.pk %}">Gerar relatório</a> ·
+    <a href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a>
+  </p>
+{% endblock %}

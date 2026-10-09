@@ -1,0 +1,8 @@
+{% extends "accounts/base.html" %}
+{% block title %}Cadastro enviado — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Cadastro enviado</h1>
+  <p class="notice">Sua solicitação está aguardando aprovação administrativa.</p>
+  <p>Você ainda não pode entrar no sistema. Aguarde a análise do Administrador.</p>
+  <p class="actions"><a href="{% url 'accounts:login' %}">Voltar para entrar</a></p>
+{% endblock %}

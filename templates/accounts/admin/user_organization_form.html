@@ -1,0 +1,13 @@
+{% extends "accounts/base.html" %}
+{% block title %}Vínculo institucional — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Organização e setor</h1>
+  <p><strong>Usuário:</strong> {{ target_user.full_name }} — {{ target_user.email }}</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}{{ field.label_tag }}{{ field }}{{ field.errors }}{% endfor %}
+    <button type="submit">Salvar vínculo</button>
+  </form>
+  <p class="actions"><a href="{% url 'accounts_admin:user_list' %}">Voltar aos usuários</a></p>
+{% endblock %}

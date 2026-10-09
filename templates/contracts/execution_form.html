@@ -1,0 +1,15 @@
+{% extends "accounts/base.html" %}
+{% block title %}Execução da OS {{ work_order.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>{% if form.instance.pk %}Editar{% else %}Registrar{% endif %} execução da OS {{ work_order.number }}</h1>
+  <p class="helptext">Registre somente o que foi efetivamente executado. Este lançamento não representa nota fiscal nem pagamento.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <p>{{ field.label_tag }} {{ field }} {{ field.errors }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}</p>
+    {% endfor %}
+    <button type="submit">Salvar execução</button>
+    <a href="{% url 'contracts:work_order_detail' work_order.contract_id work_order.pk %}">Cancelar</a>
+  </form>
+{% endblock %}

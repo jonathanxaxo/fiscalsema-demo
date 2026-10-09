@@ -1,0 +1,23 @@
+{% extends "accounts/base.html" %}
+{% block title %}Contratos arquivados — FiscalSema Light{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Histórico preservado</span><h1>Contratos arquivados</h1><p>Cadastros retirados do fluxo operacional sem exclusão física.</p></div><div class="page-header-actions"><a class="button-link button-link-secondary" href="{% url 'contracts:list' %}">Voltar aos contratos atuais</a></div></header>
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <p class="helptext">Estes contratos foram excluídos apenas das telas operacionais. O cadastro, a justificativa e a auditoria permanecem preservados.</p>
+  <table>
+    <thead><tr><th>Número</th><th>Fornecedor</th><th>Fiscal</th><th>Arquivado em</th><th>Justificativa</th><th>Ação</th></tr></thead>
+    <tbody>
+      {% for contract in contracts %}
+        <tr>
+          <td>{{ contract.number }}</td>
+          <td>{{ contract.supplier_name }}</td>
+          <td>{{ contract.responsible_fiscal.full_name }}</td>
+          <td>{{ contract.archived_at|date:"d/m/Y H:i" }} por {{ contract.archived_by.full_name }}</td>
+          <td>{{ contract.archive_reason }}</td>
+          <td><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:restore' contract.pk %}">Restaurar</a></td>
+        </tr>
+      {% empty %}<tr><td colspan="6">Nenhum contrato arquivado no seu escopo.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="actions"><a href="{% url 'contracts:list' %}">Voltar aos contratos atuais</a></p>
+{% endblock %}

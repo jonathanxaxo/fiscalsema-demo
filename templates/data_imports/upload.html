@@ -1,0 +1,18 @@
+{% extends "accounts/base.html" %}
+{% block title %}Importar planilha — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Importar planilha</h1>
+  <p><strong>Contrato {{ contract.number }}</strong></p>
+  <p class="warning"><strong>Nenhum dado é gravado neste passo.</strong> O sistema identificará abas e colunas para você mapear e revisar antes da confirmação.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}{{ form.as_p }}
+    <button type="submit">Identificar arquivo</button>
+  </form>
+  <p class="helptext">Formatos: CSV UTF-8 ou XLSX sem fórmulas; até 5 MB e 500 linhas por aba. O arquivo é identificado por SHA-256.</p>
+  <h2>Minhas importações deste contrato</h2>
+  <table><thead><tr><th>Arquivo</th><th>Tipo</th><th>Situação</th><th>Data</th></tr></thead><tbody>
+  {% for item in imports %}<tr><td><a href="{% url 'data_imports:detail' contract.pk item.pk %}">{{ item.file_name }}</a></td><td>{{ item.get_entity_type_display }}</td><td>{{ item.get_status_display }}</td><td>{{ item.created_at|date:"d/m/Y H:i" }}</td></tr>
+  {% empty %}<tr><td colspan="4">Nenhuma importação iniciada.</td></tr>{% endfor %}
+  </tbody></table>
+  <p><a href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a></p>
+{% endblock %}

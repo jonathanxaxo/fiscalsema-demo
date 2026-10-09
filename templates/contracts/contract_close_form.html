@@ -1,0 +1,18 @@
+{% extends "accounts/base.html" %}
+{% block title %}Encerrar contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Ciclo de vida</span><h1>Encerrar contrato {{ contract.number }}</h1><p>Conclui a operação e preserva integralmente os dados.</p></div></header>
+  <div class="confirmation-panel confirmation-panel-danger">
+  <p class="notice"><strong>Atenção:</strong> o encerramento preserva todos os dados e o histórico, mas bloqueia novos lançamentos. Todas as Ordens de Serviço devem estar concluídas ou canceladas.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {{ field.label_tag }}{{ field }}{{ field.errors }}
+      {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+    {% endfor %}
+    <button class="button-link-danger" type="submit">Confirmar encerramento</button>
+  </form>
+  </div>
+  <p class="actions"><a href="{% url 'contracts:detail' contract.pk %}">Cancelar</a></p>
+{% endblock %}

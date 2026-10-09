@@ -1,0 +1,17 @@
+{% extends "accounts/base.html" %}
+{% block title %}Fiscal substituto — Contrato {{ contract.number }}{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Acesso temporário</span><h1>Incluir Fiscal substituto</h1><p>Defina quem atuará e por qual período.</p></div></header>
+  <p><strong>Contrato:</strong> {{ contract.number }}</p>
+  <p class="helptext">O substituto terá acesso operacional ao contrato somente entre as datas informadas. O Fiscal titular continuará responsável pelo contrato e pelo gerenciamento dos acessos.</p>
+  <form class="form-card" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {{ field.label_tag }}{{ field }}{{ field.errors }}
+      {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+    {% endfor %}
+    <button type="submit">Registrar substituição</button>
+  </form>
+  <p class="actions"><a href="{% url 'contracts:access_list' contract.pk %}">Cancelar</a></p>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "accounts/base.html" %}
+{% block title %}Cancelar rateio — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Cancelar rateio da OS {{ work_order.number }}</h1>
+  <p>O registro será preservado, deixará de participar dos cálculos e manterá motivo, autor e data.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    <button type="submit">Confirmar cancelamento</button>
+    <a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Voltar</a>
+  </form>
+{% endblock %}

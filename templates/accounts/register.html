@@ -1,0 +1,18 @@
+{% extends "accounts/base.html" %}
+{% block title %}Cadastrar — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Cadastro de usuário</h1>
+  <p>Preencha seus dados. O acesso só será liberado depois da aprovação de um Administrador.</p>
+  <p class="helptext">A senha deve ter de 6 a 24 caracteres e incluir letra maiúscula, letra minúscula, número e caractere especial. Se faltar algum requisito, o formulário indicará exatamente qual.</p>
+  <p class="helptext">Se o seu e-mail foi convidado somente para consultar um contrato, o sistema criará o perfil Usuário de Consulta. Convite para substituição temporária mantém o cadastro como Fiscal. O perfil é definido com segurança pelo backend e não pode ser escolhido nesta tela.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {{ field.label_tag }}{{ field }}{{ field.errors }}
+      {% if field.help_text %}<div class="helptext">{{ field.help_text|safe }}</div>{% endif %}
+    {% endfor %}
+    <button type="submit">Enviar cadastro</button>
+  </form>
+  <p class="actions"><a href="{% url 'accounts:login' %}">Voltar para entrar</a></p>
+{% endblock %}

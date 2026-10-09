@@ -1,0 +1,49 @@
+{% extends "accounts/base.html" %}
+{% block title %}Auditoria — FiscalSema Light{% endblock %}
+{% block main_class %}audit-wide{% endblock %}
+{% block extra_head %}
+<style>
+  main.audit-wide { max-width: 1280px; margin: 2rem auto; }
+  .audit-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .7rem; align-items: end; }
+  .audit-filters button { margin-top: .35rem; }
+  .audit-details pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 38rem; background: #f3f6f4; padding: .6rem; border-radius: 8px; }
+  .audit-meta { white-space: nowrap; }
+</style>
+{% endblock %}
+{% block content %}
+  <h1>{% if contract %}Auditoria do contrato {{ contract.number }}{% else %}Auditoria global{% endif %}</h1>
+  <p class="helptext">Trilha somente leitura. Senhas, tokens, segredos, cookies e chaves privadas nunca são exibidos.</p>
+  <form method="get" class="audit-filters">
+    {% for field in form %}<div>{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+    <div><button type="submit">Filtrar</button></div>
+  </form>
+  <table>
+    <thead><tr><th>Data/hora</th><th>Categoria</th><th>Ação</th><th>Usuário</th><th>Organização</th><th>Contrato</th><th>Registro</th><th>Alteração</th></tr></thead>
+    <tbody>
+      {% for entry in audit_page %}
+        <tr>
+          <td class="audit-meta">{{ entry.timestamp|date:"d/m/Y H:i:s" }}</td>
+          <td>{{ entry.category }}</td><td>{{ entry.action }}</td><td>{{ entry.actor }}</td>
+          <td>{{ entry.organization }}</td><td>{{ entry.contract }}</td><td>{{ entry.record }}</td>
+          <td class="audit-details">
+            {% if entry.previous_json or entry.current_json or entry.details_json %}
+              <details><summary>Ver evidência</summary>
+                {% if entry.previous_json %}<strong>Anterior</strong><pre>{{ entry.previous_json }}</pre>{% endif %}
+                {% if entry.current_json %}<strong>Posterior</strong><pre>{{ entry.current_json }}</pre>{% endif %}
+                {% if entry.details_json %}<strong>Detalhes</strong><pre>{{ entry.details_json }}</pre>{% endif %}
+              </details>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="8">Nenhum evento encontrado.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% if audit_page.paginator.num_pages > 1 %}
+    <p class="actions">
+      {% if audit_page.has_previous %}<a href="?{% if query_without_page %}{{ query_without_page }}&{% endif %}pagina={{ audit_page.previous_page_number }}">Anterior</a>{% endif %}
+      Página {{ audit_page.number }} de {{ audit_page.paginator.num_pages }}
+      {% if audit_page.has_next %}<a href="?{% if query_without_page %}{{ query_without_page }}&{% endif %}pagina={{ audit_page.next_page_number }}">Próxima</a>{% endif %}
+    </p>
+  {% endif %}
+  <p>{% if contract %}<a href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a>{% else %}<a href="{% url 'home' %}">Voltar ao painel</a>{% endif %}</p>
+{% endblock %}

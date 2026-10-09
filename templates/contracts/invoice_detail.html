@@ -1,0 +1,83 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}NF {{ invoice.number }}/{{ invoice.series }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>NF {{ invoice.number }}/{{ invoice.series }}</h1>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <dl>
+    <dt>Contrato</dt><dd>{{ invoice.contract.number }}</dd>
+    <dt>OS</dt><dd>{{ invoice.work_order.number }}</dd>
+    <dt>Item</dt><dd>{% if invoice.item %}{{ invoice.item.number }} — {{ invoice.item.description }}{% else %}—{% endif %}</dd>
+    <dt>Rateio</dt><dd>{% if invoice.allocation %}{{ invoice.allocation }}{% else %}—{% endif %}</dd>
+    <dt>Fornecedor</dt><dd>{{ invoice.supplier_name }}</dd>
+    <dt>CNPJ/CPF</dt><dd>{{ invoice.supplier_tax_id }}</dd>
+    <dt>Emissão</dt><dd>{{ invoice.issue_date|date:"d/m/Y" }}</dd>
+    <dt>Competência</dt><dd>{{ invoice.competence }}</dd>
+    <dt>Valor bruto</dt><dd>R$ {{ invoice.gross_value|localize }}</dd>
+    <dt>Glosa</dt><dd>R$ {{ invoice.deduction_value|localize }}</dd>
+    <dt>Valor aceito</dt><dd>R$ {{ invoice.accepted_value|localize }}</dd>
+    <dt>Processo</dt><dd>{{ invoice.process_number|default:"—" }}</dd>
+    <dt>Status informado</dt><dd>{{ invoice.status }}</dd>
+    <dt>Referência do documento</dt><dd>{{ invoice.document_reference|default:"—" }}</dd>
+    <dt>Hash SHA-256</dt><dd>{{ invoice.document_hash|default:"—" }}</dd>
+    <dt>Observação</dt><dd>{{ invoice.notes|default:"—" }}</dd>
+  </dl>
+  <h2>Limite objetivo da OS após esta inclusão</h2>
+  <dl>
+    <dt>Valor da OS</dt><dd>R$ {{ invoice_position.work_order_value.value|localize }}</dd>
+    <dt>Total antes desta NF</dt><dd>R$ {{ total_before_invoice|localize }}</dd>
+    <dt>Valor bruto desta NF</dt><dd>R$ {{ invoice.gross_value|localize }}</dd>
+    <dt>Total após inclusão</dt><dd>R$ {{ invoice_position.invoiced_gross_value.value|localize }}</dd>
+    <dt>Saldo faturável objetivo</dt><dd>R$ {{ invoice_position.billable_balance.value|localize }}</dd>
+  </dl>
+  <h2>Conferência determinística</h2>
+  <p><strong>Resultado geral:</strong> {{ check_report.overall_status }}</p>
+  <table>
+    <thead><tr><th>Verificação</th><th>Resultado</th><th>Esperado</th><th>Encontrado</th><th>Diferença</th><th>Explicação</th></tr></thead>
+    <tbody>
+      {% for check in check_report.checks %}
+        <tr>
+          <td>{{ check.label }}</td><td>{{ check.status }}</td>
+          <td>{{ check.expected|default:"—" }}</td><td>{{ check.actual|default:"—" }}</td>
+          <td>{{ check.difference|default:"—" }}</td><td>{{ check.message }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="helptext">A conferência é recalculada a partir dos registros atuais. Não usa IA, tolerância oculta nem fórmula presumida para o valor aceito.</p>
+  {% if possible_duplicates %}
+    <p class="warning">Possível duplicidade detectada. Isto não é confirmação automática; revise:</p>
+    <ul>
+      {% for duplicate in possible_duplicates %}
+        <li><a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk duplicate.pk %}">NF {{ duplicate.number }}/{{ duplicate.series }} — R$ {{ duplicate.gross_value|localize }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <p class="warning">A fórmula definitiva entre valor bruto, glosa e valor aceito ainda depende de confirmação. Nenhum pagamento é inferido desta NF.</p>
+  <h2>Pagamentos</h2>
+  <dl>
+    <dt>Limite provisório</dt><dd>R$ {{ payment_position.provisional_payable_limit.value|localize }}</dd>
+    <dt>Total pago</dt><dd>R$ {{ payment_position.paid_total.value|localize }}</dd>
+    <dt>Saldo provisório</dt><dd>R$ {{ payment_position.payment_balance.value|localize }}</dd>
+  </dl>
+  {% if payments %}
+    <table>
+      <thead><tr><th>Data</th><th>Valor</th><th>Status informado</th><th>Processo</th></tr></thead>
+      <tbody>
+        {% for payment in payments %}
+          <tr>
+            <td><a href="{% url 'contracts:payment_detail' contract.pk work_order.pk invoice.pk payment.pk %}">{{ payment.payment_date|date:"d/m/Y" }}</a></td>
+            <td>R$ {{ payment.amount|localize }}</td><td>{{ payment.status }}</td><td>{{ payment.process_number|default:"—" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}<p>Nenhum pagamento registrado.</p>{% endif %}
+  {% if can_add_payment %}<p><a href="{% url 'contracts:payment_create' contract.pk work_order.pk invoice.pk %}">Registrar pagamento</a></p>{% endif %}
+  <p class="warning">O limite de pagamento é provisório e não representa autorização ou recomendação.</p>
+  <p class="actions">
+    {% if can_edit %}<a href="{% url 'contracts:invoice_update' contract.pk work_order.pk invoice.pk %}">Editar Nota Fiscal</a> · {% endif %}
+    <a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Voltar para a OS</a>
+  </p>
+{% endblock %}

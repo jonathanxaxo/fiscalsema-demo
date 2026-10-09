@@ -1,0 +1,15 @@
+{% extends "accounts/base.html" %}
+{% block title %}Cancelar OS {{ work_order.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Cancelar OS {{ work_order.number }}</h1>
+  <p class="warning">O cancelamento preserva a OS e todo o histórico. Esta ação exige motivo.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {{ field.label_tag }}{{ field }}{{ field.errors }}
+    {% endfor %}
+    <button type="submit">Confirmar cancelamento</button>
+  </form>
+  <p class="actions"><a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Voltar sem cancelar</a></p>
+{% endblock %}

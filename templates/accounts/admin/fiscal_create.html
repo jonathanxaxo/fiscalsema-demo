@@ -1,0 +1,18 @@
+{% extends "accounts/base.html" %}
+{% block title %}Criar Fiscal — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Criar Fiscal</h1>
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <p class="warning">Use uma senha temporária forte e entregue-a por canal seguro. O sistema exigirá a troca no primeiro acesso.</p>
+  <p class="helptext">A senha deve ter de 6 a 24 caracteres e incluir letra maiúscula, letra minúscula, número e caractere especial. O formulário informa separadamente cada requisito ausente.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {{ field.label_tag }}{{ field }}{{ field.errors }}
+      {% if field.help_text %}<div class="helptext">{{ field.help_text|safe }}</div>{% endif %}
+    {% endfor %}
+    <button type="submit">Criar Fiscal</button>
+  </form>
+  <p class="actions"><a href="{% url 'accounts_admin:registration_list' %}">Solicitações de cadastro</a> · <a href="{% url 'organizations:organization_list' %}">Organizações</a> · <a href="{% url 'home' %}">Início</a></p>
+{% endblock %}

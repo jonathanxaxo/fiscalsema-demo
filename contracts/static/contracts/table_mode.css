@@ -1,0 +1,16 @@
+main.table-mode-page { max-width: min(1280px, calc(100% - 2rem)); margin: 2rem auto; }
+.table-tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.table-tabs a { padding: .55rem .8rem; border: 1px solid #9eb4a5; border-radius: 8px; text-decoration: none; }
+.table-tabs a[aria-current="page"] { background: #146b3a; color: #fff; border-color: #146b3a; }
+.table-filters { display: grid; grid-template-columns: minmax(15rem, 2fr) minmax(13rem, 1fr) auto; gap: .75rem; align-items: end; }
+.table-filters label { margin-top: 0; }
+.table-filters button { margin-top: 0; min-height: 43px; }
+.table-scroll { overflow: auto; max-height: 65vh; border: 1px solid #dce7df; border-radius: 8px; }
+.data-grid { margin-top: 0; min-width: 900px; }
+.data-grid thead th { position: sticky; top: 0; z-index: 2; background: #e8f0eb; white-space: nowrap; user-select: none; }
+.data-grid tbody tr:nth-child(even) { background: #f8faf8; }
+.data-grid td:focus { outline: 3px solid #2678c9; outline-offset: -3px; background: #eef6ff; }
+.data-grid .calculated { background: #edf0ee; color: #405248; }
+.column-resizer { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; touch-action: none; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; }
+@media (max-width: 720px) { .table-filters { grid-template-columns: 1fr; } main.table-mode-page { width: auto; margin: 0; } }

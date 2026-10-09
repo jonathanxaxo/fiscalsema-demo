@@ -1,0 +1,123 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}OS {{ work_order.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>OS {{ work_order.number }}</h1>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <dl>
+    <dt>Contrato</dt><dd>{{ contract.number }}</dd>
+    <dt>Item</dt><dd>{{ work_order.item.number }} — {{ work_order.item.description }}</dd>
+    <dt>Descrição</dt><dd>{{ work_order.description }}</dd>
+    <dt>Quantidade</dt><dd>{{ work_order.quantity|localize|default:"—" }}</dd>
+    <dt>Horas</dt><dd>{{ work_order.hours|localize|default:"—" }}</dd>
+    <dt>Unidade de referência</dt><dd>{{ work_order.unit_name }}</dd>
+    <dt>Valor unitário de referência</dt><dd>R$ {{ work_order.unit_value|localize }}</dd>
+    <dt>Valor unitário atual do item</dt><dd>R$ {{ work_order.item.unit_value|localize }}</dd>
+    <dt>Diferença para o item atual</dt><dd>R$ {{ work_order.current_item_value_difference|localize }}</dd>
+    <dt>Valor total derivado</dt><dd>R$ {{ work_order.total_value|localize }}</dd>
+    <dt>Responsável</dt><dd>{{ work_order.responsible }}</dd>
+    <dt>Abertura</dt><dd>{{ work_order.opening_date|date:"d/m/Y" }}</dd>
+    <dt>Fechamento civil</dt><dd>{% if work_order.annual_period_context.calendar %}{{ work_order.annual_period_context.calendar.label }} — {{ work_order.annual_period_context.calendar.start_date|date:"d/m/Y" }} a {{ work_order.annual_period_context.calendar.end_date|date:"d/m/Y" }}{% else %}Fora da vigência{% endif %}</dd>
+    <dt>Ano contratual da OS</dt><dd>{% if work_order.annual_period_context.contract %}{{ work_order.annual_period_context.contract.label }} — {{ work_order.annual_period_context.contract.start_date|date:"d/m/Y" }} a {{ work_order.annual_period_context.contract.end_date|date:"d/m/Y" }}{% else %}Fora da vigência{% endif %}</dd>
+    <dt>Assinatura</dt><dd>{{ work_order.signature_date|date:"d/m/Y"|default:"—" }}</dd>
+    <dt>Início</dt><dd>{{ work_order.start_date|date:"d/m/Y"|default:"—" }}</dd>
+    <dt>Prazo</dt><dd>{{ work_order.deadline|date:"d/m/Y"|default:"—" }}</dd>
+    <dt>Conclusão</dt><dd>{{ work_order.completion_date|date:"d/m/Y"|default:"—" }}</dd>
+    <dt>Status</dt><dd>{{ work_order.get_status_display }}</dd>
+    <dt>Processo</dt><dd>{{ work_order.process_number }}</dd>
+    <dt>Observação</dt><dd>{{ work_order.notes|default:"—" }}</dd>
+    {% if work_order.status == "CANCELADA" %}
+      <dt>Motivo do cancelamento</dt><dd>{{ work_order.cancellation_reason }}</dd>
+      <dt>Cancelada por</dt><dd>{{ work_order.canceled_by.full_name }}</dd>
+      <dt>Cancelada em</dt><dd>{{ work_order.canceled_at|date:"d/m/Y H:i" }}</dd>
+    {% endif %}
+  </dl>
+  {% if work_order.financial_effect == None %}
+    <p class="warning">O efeito financeiro deste status ainda depende de decisão expressa e não foi presumido pelo sistema.</p>
+  {% elif work_order.financial_effect %}
+    <p class="notice">Este status está confirmado como comprometedor. Os rateios ativos alimentam o comprometimento dos empenhos.</p>
+  {% else %}
+    <p class="helptext">Este status não compromete saldo.</p>
+  {% endif %}
+  <h2>Rateios</h2>
+  <dl>
+    <dt>Total ativo rateado</dt><dd>R$ {{ active_allocated|localize }}</dd>
+    <dt>Saldo da OS a ratear</dt><dd>R$ {{ allocation_balance|localize }}</dd>
+  </dl>
+  <table>
+    <thead><tr><th>Data</th><th>Empenho</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for allocation in work_order.allocations.all %}
+        <tr>
+          <td>{{ allocation.allocation_date|date:"d/m/Y" }}</td>
+          <td><a href="{% url 'contracts:commitment_detail' contract.pk allocation.commitment_id %}">{{ allocation.commitment.number }}</a></td>
+          <td>R$ {{ allocation.amount|localize }}</td>
+          <td>{{ allocation.get_status_display }}</td>
+          <td>
+            {% if can_edit and allocation.status != "CANCELADO" %}
+              <a href="{% url 'contracts:allocation_update' contract.pk work_order.pk allocation.pk %}">Editar/ativar/inativar</a> ·
+              <a href="{% url 'contracts:allocation_cancel' contract.pk work_order.pk allocation.pk %}">Cancelar</a>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="5">Nenhum rateio registrado.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% if allocation_balance %}<p class="warning">O rateio está incompleto. A fonte ainda não definiu em qual transição a igualdade exata deve ser exigida.</p>{% endif %}
+  <h2>Execução</h2>
+  <dl>
+    <dt>Quantidade/horas executadas</dt><dd>{{ executed_quantity|localize }}</dd>
+    <dt>Saldo quantitativo da OS</dt><dd>{{ execution_quantity_balance|localize }}</dd>
+    <dt>Valor executado</dt><dd>R$ {{ executed_value|localize }}</dd>
+    <dt>Saldo de execução da OS</dt><dd>R$ {{ execution_value_balance|localize }}</dd>
+  </dl>
+  <table>
+    <thead><tr><th>Data</th><th>Competência</th><th>Quantidade</th><th>Valor</th><th>Evidência</th><th>Ação</th></tr></thead>
+    <tbody>
+      {% for execution in work_order.executions.all %}
+        <tr>
+          <td>{{ execution.execution_date|date:"d/m/Y" }}</td>
+          <td>{{ execution.competence|default:"—" }}</td>
+          <td>{{ execution.executed_quantity|localize }}</td>
+          <td>R$ {{ execution.executed_value|localize }}</td>
+          <td>{{ execution.evidence_reference|default:"—" }}</td>
+          <td>{% if can_edit %}<a href="{% url 'contracts:execution_update' contract.pk work_order.pk execution.pk %}">Editar</a>{% else %}—{% endif %}</td>
+        </tr>
+      {% empty %}<tr><td colspan="6">Nenhuma execução registrada.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="helptext">Execução, faturamento e pagamento são eventos distintos.</p>
+  <h2>Notas fiscais</h2>
+  <dl>
+    <dt>Valor da OS</dt><dd>R$ {{ invoice_position.work_order_value.value|localize }}</dd>
+    <dt>Total bruto já faturado</dt><dd>R$ {{ invoice_position.invoiced_gross_value.value|localize }}</dd>
+    <dt>Saldo faturável objetivo</dt><dd>R$ {{ invoice_position.billable_balance.value|localize }}</dd>
+  </dl>
+  <table>
+    <thead><tr><th>Emissão</th><th>Número/série</th><th>Competência</th><th>Valor bruto</th><th>Glosa</th><th>Valor aceito</th><th>Status informado</th></tr></thead>
+    <tbody>
+      {% for invoice in work_order.invoices.all %}
+        <tr>
+          <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
+          <td><a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk invoice.pk %}">{{ invoice.number }}/{{ invoice.series }}</a></td>
+          <td>{{ invoice.competence }}</td>
+          <td>R$ {{ invoice.gross_value|localize }}</td>
+          <td>R$ {{ invoice.deduction_value|localize }}</td>
+          <td>R$ {{ invoice.accepted_value|localize }}</td>
+          <td>{{ invoice.status }}</td>
+        </tr>
+      {% empty %}<tr><td colspan="7">Nenhuma Nota Fiscal registrada.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="helptext">O saldo faturável usa o total bruto como limite objetivo. A fórmula definitiva do valor aceito permanece pendente de confirmação.</p>
+  <p class="warning">Documentos da OS serão incluídos pelo módulo protegido de documentos na Etapa 31.</p>
+  <p class="actions">
+    {% if can_add_invoice %}<a href="{% url 'contracts:invoice_create' contract.pk work_order.pk %}">Cadastrar Nota Fiscal</a> · {% endif %}
+    {% if can_add_execution %}<a href="{% url 'contracts:execution_create' contract.pk work_order.pk %}">Registrar execução</a> · {% endif %}
+    {% if can_add_allocation %}<a href="{% url 'contracts:allocation_create' contract.pk work_order.pk %}">Novo rateio</a> · {% endif %}
+    {% if can_edit %}<a href="{% url 'contracts:work_order_update' contract.pk work_order.pk %}">Editar OS</a> · {% endif %}
+    {% if can_cancel %}<a href="{% url 'contracts:work_order_cancel' contract.pk work_order.pk %}">Cancelar OS</a> · {% endif %}
+    <a href="{% url 'contracts:work_order_list' contract.pk %}">Voltar</a>
+  </p>
+{% endblock %}

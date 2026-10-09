@@ -1,0 +1,30 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Itens do contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Itens do contrato {{ contract.number }}</h1>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  {% if can_create %}<p><a href="{% url 'contracts:item_create' contract.pk %}">Cadastrar item</a></p>{% endif %}
+  <table>
+    <thead><tr><th>Número</th><th>Código</th><th>Descrição</th><th>Unidade</th><th>Quantidade operacional total</th><th>Referência anual</th><th>Limite por ano contratual</th><th>Valor unitário</th><th>Total derivado</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.number }}</td>
+          <td>{{ item.external_code|default:"—" }}</td>
+          <td>{{ item.description }}</td>
+          <td>{{ item.unit_display }}</td>
+          <td>{{ item.contracted_quantity|localize }}</td>
+          <td>{% if item.annual_reference_quantity is not None %}{{ item.annual_reference_quantity|floatformat:"-7" }} {{ item.annual_reference_unit|default:item.unit_display }}{% else %}—{% endif %}</td>
+          <td>{% if item.annual_operational_limit is not None %}{{ item.annual_operational_limit|floatformat:"-4" }} {{ item.unit_display }}{% else %}Pendente{% endif %}</td>
+          <td>R$ {{ item.unit_value|localize }}</td>
+          <td>R$ {{ item.total_value|localize }}</td>
+          <td>{% if item.is_active %}Ativo{% else %}Inativo{% endif %}</td>
+          <td><a href="{% url 'contracts:item_detail' contract.pk item.pk %}">Abrir</a></td>
+        </tr>
+      {% empty %}<tr><td colspan="11">Nenhum item cadastrado neste contrato.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="actions"><a href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a></p>
+{% endblock %}

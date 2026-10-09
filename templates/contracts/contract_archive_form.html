@@ -1,0 +1,23 @@
+{% extends "accounts/base.html" %}
+{% block title %}Arquivar contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <header class="page-header"><div><span class="eyebrow">Ação sensível</span><h1>Excluir/arquivar cadastro incorreto</h1><p>Retira o cadastro das telas operacionais sem apagar o histórico.</p></div></header>
+  <div class="confirmation-panel confirmation-panel-danger">
+  <p><strong>Contrato:</strong> {{ contract.number }}</p>
+  <p class="notice"><strong>Não haverá exclusão física.</strong> O contrato sairá das telas operacionais, mas permanecerá no banco e na auditoria.</p>
+  {% if blockers %}
+    <p><strong>Arquivamento bloqueado enquanto existirem:</strong></p>
+    <ul>{% for blocker in blockers %}<li>{{ blocker }}</li>{% endfor %}</ul>
+  {% endif %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      {{ field.label_tag }}{{ field }}{{ field.errors }}
+      {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+    {% endfor %}
+    <button class="button-link-danger" type="submit">Confirmar arquivamento lógico</button>
+  </form>
+  </div>
+  <p class="actions"><a href="{% url 'contracts:detail' contract.pk %}">Cancelar</a></p>
+{% endblock %}

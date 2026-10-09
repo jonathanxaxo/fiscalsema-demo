@@ -1,0 +1,88 @@
+{% load l10n %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Relatório — Contrato {{ contract.number }}</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #f3f6f4; color: #173326; }
+    main { max-width: 1120px; margin: 2rem auto; padding: 1rem; }
+    section { background: #fff; border: 1px solid #dce7df; border-radius: 12px; padding: 1.4rem; margin-bottom: 1rem; }
+    h1, h2 { color: #146b3a; }
+    h1 { margin-top: 0; }
+    .meta, .warning { padding: .8rem; border-radius: 8px; }
+    .meta { background: #e1f4e8; }
+    .warning { background: #fff3cd; color: #664d03; }
+    .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .7rem; }
+    label { display: block; font-weight: 700; }
+    input, select { box-sizing: border-box; width: 100%; padding: .65rem; border: 1px solid #9eb4a5; border-radius: 7px; }
+    button, .button { display: inline-block; padding: .7rem 1rem; border: 0; border-radius: 7px; background: #146b3a; color: #fff; text-decoration: none; font-weight: 700; }
+    a { color: #0d5a2e; }
+    .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .7rem; }
+    .total { border: 1px solid #dce7df; border-radius: 8px; padding: .8rem; }
+    .total small, .help { color: #4d6256; }
+    .total strong { display: block; margin-top: .25rem; font-size: 1.15rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: .6rem; }
+    th, td { padding: .55rem; border-bottom: 1px solid #dce7df; text-align: left; vertical-align: top; }
+    .actions { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; }
+    @media print {
+      body { background: #fff; font-size: 10pt; }
+      main { max-width: none; margin: 0; padding: 0; }
+      section { border: 0; box-shadow: none; padding: .35rem 0; break-inside: avoid; }
+      .no-print { display: none !important; }
+      a { color: inherit; text-decoration: none; }
+      table { break-inside: auto; }
+      tr { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section>
+    <h1>Relatório do contrato</h1>
+    {% if is_read_only_access %}<p class="meta"><strong>Somente leitura</strong></p>{% endif %}
+    <p class="meta"><strong>Contrato {{ contract.number }}</strong> · Processo {{ contract.process_number }} · Fornecedor {{ contract.supplier_name }} · {{ contract.get_status_display }}</p>
+    <p class="warning">Relatório de consulta gerado com os registros cadastrados. Não constitui atesto, homologação, liquidação nem autorização ou recomendação de pagamento.</p>
+    {% if print_mode %}<p class="help">Versão preparada para impressão. Use o comando de impressão do navegador. Nenhum PDF ou arquivo foi armazenado pelo sistema.</p>{% endif %}
+  </section>
+
+  {% if not print_mode %}<section class="no-print">
+    <h2>Filtros</h2>
+    <form method="get" novalidate>
+      {{ filter_form.non_field_errors }}
+      <div class="filters">{% for field in filter_form %}<div>{{ field.label_tag }}{{ field.errors }}{{ field }}</div>{% endfor %}</div>
+      <p class="actions"><button type="submit">Gerar relatório</button>{% if can_export %}<a class="button" href="{% url 'contracts:export_csv' contract.pk %}{% if export_query %}?{{ export_query }}{% endif %}">Exportar CSV</a>{% endif %}<a class="button" href="?{{ print_query }}">Versão para impressão</a><a href="{% url 'contracts:report' contract.pk %}">Limpar</a></p>
+    </form>
+  </section>{% endif %}
+
+  <section>
+    <h2>Resumo financeiro consolidado</h2>
+    <p><strong>Fechamento oficial:</strong> {{ report.closing_rule }}.</p>
+    <p class="help">Anos civis: {% for period in report.calendar_periods %}{{ period.label }} ({{ period.start_date|date:"d/m/Y" }} a {{ period.end_date|date:"d/m/Y" }}){% if not forloop.last %}; {% endif %}{% endfor %}. Anos contratuais: {% for period in report.contract_years %}{{ period.label }} ({{ period.start_date|date:"d/m/Y" }} a {{ period.end_date|date:"d/m/Y" }}){% if not forloop.last %}; {% endif %}{% endfor %}.</p>
+    <div class="totals">
+      <div class="total"><small>Contratado atual</small><strong>R$ {{ contract.current_value|floatformat:2 }}</strong></div>
+      <div class="total"><small>Empenhado ativo</small><strong>R$ {{ report.financial_position.total_committed_budget.value|floatformat:2 }}</strong></div>
+      <div class="total"><small>Comprometido</small><strong>R$ {{ report.financial_position.committed_value.value|floatformat:2 }}</strong></div>
+      <div class="total"><small>Executado</small><strong>R$ {{ report.financial_position.executed_value.value|floatformat:2 }}</strong></div>
+      <div class="total"><small>Faturado bruto</small><strong>R$ {{ report.financial_position.invoiced_gross_value.value|floatformat:2 }}</strong></div>
+      <div class="total"><small>Pago registrado</small><strong>R$ {{ report.financial_position.paid_value.value|floatformat:2 }}</strong></div>
+      <div class="total"><small>Saldo contratual</small><strong>R$ {{ report.financial_position.contract_balance.value|floatformat:2 }}</strong></div>
+    </div>
+    <p class="help">Os totais são a posição consolidada do contrato. Os filtros limitam os registros abaixo e não simulam posição histórica.</p>
+  </section>
+
+  {% if report.section != "financial" %}
+    {% if report.section != "billing" %}<section><h2>Empenhos</h2><table><thead><tr><th>Número</th><th>Exercício</th><th>Data</th><th>Valor atual</th><th>Novos rateios</th></tr></thead><tbody>{% for item in report.commitments %}<tr><td>{{ item.number }}</td><td>{{ item.fiscal_year }}</td><td>{{ item.commitment_date|date:"d/m/Y" }}</td><td>R$ {{ item.current_value|floatformat:2 }}</td><td>{% if item.closed_for_new_allocations_at %}Encerrados por estorno{% else %}Permitidos{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nenhum registro corresponde aos filtros.</td></tr>{% endfor %}</tbody></table></section>
+    <section><h2>Ordens de Serviço</h2><table><thead><tr><th>OS</th><th>Abertura</th><th>Status</th><th>Valor</th></tr></thead><tbody>{% for item in report.work_orders %}<tr><td>{{ item.number }}</td><td>{{ item.opening_date|date:"d/m/Y" }}</td><td>{{ item.get_status_display }}</td><td>R$ {{ item.total_value|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4">Nenhum registro corresponde aos filtros.</td></tr>{% endfor %}</tbody></table></section>
+    <section><h2>Execução</h2><table><thead><tr><th>OS</th><th>Data</th><th>Competência</th><th>Valor</th></tr></thead><tbody>{% for item in report.executions %}<tr><td>{{ item.work_order.number }}</td><td>{{ item.execution_date|date:"d/m/Y" }}</td><td>{{ item.competence|default:"—" }}</td><td>R$ {{ item.executed_value|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4">Nenhum registro corresponde aos filtros.</td></tr>{% endfor %}</tbody></table></section>{% endif %}
+    {% if report.section != "operational" %}<section><h2>Notas Fiscais</h2><table><thead><tr><th>NF</th><th>Competência</th><th>Status da fonte</th><th>Bruto</th><th>Conferência</th></tr></thead><tbody>{% for item, check in report.invoice_checks %}<tr><td>{{ item.number }}/{{ item.series }}</td><td>{{ item.competence }}</td><td>{{ item.status }}</td><td>R$ {{ item.gross_value|floatformat:2 }}</td><td>{{ check.overall_status }}</td></tr>{% empty %}<tr><td colspan="5">Nenhum registro corresponde aos filtros.</td></tr>{% endfor %}</tbody></table></section>
+    <section><h2>Pagamentos registrados</h2><table><thead><tr><th>NF</th><th>Data</th><th>Competência</th><th>Status da fonte</th><th>Valor</th></tr></thead><tbody>{% for item in report.payments %}<tr><td>{{ item.invoice.number }}/{{ item.invoice.series }}</td><td>{{ item.payment_date|date:"d/m/Y" }}</td><td>{{ item.competence|default:"—" }}</td><td>{{ item.status }}</td><td>R$ {{ item.amount|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="5">Nenhum registro corresponde aos filtros.</td></tr>{% endfor %}</tbody></table><p class="help">Referências cadastradas de Atesto, RAER e Termo de Homologação não substituem a conferência dos arquivos oficiais.</p></section>{% endif %}
+  {% endif %}
+
+  {% if not print_mode %}<p class="actions no-print"><a href="{% url 'contracts:accountability' contract.pk %}">Prestação de contas</a> · <a href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a></p>{% endif %}
+</main>
+</body>
+</html>

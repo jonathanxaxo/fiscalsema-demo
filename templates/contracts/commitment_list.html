@@ -1,0 +1,33 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Empenhos do contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% block content %}
+  <h1>Empenhos do contrato {{ contract.number }}</h1>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  {% if can_create %}<p><a href="{% url 'contracts:commitment_create' contract.pk %}">Cadastrar empenho</a></p>{% endif %}
+  <table>
+    <thead><tr><th>Número</th><th>Exercício</th><th>PED</th><th>Data</th><th>Valor inicial</th><th>Reforços</th><th>Anulações</th><th>Estornos</th><th>Valor atual</th><th>Novos rateios</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>
+      {% for commitment in commitments %}
+        {% with totals=commitment.movement_totals breakdown=commitment.movement_breakdown %}
+          <tr>
+            <td>{{ commitment.number }}</td>
+            <td>{{ commitment.fiscal_year }}</td>
+            <td>{{ commitment.ped }}</td>
+            <td>{{ commitment.commitment_date|date:"d/m/Y" }}</td>
+            <td>R$ {{ commitment.initial_value|localize }}</td>
+            <td>R$ {{ totals.0|localize }}</td>
+            <td>R$ {{ breakdown.cancellations|localize }}</td>
+            <td>R$ {{ breakdown.reversals|localize }}</td>
+            <td>R$ {{ commitment.current_value|localize }}</td>
+            <td>{% if commitment.closed_for_new_allocations_at %}Encerrados em {{ commitment.closed_for_new_allocations_at|date:"d/m/Y" }}{% else %}Permitidos{% endif %}</td>
+            <td>{% if commitment.is_active %}Ativo{% else %}Inativo{% endif %}</td>
+            <td><a href="{% url 'contracts:commitment_detail' contract.pk commitment.pk %}">Abrir</a></td>
+          </tr>
+        {% endwith %}
+      {% empty %}<tr><td colspan="12">Você ainda não possui empenhos neste contrato.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="actions"><a href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a></p>
+{% endblock %}

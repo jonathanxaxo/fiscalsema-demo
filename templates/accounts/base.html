@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0b5d3b">
+  <title>{% block title %}FiscalSema Light{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% if request.user.is_authenticated %}app-page{% else %}auth-page{% endif %}">
+  <a class="skip-link" href="#conteudo-principal">Ir para o conteúdo principal</a>
+  {% if is_demo %}<div class="environment-banner demo-banner" role="status"><strong>AMBIENTE DE DEMONSTRAÇÃO</strong> — DADOS EXCLUSIVAMENTE FICTÍCIOS</div>{% elif is_homologation %}<div class="environment-banner" role="status">AMBIENTE DE HOMOLOGAÇÃO — não utilizar para operação real</div>{% endif %}
+  {% if request.user.is_authenticated %}
+    <header class="topbar">
+      <div class="topbar-start">
+        <button class="menu-toggle" type="button" aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menu">☰</button>
+        <a class="brand" href="{% url 'home' %}" aria-label="FiscalSema Light — Painel">
+          <span class="brand-mark" aria-hidden="true">FS</span>
+          <span><strong>FiscalSema</strong><small>Light</small></span>
+        </a>
+      </div>
+      <div class="user-menu">
+        <span class="user-avatar" aria-hidden="true">{{ request.user.get_short_name|first|upper }}</span>
+        <span class="user-summary"><strong>{{ request.user.full_name }}</strong><small>{{ request.user.get_profile_display }}</small></span>
+        <a href="{% url 'accounts:password_change' %}">Alterar senha</a>
+        <form method="post" action="{% url 'accounts:logout' %}" data-no-submit-lock>
+          {% csrf_token %}<button class="button-quiet" type="submit">Sair</button>
+        </form>
+      </div>
+    </header>
+    <div class="app-shell">
+      <aside class="sidebar" id="menu-principal" aria-label="Menu principal">
+        <nav>
+          <p class="nav-label">Visão geral</p>
+          <a href="{% url 'home' %}"{% if request.resolver_match.view_name == 'home' %} aria-current="page"{% endif %}><span aria-hidden="true">⌂</span>Painel</a>
+          <a href="{% url 'contracts:list' %}"{% if request.resolver_match.app_name == 'contracts' %} aria-current="page"{% endif %}><span aria-hidden="true">▣</span>Contratos</a>
+          <a href="{% url 'assistant_drafts:list' %}"{% if request.resolver_match.app_name == 'assistant_drafts' %} aria-current="page"{% endif %}><span aria-hidden="true">✦</span>Rascunhos da IA</a>
+          {% if perms.accounts.review_registration or perms.accounts.manage_users or perms.organizations.manage_organizations or perms.accounts.view_authenticationevent %}
+            <p class="nav-label">Administração</p>
+            {% if perms.accounts.review_registration %}<a href="{% url 'accounts_admin:registration_list' %}"{% if request.resolver_match.url_name == 'registration_list' %} aria-current="page"{% endif %}><span aria-hidden="true">✓</span>Solicitações de cadastro{% if pending_registration_count %} ({{ pending_registration_count }}){% endif %}</a>{% endif %}
+            {% if perms.accounts.manage_users %}<a href="{% url 'accounts_admin:user_list' %}"{% if request.resolver_match.url_name == 'user_list' %} aria-current="page"{% endif %}><span aria-hidden="true">♙</span>Usuários</a><a href="{% url 'accounts_admin:fiscal_create' %}"{% if request.resolver_match.url_name == 'fiscal_create' %} aria-current="page"{% endif %}><span aria-hidden="true">＋</span>Criar Fiscal</a>{% endif %}
+            {% if perms.organizations.manage_organizations %}<a href="{% url 'organizations:organization_list' %}"{% if request.resolver_match.url_name == 'organization_list' %} aria-current="page"{% endif %}><span aria-hidden="true">◇</span>Organizações</a><a href="{% url 'organizations:sector_list' %}"{% if request.resolver_match.url_name == 'sector_list' %} aria-current="page"{% endif %}><span aria-hidden="true">⌘</span>Setores</a>{% endif %}
+            {% if perms.accounts.view_authenticationevent %}<a href="{% url 'audit:global' %}"{% if request.resolver_match.app_name == 'audit' %} aria-current="page"{% endif %}><span aria-hidden="true">≡</span>Auditoria</a>{% endif %}
+          {% endif %}
+        </nav>
+        <div class="sidebar-note">{% if is_demo %}<strong>Demonstração</strong><span>Não inserir dados ou documentos reais</span>{% else %}<strong>Ambiente interno</strong><span>Acesso restrito à rede local</span>{% endif %}</div>
+      </aside>
+      <div class="sidebar-backdrop" data-menu-close></div>
+      <main id="conteudo-principal" class="content {% block main_class %}{% endblock %}" tabindex="-1">
+  {% else %}
+    <main id="conteudo-principal" class="auth-shell" tabindex="-1">
+      <div class="auth-brand" aria-label="FiscalSema Light">
+        <span class="brand-mark" aria-hidden="true">FS</span>
+        <span><strong>FiscalSema</strong><small>Gestão contratual simples e segura</small></span>
+      </div>
+      <section class="auth-card">
+  {% endif %}
+        {% block content %}{% endblock %}
+  {% if request.user.is_authenticated %}
+      </main>
+    </div>
+  {% else %}
+      </section>
+      <p class="auth-footer">{% if is_demo %}Ambiente de demonstração · dados fictícios{% else %}Ambiente institucional · acesso restrito{% endif %}</p>
+    </main>
+  {% endif %}
+  <script src="{% static 'core/js/app.js' %}" defer></script>
+</body>
+</html>
