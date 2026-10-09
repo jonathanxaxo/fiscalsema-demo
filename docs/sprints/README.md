@@ -9,3 +9,10 @@ Cada sprint deve possuir uma pasta `sprint-NN-nome` com:
 
 Correções futuras criam nova sprint; não reescrevem silenciosamente o histórico
 documental das entregas anteriores.
+
+## Sprints registradas
+
+- `sprint-01-vercel-minima`: cópia independente, sanitização, adaptação para
+  Vercel e validações sem banco;
+- `sprint-02-integracao-postgresql`: primeiro commit local e preparação dos
+  testes integrais em PostgreSQL exclusivo.
