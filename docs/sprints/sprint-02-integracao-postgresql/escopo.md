@@ -10,10 +10,12 @@ integrais com um PostgreSQL 17 exclusivo e descartável.
 - não acessar o PostgreSQL da VM;
 - não acessar o PostgreSQL 9.6 já instalado no Windows;
 - não copiar dados, usuários ou documentos reais;
-- não publicar no GitHub ou na Vercel;
+- manter o repositório GitHub privado;
+- não publicar na Vercel sem nova autorização;
 - não criar recurso externo ou pago sem nova autorização.
 
 ## Estado
 
-O primeiro commit local foi criado. A execução integral está pendente porque o
-serviço do Docker Desktop exige inicialização administrativa no Windows.
+A sprint foi concluída no repositório privado. A suíte integral foi executada
+no GitHub Actions com PostgreSQL 17 temporário, sem depender do Docker Desktop
+local e sem acessar a VM.

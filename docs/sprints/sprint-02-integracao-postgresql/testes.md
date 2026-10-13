@@ -1,23 +1,42 @@
 # Testes da Sprint 02
 
-## Verificações concluídas
+## Resultado final
 
 | Verificação | Resultado |
 |---|---|
-| Projeto original | Limpo em `c27d87cf0a7f6aa035e6e9772a98798b2140f99f` |
-| Primeiro commit da demo | Criado localmente em `c4b8d14` |
-| Repositório remoto | Nenhum remoto configurado |
-| PostgreSQL preexistente | Versão 9.6 detectada e não utilizada |
-| Docker Desktop | Instalado, mas serviço administrativo indisponível nesta sessão |
-| Contêiner de teste | Não criado |
+| Projeto original | Preservado e não alterado |
+| Repositório da demo | Privado e sincronizado com a branch `main` |
+| Banco de validação | PostgreSQL 17 descartável e exclusivo do GitHub Actions |
+| Migrações | `makemigrations --check --dry-run` aprovado |
+| Configuração Django | `check` aprovado |
+| Configuração Vercel | `check --deploy` e `collectstatic` aprovados sem acessar banco operacional |
+| Auditoria do repositório | Nenhum segredo conhecido, dado real ou artefato proibido encontrado |
+| Suíte integral | **408 testes aprovados** em 59,850 segundos |
 | Banco original/VM | Não acessado |
+| Commit validado | `254c8d43293cbb70e917e074276067562a5c4b91` |
+| Execução | GitHub Actions nº `38395479419` |
 
-## Pendente
+## Correções comprovadas pela primeira execução
 
-Depois que o usuário iniciar o Docker Desktop como administrador:
+A primeira execução encontrou dois testes herdados que ainda verificavam
+características exclusivas da VM:
 
-1. criar PostgreSQL 17 descartável;
-2. aplicar todas as migrações;
-3. executar a suíte integral;
-4. remover o contêiner;
-5. atualizar este relatório com quantidade e resultado dos testes.
+1. o texto visual `Ambiente interno`, substituído na demo pelo aviso explícito
+   `AMBIENTE DE DEMONSTRAÇÃO — DADOS EXCLUSIVAMENTE FICTÍCIOS`;
+2. arquivos do Nginx, que não pertencem à arquitetura serverless da Vercel.
+
+Os testes foram adaptados para validar os controles equivalentes da demo:
+
+- identificação inequívoca do ambiente fictício;
+- arquivos estáticos versionados pelo WhiteNoise;
+- roteamento da função Django no `vercel.json`;
+- cabeçalhos `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e
+  `Permissions-Policy` na borda da Vercel.
+
+Nenhuma funcionalidade, dado ou configuração da VM foi alterada.
+
+## Observação operacional
+
+O Docker Desktop local não foi necessário. O teste integral foi realizado no
+GitHub Actions com um PostgreSQL temporário, removido automaticamente ao fim da
+execução.
