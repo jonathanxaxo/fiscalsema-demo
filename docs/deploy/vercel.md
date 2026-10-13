@@ -11,18 +11,27 @@
 - `APP_ENVIRONMENT=demo`
 - `DJANGO_SETTINGS_MODULE=core.settings_demo`
 - `DJANGO_SECRET_KEY`
-- `DATABASE_URL`
+- `FISCALSEMA_DEMO_DATABASE_URL` (conexão exclusiva usada pela aplicação)
 - `ALLOWED_HOSTS`
 - `CSRF_TRUSTED_ORIGINS`
 
-O nome do banco e o usuário da `DATABASE_URL` precisam conter `demo`. A
-configuração recusa hosts locais, o IP conhecido da VM e o hostname Docker.
+Quando `FISCALSEMA_DEMO_DATABASE_URL` estiver definida, ela substitui a
+`DATABASE_URL` genérica fornecida pela integração da plataforma. O nome do
+banco e o usuário da conexão efetiva precisam conter `demo`. A configuração
+recusa hosts locais, o IP conhecido da VM e o hostname Docker.
 
 ## Preparação do banco
 
 Execute migrations uma única vez usando a credencial de migration. Não execute
-migrations durante cada requisição da Vercel. Depois, configure `DATABASE_URL`
-com o usuário de runtime, que não deve criar banco, schema ou roles.
+migrations durante cada requisição da Vercel. Depois, configure
+`FISCALSEMA_DEMO_DATABASE_URL` com o usuário de runtime, que não deve criar
+banco, schema ou roles.
+
+O fluxo manual fica em `.github/workflows/migrate-demo.yml`. A credencial do
+proprietário das tabelas deve existir somente no secret
+`FISCALSEMA_DEMO_MIGRATION_DATABASE_URL` do GitHub. Ao final, o fluxo executa
+`scripts/deploy/grant_demo_runtime.py`, que concede ao usuário web apenas
+conexão, uso do schema e operações usuais nas tabelas e sequências.
 
 ## Publicação
 

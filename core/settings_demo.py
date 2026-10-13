@@ -4,6 +4,11 @@ from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 
+
+dedicated_database_url = os.getenv("FISCALSEMA_DEMO_DATABASE_URL", "").strip()
+if dedicated_database_url:
+    os.environ["DATABASE_URL"] = dedicated_database_url
+
 from .settings_base import *  # noqa: F403
 from .settings_base import BASE_DIR, env_bool, env_list
 

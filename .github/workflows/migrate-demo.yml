@@ -1,0 +1,50 @@
+name: Migracao manual do FiscalSema Demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fiscalsema-demo-database-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: python:3.14.7-slim-bookworm
+    env:
+      APP_ENVIRONMENT: demo
+      DJANGO_SETTINGS_MODULE: core.settings_demo
+      ALLOWED_HOSTS: fiscalsema-demo.vercel.app
+      CSRF_TRUSTED_ORIGINS: https://fiscalsema-demo.vercel.app
+      FISCALSEMA_DEMO_DATABASE_URL: ${{ secrets.FISCALSEMA_DEMO_MIGRATION_DATABASE_URL }}
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v7
+
+      - name: Exigir credencial de migracao
+        run: test -n "$FISCALSEMA_DEMO_DATABASE_URL"
+
+      - name: Gerar chave Django efemera
+        run: python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(64))" >> "$GITHUB_ENV"
+
+      - name: Instalar dependencias verificadas
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --requirement requirements.txt
+          python -m pip check
+
+      - name: Validar configuracao antes da alteracao
+        run: |
+          python manage.py makemigrations --check --dry-run
+          python manage.py check --deploy
+
+      - name: Aplicar migrations do Django
+        run: python manage.py migrate --noinput
+
+      - name: Restringir usuario de execucao
+        run: python scripts/deploy/grant_demo_runtime.py

@@ -30,7 +30,14 @@ PATTERNS = {
 def candidate_files() -> list[Path]:
     try:
         output = subprocess.check_output(
-            ["git", "-C", str(ROOT), "ls-files"],
+            [
+                "git",
+                "-c",
+                f"safe.directory={ROOT.as_posix()}",
+                "-C",
+                str(ROOT),
+                "ls-files",
+            ],
             text=True,
             encoding="utf-8",
             stderr=subprocess.DEVNULL,

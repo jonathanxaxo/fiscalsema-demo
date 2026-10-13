@@ -124,6 +124,10 @@ class InterfaceUpgradeTests(TestCase):
         vercel_config = json.loads((root / "vercel.json").read_text(encoding="utf-8"))
 
         self.assertIn("CompressedManifestStaticFilesStorage", demo_settings)
+        self.assertIn("FISCALSEMA_DEMO_DATABASE_URL", demo_settings)
+        self.assertIn(
+            'os.environ["DATABASE_URL"] = dedicated_database_url', demo_settings
+        )
         self.assertEqual(
             vercel_config["rewrites"],
             [{"source": "/(.*)", "destination": "/api/index.py"}],

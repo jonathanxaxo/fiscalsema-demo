@@ -61,7 +61,8 @@ jobs:
 
       - name: Verificar configuracao Vercel sem acessar banco
         env:
-          DATABASE_URL: postgresql://fiscalsema_demo_runtime@demo-db.invalid/fiscalsema_demo?sslmode=require
+          DATABASE_URL: postgresql://integracao_generica@wrong-db.invalid/neondb?sslmode=require
+          FISCALSEMA_DEMO_DATABASE_URL: postgresql://fiscalsema_demo_runtime@demo-db.invalid/fiscalsema_demo?sslmode=require
           VERCEL_URL: fiscalsema-demo-ci.vercel.app
         run: |
           python manage.py check --deploy --settings=core.settings_demo
