@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -115,26 +116,30 @@ class InterfaceUpgradeTests(TestCase):
         ):
             self.assertIn(selector, stylesheet)
 
-    def test_production_uses_versioned_static_assets_and_immutable_cache(self):
+    def test_demo_uses_versioned_static_assets_and_vercel_security_headers(self):
         root = Path(__file__).resolve().parent.parent
-        production_settings = (root / "core" / "settings_production.py").read_text(
+        demo_settings = (root / "core" / "settings_demo.py").read_text(
             encoding="utf-8"
         )
-        nginx_config = (root / "deploy" / "nginx" / "default.conf").read_text(
-            encoding="utf-8"
+        vercel_config = json.loads((root / "vercel.json").read_text(encoding="utf-8"))
+
+        self.assertIn("CompressedManifestStaticFilesStorage", demo_settings)
+        self.assertEqual(
+            vercel_config["rewrites"],
+            [{"source": "/(.*)", "destination": "/api/index.py"}],
         )
-        deploy_script = (root / "scripts" / "deploy.sh").read_text(encoding="utf-8")
-        nginx_verification = (root / "scripts" / "verify-nginx.sh").read_text(
-            encoding="utf-8"
+        security_headers = {
+            item["key"]: item["value"]
+            for rule in vercel_config["headers"]
+            for item in rule["headers"]
+        }
+        self.assertEqual(security_headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(security_headers["X-Frame-Options"], "DENY")
+        self.assertEqual(security_headers["Referrer-Policy"], "same-origin")
+        self.assertEqual(
+            security_headers["Permissions-Policy"],
+            "camera=(), microphone=(), geolocation=()",
         )
-        self.assertIn("ManifestStaticFilesStorage", production_settings)
-        self.assertIn('Cache-Control "public, immutable"', nginx_config)
-        self.assertIn("expires 1y", nginx_config)
-        self.assertIn("nginx -t", deploy_script)
-        self.assertIn("run --rm --no-deps nginx nginx -t", deploy_script)
-        self.assertIn("up -d --no-deps --force-recreate nginx", deploy_script)
-        self.assertIn("max-age=31536000", nginx_verification)
-        self.assertIn("public, immutable", nginx_verification)
 
     def test_javascript_improves_live_messages_and_table_names(self):
         script = Path(finders.find("core/js/app.js")).read_text(encoding="utf-8")

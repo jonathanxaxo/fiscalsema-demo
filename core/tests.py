@@ -24,7 +24,9 @@ class BaseTecnicaTests(TestCase):
         self.assertContains(response, "Fiscal de Teste")
         self.assertContains(response, 'id="menu-principal"')
         self.assertContains(response, "Rascunhos da IA")
-        self.assertContains(response, "Ambiente interno")
+        self.assertContains(response, "AMBIENTE DE DEMONSTRAÇÃO")
+        self.assertContains(response, "DADOS EXCLUSIVAMENTE FICTÍCIOS")
+        self.assertNotContains(response, "Ambiente interno")
 
     def test_layout_publico_tem_identidade_e_acessibilidade(self):
         response = Client().get("/conta/entrar/")
