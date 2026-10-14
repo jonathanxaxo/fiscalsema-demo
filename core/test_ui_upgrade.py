@@ -130,7 +130,7 @@ class InterfaceUpgradeTests(TestCase):
         )
         self.assertEqual(
             vercel_config["rewrites"],
-            [{"source": "/(.*)", "destination": "/api/index.py"}],
+            [{"source": "/(.*)", "destination": "/api/index"}],
         )
         security_headers = {
             item["key"]: item["value"]
