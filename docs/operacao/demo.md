@@ -18,6 +18,13 @@ python manage.py create_demo_admin
 O comando recusa a execução se já existir qualquer conta e nunca imprime a
 senha.
 
+Para a implantação oficial desta demonstração, o fluxo manual
+`.github/workflows/create-demo-admin.yml` recebe o e-mail e o nome somente no
+momento da execução, lê a senha exclusivamente do secret temporário
+`FISCALSEMA_DEMO_ADMIN_PASSWORD` e confirma que a conta criada é o único
+usuário, está ativa, possui perfil Administrador, superusuário e grupo técnico
+`ADMINISTRADOR`. Depois da criação confirmada, remova o secret temporário.
+
 ## Limpar a demonstração
 
 Não use o banco da VM e não importe dumps. Para reiniciar, descarte o banco demo

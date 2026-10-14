@@ -1,0 +1,64 @@
+name: Criar administrador inicial do FiscalSema Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      admin_email:
+        description: E-mail do Administrador Geral
+        required: true
+        type: string
+      admin_name:
+        description: Nome exibido no sistema
+        required: true
+        default: Administrador Geral
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fiscalsema-demo-initial-administrator
+  cancel-in-progress: false
+
+jobs:
+  create-administrator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: python:3.14.7-slim-bookworm
+    env:
+      APP_ENVIRONMENT: demo
+      DJANGO_SETTINGS_MODULE: core.settings_demo
+      ALLOWED_HOSTS: fiscalsema-demo.vercel.app
+      CSRF_TRUSTED_ORIGINS: https://fiscalsema-demo.vercel.app
+      FISCALSEMA_DEMO_DATABASE_URL: ${{ secrets.FISCALSEMA_DEMO_MIGRATION_DATABASE_URL }}
+      DEMO_ADMIN_EMAIL: ${{ inputs.admin_email }}
+      DEMO_ADMIN_NAME: ${{ inputs.admin_name }}
+      DEMO_ADMIN_PASSWORD: ${{ secrets.FISCALSEMA_DEMO_ADMIN_PASSWORD }}
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v7
+
+      - name: Exigir os segredos necessarios
+        run: |
+          test -n "$FISCALSEMA_DEMO_DATABASE_URL"
+          test -n "$DEMO_ADMIN_PASSWORD"
+
+      - name: Gerar chave Django efemera
+        run: python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(64))" >> "$GITHUB_ENV"
+
+      - name: Instalar dependencias verificadas
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --requirement requirements.txt
+          python -m pip check
+
+      - name: Validar configuracao
+        run: python manage.py check --deploy
+
+      - name: Criar a unica conta administrativa
+        run: python manage.py create_demo_admin
+
+      - name: Confirmar perfil e protecoes
+        run: |
+          python manage.py shell -c "import os; from accounts.models import AccountStatus, User, UserProfile; assert User.objects.count() == 1; user = User.objects.get(email__iexact=os.environ['DEMO_ADMIN_EMAIL']); assert user.profile == UserProfile.ADMINISTRATOR; assert user.status == AccountStatus.ACTIVE; assert user.is_superuser and user.is_staff and user.is_active; assert user.groups.filter(name='ADMINISTRADOR').exists(); print('PASS | Administrador Geral ativo, exclusivo e auditavel')"
