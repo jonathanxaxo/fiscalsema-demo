@@ -128,10 +128,7 @@ class InterfaceUpgradeTests(TestCase):
         self.assertIn(
             'os.environ["DATABASE_URL"] = dedicated_database_url', demo_settings
         )
-        self.assertEqual(
-            vercel_config["rewrites"],
-            [{"source": "/(.*)", "destination": "/api/index"}],
-        )
+        self.assertNotIn("rewrites", vercel_config)
         security_headers = {
             item["key"]: item["value"]
             for rule in vercel_config["headers"]

@@ -35,9 +35,10 @@ conexão, uso do schema e operações usuais nas tabelas e sequências.
 
 ## Publicação
 
-A Vercel executa `collectstatic` no build e encaminha as rotas públicas para
-o endpoint de função `/api/index`, implementado por `api/index.py`. O destino
-da reescrita não deve incluir a extensão `.py`, pois a rota pública da função
-é sem extensão. Não há Gunicorn, Nginx, Docker ou volume persistente.
+A Vercel detecta o `manage.py` e o WSGI do Django, executa `collectstatic` no
+build e encaminha as rotas públicas diretamente para a aplicação. Não deve
+existir uma reescrita global para `/api/index`, pois isso troca o caminho que o
+Django recebe e causa resposta 404. Não há Gunicorn, Nginx, Docker ou volume
+persistente.
 
 Push e deploy somente devem ocorrer após auditoria de segredos e autorização.
