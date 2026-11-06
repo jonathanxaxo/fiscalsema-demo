@@ -215,6 +215,8 @@ class AuthenticationEvent(models.Model):
         ACCOUNT_STATUS_CHANGED = "CONTA_STATUS_ALTERADO", "Status da conta alterado"
         ACCOUNT_ARCHIVED = "CONTA_ARQUIVADA", "Conta excluída logicamente"
         ACCOUNT_RESTORED = "CONTA_RESTAURADA", "Conta restaurada"
+        PROFILE_SWITCHED_TO_FISCAL = "PERFIL_FISCAL", "Perfil alternado para Fiscal"
+        PROFILE_SWITCHED_TO_ADMIN = "PERFIL_ADMIN", "Perfil alternado para Administrador"
 
     event_type = models.CharField(max_length=30, choices=EventType.choices)
     user = models.ForeignKey(
@@ -314,3 +316,45 @@ class RegistrationRequest(models.Model):
 
     def __str__(self):
         return f"{self.user.email} — {self.get_status_display()}"
+
+
+class ProfileSwitchLink(models.Model):
+    """Exceção da demo: uma conta administrativa que pode atuar como Fiscal.
+
+    O vínculo só é criado por comando de gestão (fluxo manual auditado); não
+    existe tela para concedê-lo.
+    """
+
+    administrator = models.OneToOneField(
+        User,
+        on_delete=models.PROTECT,
+        related_name="profile_switch_link",
+        verbose_name="administrador",
+    )
+    fiscal = models.OneToOneField(
+        User,
+        on_delete=models.PROTECT,
+        related_name="profile_switch_owner",
+        verbose_name="conta fiscal vinculada",
+    )
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "vínculo de troca de perfil"
+        verbose_name_plural = "vínculos de troca de perfil"
+
+    def clean(self):
+        super().clean()
+        if self.administrator_id == self.fiscal_id:
+            raise ValidationError("O vínculo exige duas contas distintas.")
+        if not (
+            self.administrator.is_superuser
+            and self.administrator.profile == UserProfile.ADMINISTRATOR
+        ):
+            raise ValidationError({"administrator": "A conta de origem deve ser Administrador."})
+        if self.fiscal.profile != UserProfile.FISCAL or self.fiscal.is_superuser:
+            raise ValidationError({"fiscal": "A conta vinculada deve ser Fiscal."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

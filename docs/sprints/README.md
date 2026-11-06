@@ -30,3 +30,5 @@ documental das entregas anteriores.
 - `sprint-08-painel`: prioridades no topo do painel e barra de atalhos.
 - `sprint-09-publicacao`: registro do PR nº 3, CI, Preview, merge e
   conferência da produção.
+- `sprint-10-troca-de-perfil`: exceção da demo para uma conta administrativa
+  atuar como Fiscal, com conta vinculada sem senha e auditoria.
