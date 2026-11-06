@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
 {% load l10n %}
-{% block title %}Nota Fiscal da OS {{ work_order.number }} — FiscalSema Light{% endblock %}
+{% block title %}Nota Fiscal da OS {{ work_order.number }} — FiscalSema{% endblock %}
 {% block content %}
   <h1>{% if form.instance.pk %}Editar{% else %}Cadastrar{% endif %} Nota Fiscal da OS {{ work_order.number }}</h1>
   <dl>

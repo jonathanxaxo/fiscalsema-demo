@@ -22,3 +22,5 @@ documental das entregas anteriores.
   capturas de tela e lista priorizada de melhorias visuais.
 - `sprint-05-correcoes-leitura`: tabelas sem quebra de palavras, aviso de
   rolagem, formatação de exercício, quantidades e CNPJ/CPF.
+- `sprint-06-identidade-visual`: logotipo, favicon e ícones SVG próprios,
+  faixa de demonstração em âmbar e nome FiscalSema nos títulos.

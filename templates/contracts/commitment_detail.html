@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
 {% load l10n %}
-{% block title %}Empenho {{ commitment.number }} — FiscalSema Light{% endblock %}
+{% block title %}Empenho {{ commitment.number }} — FiscalSema{% endblock %}
 {% block content %}
   <h1>Empenho {{ commitment.number }}</h1>
   {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}

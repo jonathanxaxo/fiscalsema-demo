@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
 {% load l10n formatacao %}
-{% block title %}OS {{ work_order.number }} — FiscalSema Light{% endblock %}
+{% block title %}OS {{ work_order.number }} — FiscalSema{% endblock %}
 {% block content %}
   <h1>OS {{ work_order.number }}</h1>
   {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}

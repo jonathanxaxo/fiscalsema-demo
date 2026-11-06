@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% block title %}Usuários — FiscalSema Light{% endblock %}
+{% block title %}Usuários — FiscalSema{% endblock %}
 {% block content %}
   <header class="page-header"><div><span class="eyebrow">Administração</span><h1>Usuários</h1><p>Gerencie vínculos e o ciclo de acesso sem excluir o histórico.</p></div><div class="page-header-actions"><a class="button-link" href="{% url 'accounts_admin:fiscal_create' %}">Criar Fiscal</a>{% if show_archived %}<a class="button-link button-link-secondary" href="{% url 'accounts_admin:user_list' %}">Ver contas atuais</a>{% else %}<a class="button-link button-link-secondary" href="?excluidos=1">Ver contas excluídas</a>{% endif %}</div></header>
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}

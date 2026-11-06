@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#0b5d3b">
-  <title>{% block title %}FiscalSema Light{% endblock %}</title>
+  <title>{% block title %}FiscalSema{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'core/img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
@@ -17,9 +18,9 @@
     <header class="topbar">
       <div class="topbar-start">
         <button class="menu-toggle" type="button" aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menu">☰</button>
-        <a class="brand" href="{% url 'home' %}" aria-label="FiscalSema Light — Painel">
-          <span class="brand-mark" aria-hidden="true">FS</span>
-          <span><strong>FiscalSema</strong><small>Light</small></span>
+        <a class="brand" href="{% url 'home' %}" aria-label="FiscalSema — Painel">
+          <img class="brand-mark" src="{% static 'core/img/logo.svg' %}" alt="" width="38" height="38">
+          <span><strong>FiscalSema</strong><small>Gestão contratual</small></span>
         </a>
       </div>
       <div class="user-menu">
@@ -35,15 +36,15 @@
       <aside class="sidebar" id="menu-principal" aria-label="Menu principal">
         <nav>
           <p class="nav-label">Visão geral</p>
-          <a href="{% url 'home' %}"{% if request.resolver_match.view_name == 'home' %} aria-current="page"{% endif %}><span aria-hidden="true">⌂</span>Painel</a>
-          <a href="{% url 'contracts:list' %}"{% if request.resolver_match.app_name == 'contracts' %} aria-current="page"{% endif %}><span aria-hidden="true">▣</span>Contratos</a>
-          <a href="{% url 'assistant_drafts:list' %}"{% if request.resolver_match.app_name == 'assistant_drafts' %} aria-current="page"{% endif %}><span aria-hidden="true">✦</span>Rascunhos da IA</a>
+          <a href="{% url 'home' %}"{% if request.resolver_match.view_name == 'home' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="painel" %}Painel</a>
+          <a href="{% url 'contracts:list' %}"{% if request.resolver_match.app_name == 'contracts' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="contratos" %}Contratos</a>
+          <a href="{% url 'assistant_drafts:list' %}"{% if request.resolver_match.app_name == 'assistant_drafts' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="ia" %}Rascunhos da IA</a>
           {% if perms.accounts.review_registration or perms.accounts.manage_users or perms.organizations.manage_organizations or perms.accounts.view_authenticationevent %}
             <p class="nav-label">Administração</p>
-            {% if perms.accounts.review_registration %}<a href="{% url 'accounts_admin:registration_list' %}"{% if request.resolver_match.url_name == 'registration_list' %} aria-current="page"{% endif %}><span aria-hidden="true">✓</span>Solicitações de cadastro{% if pending_registration_count %} ({{ pending_registration_count }}){% endif %}</a>{% endif %}
-            {% if perms.accounts.manage_users %}<a href="{% url 'accounts_admin:user_list' %}"{% if request.resolver_match.url_name == 'user_list' %} aria-current="page"{% endif %}><span aria-hidden="true">♙</span>Usuários</a><a href="{% url 'accounts_admin:fiscal_create' %}"{% if request.resolver_match.url_name == 'fiscal_create' %} aria-current="page"{% endif %}><span aria-hidden="true">＋</span>Criar Fiscal</a>{% endif %}
-            {% if perms.organizations.manage_organizations %}<a href="{% url 'organizations:organization_list' %}"{% if request.resolver_match.url_name == 'organization_list' %} aria-current="page"{% endif %}><span aria-hidden="true">◇</span>Organizações</a><a href="{% url 'organizations:sector_list' %}"{% if request.resolver_match.url_name == 'sector_list' %} aria-current="page"{% endif %}><span aria-hidden="true">⌘</span>Setores</a>{% endif %}
-            {% if perms.accounts.view_authenticationevent %}<a href="{% url 'audit:global' %}"{% if request.resolver_match.app_name == 'audit' %} aria-current="page"{% endif %}><span aria-hidden="true">≡</span>Auditoria</a>{% endif %}
+            {% if perms.accounts.review_registration %}<a href="{% url 'accounts_admin:registration_list' %}"{% if request.resolver_match.url_name == 'registration_list' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="solicitacoes" %}Solicitações de cadastro{% if pending_registration_count %} ({{ pending_registration_count }}){% endif %}</a>{% endif %}
+            {% if perms.accounts.manage_users %}<a href="{% url 'accounts_admin:user_list' %}"{% if request.resolver_match.url_name == 'user_list' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="usuarios" %}Usuários</a><a href="{% url 'accounts_admin:fiscal_create' %}"{% if request.resolver_match.url_name == 'fiscal_create' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="criar_fiscal" %}Criar Fiscal</a>{% endif %}
+            {% if perms.organizations.manage_organizations %}<a href="{% url 'organizations:organization_list' %}"{% if request.resolver_match.url_name == 'organization_list' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="organizacoes" %}Organizações</a><a href="{% url 'organizations:sector_list' %}"{% if request.resolver_match.url_name == 'sector_list' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="setores" %}Setores</a>{% endif %}
+            {% if perms.accounts.view_authenticationevent %}<a href="{% url 'audit:global' %}"{% if request.resolver_match.app_name == 'audit' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="auditoria" %}Auditoria</a>{% endif %}
           {% endif %}
         </nav>
         <div class="sidebar-note">{% if is_demo %}<strong>Demonstração</strong><span>Não inserir dados ou documentos reais</span>{% else %}<strong>Ambiente interno</strong><span>Acesso restrito à rede local</span>{% endif %}</div>
@@ -52,8 +53,8 @@
       <main id="conteudo-principal" class="content {% block main_class %}{% endblock %}" tabindex="-1">
   {% else %}
     <main id="conteudo-principal" class="auth-shell" tabindex="-1">
-      <div class="auth-brand" aria-label="FiscalSema Light">
-        <span class="brand-mark" aria-hidden="true">FS</span>
+      <div class="auth-brand" aria-label="FiscalSema">
+        <img class="brand-mark" src="{% static 'core/img/logo.svg' %}" alt="" width="48" height="48">
         <span><strong>FiscalSema</strong><small>Gestão contratual simples e segura</small></span>
       </div>
       <section class="auth-card">

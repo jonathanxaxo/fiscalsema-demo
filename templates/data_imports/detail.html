@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% block title %}Prévia da importação — FiscalSema Light{% endblock %}
+{% block title %}Prévia da importação — FiscalSema{% endblock %}
 {% block content %}
   <h1>Prévia da importação</h1>
   {% for message in messages %}<p class="{% if message.tags == 'error' %}warning{% else %}notice{% endif %}">{{ message }}</p>{% endfor %}

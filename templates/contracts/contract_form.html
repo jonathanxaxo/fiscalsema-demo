@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% block title %}Contrato — FiscalSema Light{% endblock %}
+{% block title %}Contrato — FiscalSema{% endblock %}
 {% block content %}
   <header class="page-header"><div><span class="eyebrow">Cadastro contratual</span><h1>{% if object %}Editar contrato{% else %}Cadastrar contrato{% endif %}</h1><p>Preencha somente informações comprovadas pelas fontes oficiais.</p></div></header>
   <p><strong>Contratante:</strong> {% if object %}{{ object.contracting_organization.name }}{% else %}{{ request.user.organization.name }}{% endif %}</p>

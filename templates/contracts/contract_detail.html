@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
 {% load l10n formatacao %}
-{% block title %}Contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% block title %}Contrato {{ contract.number }} — FiscalSema{% endblock %}
 {% block content %}
   <header class="page-header">
     <div><span class="eyebrow">Cadastro do contrato</span><h1>Contrato {{ contract.number }}</h1><p>{{ contract.object|truncatechars:130 }}</p></div>

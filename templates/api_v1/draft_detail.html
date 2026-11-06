@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>Revisar rascunho — FiscalSema Light</title>
+<meta name="robots" content="noindex,nofollow"><title>Revisar rascunho — FiscalSema</title>
 <style>body{font-family:system-ui;margin:2rem;background:#f3f6f4;color:#173326}main{max-width:900px;margin:auto;background:white;padding:1.5rem;border-radius:14px}pre{white-space:pre-wrap;background:#f7faf8;padding:1rem;border:1px solid #dce7df;border-radius:8px}button{padding:.7rem 1rem;border:0;border-radius:8px;background:#146b3a;color:white;font-weight:700}.reject{background:#8b1d1d}textarea{width:100%;min-height:80px}</style></head>
 <body><main><nav><a href="{% url 'assistant_drafts:list' %}">Voltar aos rascunhos</a></nav>
 {% for message in messages %}<p><strong>{{ message }}</strong></p>{% endfor %}
