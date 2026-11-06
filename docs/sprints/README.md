@@ -16,3 +16,5 @@ documental das entregas anteriores.
   Vercel e validações sem banco;
 - `sprint-02-integracao-postgresql`: primeiro commit local e preparação dos
   testes integrais em PostgreSQL exclusivo.
+- `sprint-03-governanca-agente`: criação do `CLAUDE.md` com as regras de
+  trabalho, segurança e registro para agentes de IA.
