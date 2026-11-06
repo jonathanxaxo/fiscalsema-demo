@@ -12,6 +12,13 @@
 4. URLs completas da Vercel não foram registradas porque contêm identificador
    pessoal; a auditoria `scripts/security/scan_repository.py` as rejeitaria.
 
+5. **Sprint 10 descartada:** foi implementado um fluxo para redefinir a senha
+   do administrador (comando, workflow manual e 7 testes; 431 testes
+   aprovados), mas o responsável informou que conhece a senha. Por não ser
+   necessária, a entrega foi desfeita com `git revert` (commits `37397f1` e
+   reversão seguinte) e não chega à `main`. Se voltar a ser necessária, pode
+   ser recuperada desses commits em nova sprint.
+
 ## Pendências levadas adiante
 
 - e-mails de recuperação de senha ainda citam "FiscalSema Light";
