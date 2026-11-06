@@ -1,0 +1,71 @@
+name: Criar dados ficticios de apresentacao do FiscalSema Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      contract_number:
+        description: Numero do contrato que recebera os dados ficticios
+        required: true
+        default: 000885/2026
+        type: string
+      fiscal_email:
+        description: E-mail (login) do Fiscal responsavel pelo contrato
+        required: true
+        type: string
+      confirmacao:
+        description: Digite CRIAR DADOS para confirmar (os dados nao poderao ser apagados)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fiscalsema-demo-presentation-data
+  cancel-in-progress: false
+
+jobs:
+  seed-presentation-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: python:3.14.7-slim-bookworm
+    env:
+      APP_ENVIRONMENT: demo
+      DJANGO_SETTINGS_MODULE: core.settings_demo
+      ALLOWED_HOSTS: fiscalsema-demo.vercel.app
+      CSRF_TRUSTED_ORIGINS: https://fiscalsema-demo.vercel.app
+      FISCALSEMA_DEMO_DATABASE_URL: ${{ secrets.FISCALSEMA_DEMO_MIGRATION_DATABASE_URL }}
+      DEMO_CONTRACT_NUMBER: ${{ inputs.contract_number }}
+      DEMO_FISCAL_EMAIL: ${{ inputs.fiscal_email }}
+      CONFIRMACAO: ${{ inputs.confirmacao }}
+    steps:
+      - name: Exigir confirmacao explicita
+        run: test "$CONFIRMACAO" = "CRIAR DADOS"
+
+      - name: Baixar codigo
+        uses: actions/checkout@v7
+
+      - name: Exigir o segredo do banco
+        run: test -n "$FISCALSEMA_DEMO_DATABASE_URL"
+
+      - name: Gerar chave Django efemera
+        run: python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(64))" >> "$GITHUB_ENV"
+
+      - name: Instalar dependencias verificadas
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --requirement requirements.txt
+          python -m pip check
+
+      - name: Validar configuracao e migrations aplicadas
+        run: |
+          python manage.py check --deploy
+          python manage.py migrate --check
+
+      - name: Criar dados ficticios de apresentacao
+        run: python manage.py seed_demo_presentation
+
+      - name: Confirmar dados criados
+        run: |
+          python manage.py shell -c "import os; from contracts.models import Contract, ContractItem, WorkOrder; c = Contract.objects.get(number=os.environ['DEMO_CONTRACT_NUMBER'], responsible_fiscal__email__iexact=os.environ['DEMO_FISCAL_EMAIL'], archived_at__isnull=True); assert ContractItem.objects.filter(contract=c, number__startswith='DEMO-').count() == 3; assert WorkOrder.objects.filter(contract=c, number__startswith='DEMO-OS-').count() == 5; print('PASS | Dados ficticios de apresentacao presentes no contrato')"

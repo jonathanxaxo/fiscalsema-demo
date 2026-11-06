@@ -34,3 +34,5 @@ documental das entregas anteriores.
   como o Administrador, sem a senha dele, com auditoria.
 - `sprint-11-painel-administrador`: tela inicial do Administrador dedicada ao
   controle de acessos.
+- `sprint-12-dados-apresentacao`: fluxo manual que preenche um contrato com
+  dados fictícios de apresentação.
