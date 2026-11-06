@@ -1,9 +1,25 @@
-<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>Rascunhos da IA — FiscalSema Light</title>
-<style>body{font-family:system-ui;margin:2rem;background:#f3f6f4;color:#173326}main{max-width:1100px;margin:auto;background:white;padding:1.5rem;border-radius:14px}table{width:100%;border-collapse:collapse}th,td{padding:.7rem;border-bottom:1px solid #dce7df;text-align:left}a{color:#0d5a2e}.status{font-weight:700}button{padding:.45rem;border:0;border-radius:6px;background:#146b3a;color:white;font-weight:700}</style></head>
-<body><main><nav><a href="/">Dashboard</a></nav><h1>Rascunhos preparados pela IA</h1>
-<p>Nenhum item desta lista altera dados operacionais antes da sua confirmação.</p>
-<table><thead><tr><th>Data</th><th>Lote</th><th>Operação</th><th>Tipo</th><th>Contrato</th><th>Status</th><th></th></tr></thead><tbody>
-{% for draft in drafts %}<tr><td>{{ draft.created_at }}</td><td>{{ draft.batch_id }}</td><td>{{ draft.get_operation_display }}</td><td>{{ draft.get_entity_type_display }}</td><td>{{ draft.contract|default:"Novo contrato" }}</td><td class="status">{{ draft.get_status_display }}</td><td><a href="{% url 'assistant_drafts:detail' draft.pk %}">Revisar</a>{% if draft.status == 'PENDENTE' %}<form method="post" action="{% url 'assistant_drafts:batch-confirm' draft.batch_id %}" style="margin-top:.4rem">{% csrf_token %}<button type="submit">Confirmar lote</button></form>{% endif %}</td></tr>
-{% empty %}<tr><td colspan="7">Nenhum rascunho disponível.</td></tr>{% endfor %}</tbody></table></main></body></html>
+{% extends "accounts/base.html" %}
+{% block title %}Rascunhos da IA — FiscalSema{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div><span class="eyebrow">Assistente</span><h1>Rascunhos preparados pela IA</h1><p>Nenhum item desta lista altera dados operacionais antes da sua confirmação.</p></div>
+    <div class="page-header-actions"><a class="button-link button-link-secondary" href="{% url 'home' %}">Voltar ao painel</a></div>
+  </header>
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <table>
+    <thead><tr><th>Data</th><th>Lote</th><th>Operação</th><th>Tipo</th><th>Contrato</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>
+      {% for draft in drafts %}
+        <tr>
+          <td>{{ draft.created_at }}</td>
+          <td>{{ draft.batch_id }}</td>
+          <td>{{ draft.get_operation_display }}</td>
+          <td>{{ draft.get_entity_type_display }}</td>
+          <td>{{ draft.contract|default:"Novo contrato" }}</td>
+          <td><span class="status-pill {% if draft.status == 'PENDENTE' %}status-warning{% else %}status-neutral{% endif %}">{{ draft.get_status_display }}</span></td>
+          <td><div class="row-actions"><a class="button-link button-link-secondary button-link-small" href="{% url 'assistant_drafts:detail' draft.pk %}">Revisar</a>{% if draft.status == 'PENDENTE' %}<form method="post" action="{% url 'assistant_drafts:batch-confirm' draft.batch_id %}">{% csrf_token %}<button class="button-link-small" type="submit">Confirmar lote</button></form>{% endif %}</div></td>
+        </tr>
+      {% empty %}<tr><td colspan="7">Nenhum rascunho disponível.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

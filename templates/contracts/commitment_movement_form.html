@@ -1,15 +1,15 @@
 {% extends "accounts/base.html" %}
-{% block title %}Movimentação de empenho — FiscalSema Light{% endblock %}
+{% block title %}Movimentação de empenho — FiscalSema{% endblock %}
 {% block content %}
   <h1>Registrar reforço, anulação ou estorno</h1>
   <p><strong>Contrato:</strong> {{ contract.number }}</p>
   <p><strong>Empenho:</strong> {{ commitment.number }}</p>
   <p class="warning">O estorno encerra este empenho para novos rateios. Informe exatamente o saldo disponível não comprometido e a referência do documento oficial. O empenho do próximo exercício deve ser cadastrado separadamente.</p>
-  <form method="post" novalidate>
+  <form class="form-card form-grid" method="post" novalidate>
     {% csrf_token %}
     {{ form.non_field_errors }}
     {% for field in form %}
-      {{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}{{ field.errors }}
+      <div class="form-field{% if field.widget_type == 'textarea' %} form-field-wide{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</div>
     {% endfor %}
     <button type="submit">Registrar</button>
   </form>

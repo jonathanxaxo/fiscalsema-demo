@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% block title %}Rateio da OS {{ work_order.number }} — FiscalSema Light{% endblock %}
+{% block title %}Rateio da OS {{ work_order.number }} — FiscalSema{% endblock %}
 {% block content %}
   <h1>{% if object %}Editar{% else %}Novo{% endif %} rateio da OS {{ work_order.number }}</h1>
   <p>Valor total da OS: R$ {{ work_order.total_value }}</p>

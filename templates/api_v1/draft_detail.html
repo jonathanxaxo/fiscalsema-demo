@@ -1,18 +1,31 @@
-<!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>Revisar rascunho — FiscalSema Light</title>
-<style>body{font-family:system-ui;margin:2rem;background:#f3f6f4;color:#173326}main{max-width:900px;margin:auto;background:white;padding:1.5rem;border-radius:14px}pre{white-space:pre-wrap;background:#f7faf8;padding:1rem;border:1px solid #dce7df;border-radius:8px}button{padding:.7rem 1rem;border:0;border-radius:8px;background:#146b3a;color:white;font-weight:700}.reject{background:#8b1d1d}textarea{width:100%;min-height:80px}</style></head>
-<body><main><nav><a href="{% url 'assistant_drafts:list' %}">Voltar aos rascunhos</a></nav>
-{% for message in messages %}<p><strong>{{ message }}</strong></p>{% endfor %}
-<h1>{{ draft.get_entity_type_display }} — {{ draft.get_operation_display }} — {{ draft.get_status_display }}</h1>
-<p><strong>Lote:</strong> {{ draft.batch_id }}</p>
-<p><strong>Origem:</strong> {{ draft.source_summary }}</p>
-<p><strong>Autoridade:</strong> {{ draft.get_source_authority_display }} | <strong>Confiança:</strong> {{ draft.get_confidence_level_display }}</p>
-<h2>Dados propostos</h2><pre>{{ payload_json }}</pre>
-<h2>Comparação com o sistema</h2><pre>{{ comparison_json }}</pre>
-<h2>Fontes e evidências</h2><pre>{{ evidence_json }}</pre>
-{% if draft.status == 'PENDENTE' %}<p><strong>Atenção:</strong> confirmar executará novamente permissões, regras financeiras, saldos, constraints e concorrência.</p>
-<form method="post" action="{% url 'assistant_drafts:confirm' draft.pk %}">{% csrf_token %}<button type="submit">Confirmar e gravar</button></form>
-<h2>Rejeitar</h2><form method="post" action="{% url 'assistant_drafts:reject' draft.pk %}">{% csrf_token %}<label for="reason">Motivo</label><textarea id="reason" name="reason" required></textarea><button class="reject" type="submit">Rejeitar rascunho</button></form>
-{% elif draft.target_id %}<p><strong>Registro gravado:</strong> {{ draft.target_model }} #{{ draft.target_id }}</p><h2>Verificação de consistência</h2><pre>{{ consistency_json }}</pre>{% else %}<p><strong>Motivo:</strong> {{ draft.rejection_reason }}</p>{% endif %}
-</main></body></html>
+{% extends "accounts/base.html" %}
+{% block title %}Revisar rascunho — FiscalSema{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div><span class="eyebrow">Rascunho da IA · Lote {{ draft.batch_id }}</span><h1>{{ draft.get_entity_type_display }} — {{ draft.get_operation_display }} — {{ draft.get_status_display }}</h1></div>
+    <div class="page-header-actions"><a class="button-link button-link-secondary" href="{% url 'assistant_drafts:list' %}">Voltar aos rascunhos</a></div>
+  </header>
+  {% for message in messages %}<p class="notice"><strong>{{ message }}</strong></p>{% endfor %}
+  <dl>
+    <dt>Lote</dt><dd>{{ draft.batch_id }}</dd>
+    <dt>Origem</dt><dd>{{ draft.source_summary }}</dd>
+    <dt>Autoridade</dt><dd>{{ draft.get_source_authority_display }}</dd>
+    <dt>Confiança</dt><dd>{{ draft.get_confidence_level_display }}</dd>
+  </dl>
+  <h2>Dados propostos</h2><pre class="code-block">{{ payload_json }}</pre>
+  <h2>Comparação com o sistema</h2><pre class="code-block">{{ comparison_json }}</pre>
+  <h2>Fontes e evidências</h2><pre class="code-block">{{ evidence_json }}</pre>
+  {% if draft.status == 'PENDENTE' %}
+    <p class="warning"><strong>Atenção:</strong> confirmar executará novamente permissões, regras financeiras, saldos, constraints e concorrência.</p>
+    <form method="post" action="{% url 'assistant_drafts:confirm' draft.pk %}">{% csrf_token %}<button type="submit">Confirmar e gravar</button></form>
+    <section class="confirmation-panel confirmation-panel-danger subsection">
+      <h2>Rejeitar</h2>
+      <form method="post" action="{% url 'assistant_drafts:reject' draft.pk %}">{% csrf_token %}<label for="reason">Motivo</label><textarea id="reason" name="reason" required></textarea><button class="button-link-danger" type="submit">Rejeitar rascunho</button></form>
+    </section>
+  {% elif draft.target_id %}
+    <p class="notice"><strong>Registro gravado:</strong> {{ draft.target_model }} #{{ draft.target_id }}</p>
+    <h2>Verificação de consistência</h2><pre class="code-block">{{ consistency_json }}</pre>
+  {% else %}
+    <p class="notice"><strong>Motivo:</strong> {{ draft.rejection_reason }}</p>
+  {% endif %}
+{% endblock %}

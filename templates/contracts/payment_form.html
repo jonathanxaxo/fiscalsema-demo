@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
 {% load l10n %}
-{% block title %}Pagamento da NF {{ invoice.number }}/{{ invoice.series }} — FiscalSema Light{% endblock %}
+{% block title %}Pagamento da NF {{ invoice.number }}/{{ invoice.series }} — FiscalSema{% endblock %}
 {% block content %}
   <h1>{% if form.instance.pk %}Editar{% else %}Registrar{% endif %} pagamento da NF {{ invoice.number }}/{{ invoice.series }}</h1>
   <dl>

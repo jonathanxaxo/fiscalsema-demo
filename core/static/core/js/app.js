@@ -6,7 +6,17 @@
     menuButton?.setAttribute('aria-expanded', 'false');
   };
 
+  const topbar = document.querySelector('.topbar');
+  const updateMenuTop = () => {
+    if (!topbar) return;
+    const bottom = Math.max(0, Math.round(topbar.getBoundingClientRect().bottom));
+    document.documentElement.style.setProperty('--menu-top', `${bottom}px`);
+  };
+  window.addEventListener('scroll', () => { if (body.classList.contains('menu-open')) updateMenuTop(); }, { passive: true });
+  window.addEventListener('resize', updateMenuTop);
+
   menuButton?.addEventListener('click', () => {
+    updateMenuTop();
     const opening = !body.classList.contains('menu-open');
     body.classList.toggle('menu-open', opening);
     menuButton.setAttribute('aria-expanded', String(opening));
@@ -27,6 +37,22 @@
     table.parentNode.insertBefore(wrapper, table);
     wrapper.appendChild(table);
   });
+
+  const scrollHints = [];
+  document.querySelectorAll('.table-responsive').forEach((wrapper) => {
+    const hint = document.createElement('p');
+    hint.className = 'table-scroll-hint';
+    hint.textContent = 'Deslize a tabela para o lado para ver todas as colunas →';
+    wrapper.parentNode.insertBefore(hint, wrapper);
+    scrollHints.push([wrapper, hint]);
+  });
+  const updateScrollHints = () => {
+    scrollHints.forEach(([wrapper, hint]) => {
+      hint.classList.toggle('is-visible', wrapper.scrollWidth > wrapper.clientWidth + 1);
+    });
+  };
+  updateScrollHints();
+  window.addEventListener('resize', updateScrollHints);
 
   document.querySelectorAll('.notice').forEach((notice) => {
     if (!notice.hasAttribute('role')) notice.setAttribute('role', 'status');

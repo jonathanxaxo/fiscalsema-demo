@@ -1,6 +1,6 @@
 {% extends "accounts/base.html" %}
-{% load l10n %}
-{% block title %}Contrato {{ contract.number }} — FiscalSema Light{% endblock %}
+{% load l10n formatacao %}
+{% block title %}Contrato {{ contract.number }} — FiscalSema{% endblock %}
 {% block content %}
   <header class="page-header">
     <div><span class="eyebrow">Cadastro do contrato</span><h1>Contrato {{ contract.number }}</h1><p>{{ contract.object|truncatechars:130 }}</p></div>
@@ -16,12 +16,17 @@
     <div><small>Valor atual</small><strong>R$ {{ contract.current_value|localize }}</strong></div>
     <div><small>Saldo contratual</small><strong>R$ {{ financial_position.contract_balance.value|localize }}</strong></div>
   </div>
+  <nav class="action-groups" aria-label="Ações do contrato">
+    <section class="action-cluster"><h2>Operação</h2><p>Cadastros e acompanhamento da execução contratual.</p><div class="action-list"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:item_list' contract.pk %}">Itens</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:commitment_list' contract.pk %}">Empenhos</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_list' contract.pk %}">Ordens de serviço</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:table_mode' contract.pk %}">Modo tabela</a>{% if file_features_enabled %}<a class="button-link button-link-secondary button-link-small" href="{% url 'documents:list' contract.pk %}">Documentos</a>{% if can_edit %}<a class="button-link button-link-secondary button-link-small" href="{% url 'data_imports:upload' contract.pk %}">Importar planilha</a>{% endif %}{% endif %}</div></section>
+    <section class="action-cluster"><h2>Análise e controle</h2><p>Consultas consolidadas, evidências e prestação de contas.</p><div class="action-list"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:dashboard' contract.pk %}">Dashboard</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:accountability' contract.pk %}">Prestação de contas</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:report' contract.pk %}">Relatório</a>{% if can_export %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:export_csv' contract.pk %}">Exportar CSV</a>{% endif %}{% if can_manage_access %}<a class="button-link button-link-secondary button-link-small" href="{% url 'audit:contract' contract.pk %}">Auditoria</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:access_list' contract.pk %}">Acessos</a>{% endif %}</div></section>
+    {% if can_edit or can_manage_lifecycle %}<section class="action-cluster"><h2>Gestão do contrato</h2><p>Alterações administrativas e ações de ciclo de vida.</p><div class="action-list">{% if can_edit %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:update' contract.pk %}">Editar</a>{% endif %}{% if can_manage_lifecycle %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:transfer' contract.pk %}">Transferir Fiscal responsável</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:close' contract.pk %}">Encerrar contrato</a><a class="button-link button-link-danger button-link-small" href="{% url 'contracts:archive' contract.pk %}">Excluir/arquivar cadastro incorreto</a>{% endif %}</div></section>{% endif %}
+  </nav>
   <dl>
     <dt>Processo</dt><dd>{{ contract.process_number }}</dd>
     <dt>Objeto</dt><dd>{{ contract.object }}</dd>
     <dt>Contratante</dt><dd>{{ contract.contracting_organization.name }}</dd>
     <dt>Fornecedor</dt><dd>{{ contract.supplier_name }}</dd>
-    <dt>CNPJ/CPF</dt><dd>{{ contract.supplier_tax_id }}</dd>
+    <dt>CNPJ/CPF</dt><dd>{{ contract.supplier_tax_id|cnpj_cpf }}</dd>
     <dt>Assinatura</dt><dd>{{ contract.signature_date|date:"d/m/Y" }}</dd>
     <dt>Vigência</dt><dd>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</dd>
     <dt>Valor original</dt><dd>R$ {{ contract.original_value|localize }}</dd>
@@ -74,11 +79,6 @@
       <li>{{ evidence.description }}: R$ {{ evidence.value|localize }}</li>
     {% empty %}<li>Nenhuma OS em estado financeiro confirmado compõe o comprometido.</li>{% endfor %}
   </ul>
-  <p class="helptext">O comprometimento por empenho será alimentado pelos rateios da Etapa 19. Estados de OS ainda sem decisão financeira não são presumidos.</p>
-  <nav class="action-groups" aria-label="Ações do contrato">
-    <section class="action-cluster"><h2>Operação</h2><p>Cadastros e acompanhamento da execução contratual.</p><div class="action-list"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:item_list' contract.pk %}">Itens</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:commitment_list' contract.pk %}">Empenhos</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_list' contract.pk %}">Ordens de serviço</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:table_mode' contract.pk %}">Modo tabela</a>{% if file_features_enabled %}<a class="button-link button-link-secondary button-link-small" href="{% url 'documents:list' contract.pk %}">Documentos</a>{% if can_edit %}<a class="button-link button-link-secondary button-link-small" href="{% url 'data_imports:upload' contract.pk %}">Importar planilha</a>{% endif %}{% endif %}</div></section>
-    <section class="action-cluster"><h2>Análise e controle</h2><p>Consultas consolidadas, evidências e prestação de contas.</p><div class="action-list"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:dashboard' contract.pk %}">Dashboard</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:accountability' contract.pk %}">Prestação de contas</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:report' contract.pk %}">Relatório</a>{% if can_export %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:export_csv' contract.pk %}">Exportar CSV</a>{% endif %}{% if can_manage_access %}<a class="button-link button-link-secondary button-link-small" href="{% url 'audit:contract' contract.pk %}">Auditoria</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:access_list' contract.pk %}">Acessos</a>{% endif %}</div></section>
-    {% if can_edit or can_manage_lifecycle %}<section class="action-cluster"><h2>Gestão do contrato</h2><p>Alterações administrativas e ações de ciclo de vida.</p><div class="action-list">{% if can_edit %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:update' contract.pk %}">Editar</a>{% endif %}{% if can_manage_lifecycle %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:transfer' contract.pk %}">Transferir Fiscal responsável</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:close' contract.pk %}">Encerrar contrato</a><a class="button-link button-link-danger button-link-small" href="{% url 'contracts:archive' contract.pk %}">Excluir/arquivar cadastro incorreto</a>{% endif %}</div></section>{% endif %}
-  </nav>
+  <p class="helptext">O comprometimento por empenho é calculado a partir dos rateios das OS. Estados de OS ainda sem decisão financeira não são presumidos.</p>
   <p class="actions"><a href="{% url 'contracts:list' %}">Voltar aos contratos</a></p>
 {% endblock %}

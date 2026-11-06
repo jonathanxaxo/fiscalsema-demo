@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% block title %}Contratos arquivados — FiscalSema Light{% endblock %}
+{% block title %}Contratos arquivados — FiscalSema{% endblock %}
 {% block content %}
   <header class="page-header"><div><span class="eyebrow">Histórico preservado</span><h1>Contratos arquivados</h1><p>Cadastros retirados do fluxo operacional sem exclusão física.</p></div><div class="page-header-actions"><a class="button-link button-link-secondary" href="{% url 'contracts:list' %}">Voltar aos contratos atuais</a></div></header>
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
