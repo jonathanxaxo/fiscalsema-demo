@@ -32,3 +32,5 @@ documental das entregas anteriores.
   conferência da produção.
 - `sprint-10-troca-de-perfil`: exceção da demo para uma conta Fiscal atuar
   como o Administrador, sem a senha dele, com auditoria.
+- `sprint-11-painel-administrador`: tela inicial do Administrador dedicada ao
+  controle de acessos.
