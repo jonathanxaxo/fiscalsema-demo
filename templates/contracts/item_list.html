@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% load l10n %}
+{% load l10n formatacao %}
 {% block title %}Itens do contrato {{ contract.number }} — FiscalSema Light{% endblock %}
 {% block content %}
   <h1>Itens do contrato {{ contract.number }}</h1>
@@ -15,7 +15,7 @@
           <td>{{ item.external_code|default:"—" }}</td>
           <td>{{ item.description }}</td>
           <td>{{ item.unit_display }}</td>
-          <td>{{ item.contracted_quantity|localize }}</td>
+          <td>{{ item.contracted_quantity|quantidade }}</td>
           <td>{% if item.annual_reference_quantity is not None %}{{ item.annual_reference_quantity|floatformat:"-7" }} {{ item.annual_reference_unit|default:item.unit_display }}{% else %}—{% endif %}</td>
           <td>{% if item.annual_operational_limit is not None %}{{ item.annual_operational_limit|floatformat:"-4" }} {{ item.unit_display }}{% else %}Pendente{% endif %}</td>
           <td>R$ {{ item.unit_value|localize }}</td>

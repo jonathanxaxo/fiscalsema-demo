@@ -20,3 +20,5 @@ documental das entregas anteriores.
   trabalho, segurança e registro para agentes de IA.
 - `sprint-04-diagnostico-visual`: execução local com dados fictícios,
   capturas de tela e lista priorizada de melhorias visuais.
+- `sprint-05-correcoes-leitura`: tabelas sem quebra de palavras, aviso de
+  rolagem, formatação de exercício, quantidades e CNPJ/CPF.

@@ -30,7 +30,7 @@
 
   <h2>Empenhos</h2>
   <table><thead><tr><th>Número</th><th>Exercício</th><th>Data</th><th>Valor atual</th><th>Novos rateios</th></tr></thead><tbody>
-    {% for item in accountability.commitments %}<tr><td><a href="{% url 'contracts:commitment_detail' contract.pk item.pk %}">{{ item.number }}</a></td><td>{{ item.fiscal_year }}</td><td>{{ item.commitment_date|date:"d/m/Y" }}</td><td>R$ {{ item.current_value|localize }}</td><td>{% if item.closed_for_new_allocations_at %}Encerrados por estorno{% else %}Permitidos{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nenhum empenho corresponde aos filtros.</td></tr>{% endfor %}
+    {% for item in accountability.commitments %}<tr><td><a href="{% url 'contracts:commitment_detail' contract.pk item.pk %}">{{ item.number }}</a></td><td>{{ item.fiscal_year|unlocalize }}</td><td>{{ item.commitment_date|date:"d/m/Y" }}</td><td>R$ {{ item.current_value|localize }}</td><td>{% if item.closed_for_new_allocations_at %}Encerrados por estorno{% else %}Permitidos{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nenhum empenho corresponde aos filtros.</td></tr>{% endfor %}
   </tbody></table>
 
   <h2>Ordens de Serviço</h2>

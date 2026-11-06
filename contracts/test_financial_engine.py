@@ -215,6 +215,6 @@ class FinancialEngineIntegrationTests(TestCase):
         self.assertContains(contract_response, "Total empenhado ativo")
         self.assertContains(contract_response, "125.000,00")
         self.assertContains(item_response, "Saldo quantitativo")
-        self.assertContains(item_response, "100,0000")
+        self.assertContains(item_response, "100,00")
         self.assertContains(commitment_response, "Saldo disponível")
         self.assertContains(commitment_response, "125.000,00")

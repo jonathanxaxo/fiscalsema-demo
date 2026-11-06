@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% load l10n %}
+{% load l10n formatacao %}
 {% block title %}Ordens de serviço do contrato {{ contract.number }} — FiscalSema Light{% endblock %}
 {% block content %}
   <h1>Ordens de serviço do contrato {{ contract.number }}</h1>
@@ -15,7 +15,7 @@
           <td>{{ work_order.item.number }}</td>
           <td>{{ work_order.annual_period_context.calendar.label|default:"Fora da vigência" }}</td>
           <td>{{ work_order.annual_period_context.contract.label|default:"Fora da vigência" }}</td>
-          <td>{{ work_order.measure|localize }} {{ work_order.unit_name }}</td>
+          <td>{{ work_order.measure|quantidade }} {{ work_order.unit_name }}</td>
           <td>R$ {{ work_order.unit_value|localize }}</td>
           <td>R$ {{ work_order.total_value|localize }}</td>
           <td>{{ work_order.deadline|date:"d/m/Y"|default:"—" }}</td>

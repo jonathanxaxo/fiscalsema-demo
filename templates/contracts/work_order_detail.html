@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% load l10n %}
+{% load l10n formatacao %}
 {% block title %}OS {{ work_order.number }} — FiscalSema Light{% endblock %}
 {% block content %}
   <h1>OS {{ work_order.number }}</h1>
@@ -9,8 +9,8 @@
     <dt>Contrato</dt><dd>{{ contract.number }}</dd>
     <dt>Item</dt><dd>{{ work_order.item.number }} — {{ work_order.item.description }}</dd>
     <dt>Descrição</dt><dd>{{ work_order.description }}</dd>
-    <dt>Quantidade</dt><dd>{{ work_order.quantity|localize|default:"—" }}</dd>
-    <dt>Horas</dt><dd>{{ work_order.hours|localize|default:"—" }}</dd>
+    <dt>Quantidade</dt><dd>{{ work_order.quantity|quantidade|default:"—" }}</dd>
+    <dt>Horas</dt><dd>{{ work_order.hours|quantidade|default:"—" }}</dd>
     <dt>Unidade de referência</dt><dd>{{ work_order.unit_name }}</dd>
     <dt>Valor unitário de referência</dt><dd>R$ {{ work_order.unit_value|localize }}</dd>
     <dt>Valor unitário atual do item</dt><dd>R$ {{ work_order.item.unit_value|localize }}</dd>
@@ -67,8 +67,8 @@
   {% if allocation_balance %}<p class="warning">O rateio está incompleto. A fonte ainda não definiu em qual transição a igualdade exata deve ser exigida.</p>{% endif %}
   <h2>Execução</h2>
   <dl>
-    <dt>Quantidade/horas executadas</dt><dd>{{ executed_quantity|localize }}</dd>
-    <dt>Saldo quantitativo da OS</dt><dd>{{ execution_quantity_balance|localize }}</dd>
+    <dt>Quantidade/horas executadas</dt><dd>{{ executed_quantity|quantidade }}</dd>
+    <dt>Saldo quantitativo da OS</dt><dd>{{ execution_quantity_balance|quantidade }}</dd>
     <dt>Valor executado</dt><dd>R$ {{ executed_value|localize }}</dd>
     <dt>Saldo de execução da OS</dt><dd>R$ {{ execution_value_balance|localize }}</dd>
   </dl>
@@ -79,7 +79,7 @@
         <tr>
           <td>{{ execution.execution_date|date:"d/m/Y" }}</td>
           <td>{{ execution.competence|default:"—" }}</td>
-          <td>{{ execution.executed_quantity|localize }}</td>
+          <td>{{ execution.executed_quantity|quantidade }}</td>
           <td>R$ {{ execution.executed_value|localize }}</td>
           <td>{{ execution.evidence_reference|default:"—" }}</td>
           <td>{% if can_edit %}<a href="{% url 'contracts:execution_update' contract.pk work_order.pk execution.pk %}">Editar</a>{% else %}—{% endif %}</td>

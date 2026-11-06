@@ -1,5 +1,5 @@
 {% extends "accounts/base.html" %}
-{% load l10n %}
+{% load l10n formatacao %}
 {% block title %}NF {{ invoice.number }}/{{ invoice.series }} — FiscalSema Light{% endblock %}
 {% block content %}
   <h1>NF {{ invoice.number }}/{{ invoice.series }}</h1>
@@ -11,7 +11,7 @@
     <dt>Item</dt><dd>{% if invoice.item %}{{ invoice.item.number }} — {{ invoice.item.description }}{% else %}—{% endif %}</dd>
     <dt>Rateio</dt><dd>{% if invoice.allocation %}{{ invoice.allocation }}{% else %}—{% endif %}</dd>
     <dt>Fornecedor</dt><dd>{{ invoice.supplier_name }}</dd>
-    <dt>CNPJ/CPF</dt><dd>{{ invoice.supplier_tax_id }}</dd>
+    <dt>CNPJ/CPF</dt><dd>{{ invoice.supplier_tax_id|cnpj_cpf }}</dd>
     <dt>Emissão</dt><dd>{{ invoice.issue_date|date:"d/m/Y" }}</dd>
     <dt>Competência</dt><dd>{{ invoice.competence }}</dd>
     <dt>Valor bruto</dt><dd>R$ {{ invoice.gross_value|localize }}</dd>

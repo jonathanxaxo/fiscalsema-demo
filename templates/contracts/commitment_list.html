@@ -13,7 +13,7 @@
         {% with totals=commitment.movement_totals breakdown=commitment.movement_breakdown %}
           <tr>
             <td>{{ commitment.number }}</td>
-            <td>{{ commitment.fiscal_year }}</td>
+            <td>{{ commitment.fiscal_year|unlocalize }}</td>
             <td>{{ commitment.ped }}</td>
             <td>{{ commitment.commitment_date|date:"d/m/Y" }}</td>
             <td>R$ {{ commitment.initial_value|localize }}</td>

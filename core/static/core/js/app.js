@@ -28,6 +28,22 @@
     wrapper.appendChild(table);
   });
 
+  const scrollHints = [];
+  document.querySelectorAll('.table-responsive').forEach((wrapper) => {
+    const hint = document.createElement('p');
+    hint.className = 'table-scroll-hint';
+    hint.textContent = 'Deslize a tabela para o lado para ver todas as colunas →';
+    wrapper.parentNode.insertBefore(hint, wrapper);
+    scrollHints.push([wrapper, hint]);
+  });
+  const updateScrollHints = () => {
+    scrollHints.forEach(([wrapper, hint]) => {
+      hint.classList.toggle('is-visible', wrapper.scrollWidth > wrapper.clientWidth + 1);
+    });
+  };
+  updateScrollHints();
+  window.addEventListener('resize', updateScrollHints);
+
   document.querySelectorAll('.notice').forEach((notice) => {
     if (!notice.hasAttribute('role')) notice.setAttribute('role', 'status');
     if (!notice.hasAttribute('aria-live')) notice.setAttribute('aria-live', 'polite');
