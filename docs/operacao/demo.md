@@ -6,6 +6,16 @@ Após as migrations, o banco fica sem usuários, contratos e dados operacionais.
 A versão atual não cria dados fictícios automaticamente para respeitar a regra
 de manter somente a conta administrativa.
 
+**Exceção autorizada (Sprint 12):** o fluxo manual **"Criar dados ficticios de
+apresentacao do FiscalSema Demo"** (`.github/workflows/seed-demo-presentation.yml`)
+preenche um contrato existente de um Fiscal com 3 itens, 2 empenhos, 5 OS,
+2 execuções, 2 notas fiscais e 1 pagamento, todos marcados com
+`[DEMO-APRESENTACAO]` e numerados com o prefixo `DEMO-`. Os valores usam no
+máximo metade do saldo do contrato e as datas ficam dentro da vigência. Exige
+a confirmação `CRIAR DADOS` e pode ser repetido sem efeito. **Esses registros
+não podem ser apagados** (o sistema não faz exclusão física); para removê-los
+é preciso recriar o banco da demo.
+
 ## Criar o administrador
 
 Configure `DEMO_ADMIN_EMAIL`, `DEMO_ADMIN_PASSWORD` e `DEMO_ADMIN_NAME` como
