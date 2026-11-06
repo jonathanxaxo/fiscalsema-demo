@@ -18,3 +18,5 @@ documental das entregas anteriores.
   testes integrais em PostgreSQL exclusivo.
 - `sprint-03-governanca-agente`: criação do `CLAUDE.md` com as regras de
   trabalho, segurança e registro para agentes de IA.
+- `sprint-04-diagnostico-visual`: execução local com dados fictícios,
+  capturas de tela e lista priorizada de melhorias visuais.
