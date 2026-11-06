@@ -30,5 +30,3 @@ documental das entregas anteriores.
 - `sprint-08-painel`: prioridades no topo do painel e barra de atalhos.
 - `sprint-09-publicacao`: registro do PR nº 3, CI, Preview, merge e
   conferência da produção.
-- `sprint-10-recuperar-acesso-admin`: fluxo manual e auditado para redefinir a
-  senha do administrador da demo.
