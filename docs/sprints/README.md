@@ -24,3 +24,6 @@ documental das entregas anteriores.
   rolagem, formatação de exercício, quantidades e CNPJ/CPF.
 - `sprint-06-identidade-visual`: logotipo, favicon e ícones SVG próprios,
   faixa de demonstração em âmbar e nome FiscalSema nos títulos.
+- `sprint-07-padronizacao-telas`: listas operacionais padronizadas, ações do
+  contrato no topo, formulários em duas colunas, rascunhos da IA no layout do
+  sistema e correção do menu móvel.

@@ -6,7 +6,17 @@
     menuButton?.setAttribute('aria-expanded', 'false');
   };
 
+  const topbar = document.querySelector('.topbar');
+  const updateMenuTop = () => {
+    if (!topbar) return;
+    const bottom = Math.max(0, Math.round(topbar.getBoundingClientRect().bottom));
+    document.documentElement.style.setProperty('--menu-top', `${bottom}px`);
+  };
+  window.addEventListener('scroll', () => { if (body.classList.contains('menu-open')) updateMenuTop(); }, { passive: true });
+  window.addEventListener('resize', updateMenuTop);
+
   menuButton?.addEventListener('click', () => {
+    updateMenuTop();
     const opening = !body.classList.contains('menu-open');
     body.classList.toggle('menu-open', opening);
     menuButton.setAttribute('aria-expanded', String(opening));
