@@ -22,6 +22,21 @@ def home(request):
         contract_is_read_only_for,
     )
 
+    from accounts.models import UserProfile
+
+    if request.user.profile == UserProfile.ADMINISTRATOR:
+        from .admin_dashboard import build_admin_dashboard
+
+        admin_dashboard = build_admin_dashboard()
+        return render(
+            request,
+            "core/admin_home.html",
+            {
+                "admin_dashboard": admin_dashboard,
+                "pending_registration_count": admin_dashboard["pending_count"],
+            },
+        )
+
     contracts = contracts_visible_to(request.user)
     selected_contract = None
     selected_id = request.GET.get("contract")

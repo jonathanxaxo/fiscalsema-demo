@@ -1,0 +1,77 @@
+{% extends "accounts/base.html" %}
+{% block title %}Painel de acessos — FiscalSema{% endblock %}
+{% block main_class %}dashboard-page{% endblock %}
+{% block content %}
+  {% with d=admin_dashboard %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Administração</span>
+      <h1>Controle de acessos</h1>
+      <p>Olá, {{ request.user.get_short_name }}. Gerencie quem acessa o sistema, os cadastros pendentes e a segurança das contas.</p>
+    </div>
+    <span class="badge badge-success">{{ request.user.get_profile_display }}</span>
+  </header>
+
+  <section class="surface" aria-labelledby="pendencias-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Prioridades</span><h2 id="pendencias-titulo">Solicitações de cadastro</h2></div><a href="{% url 'accounts_admin:registration_list' %}">Ver todas</a></div>
+    {% if d.pending_count %}
+      <p class="alert alert-warning"><strong>{{ d.pending_count }}</strong> solicitação(ões) aguardando análise.</p>
+      <div class="table-responsive" tabindex="0"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Solicitado em</th><th>Ação</th></tr></thead><tbody>
+        {% for registration in d.pending_preview %}<tr><td>{{ registration.user.full_name }}</td><td>{{ registration.user.email }}</td><td>{{ registration.created_at|date:"d/m/Y H:i" }}</td><td><a class="button-link button-link-small" href="{% url 'accounts_admin:registration_review' registration.pk %}">Analisar</a></td></tr>{% endfor %}
+      </tbody></table></div>
+    {% else %}
+      <p class="empty-compact">Nenhuma solicitação de cadastro pendente.</p>
+    {% endif %}
+  </section>
+
+  <section class="surface" aria-labelledby="usuarios-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Contas</span><h2 id="usuarios-titulo">Usuários do sistema</h2></div><a href="{% url 'accounts_admin:user_list' %}">Gerenciar usuários</a></div>
+    <div class="metric-grid">
+      <a class="metric-card metric-card-highlight" href="{% url 'accounts_admin:user_list' %}"><small>Contas cadastradas</small><strong>{{ d.users_total }}</strong><span>Abrir usuários →</span></a>
+      {% for row in d.status_rows %}<div class="metric-card"><small>{{ row.label }}</small><strong>{{ row.count }}</strong></div>{% endfor %}
+      <a class="metric-card" href="{% url 'accounts_admin:user_list' %}?excluidos=1"><small>Excluídas logicamente</small><strong>{{ d.users_archived }}</strong><span>Ver excluídas →</span></a>
+    </div>
+    <h3>Contas ativas por perfil</h3>
+    <div class="status-summary-list">{% for row in d.profile_rows %}<div><span>{{ row.label }}</span><strong>{{ row.count }}</strong></div>{% endfor %}</div>
+  </section>
+
+  <div class="dashboard-columns">
+    <section class="surface" aria-labelledby="seguranca-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Segurança</span><h2 id="seguranca-titulo">Acessos recentes</h2></div><a href="{% url 'audit:global' %}">Abrir auditoria</a></div>
+      <div class="metric-grid metric-grid-compact dashboard-two-metrics">
+        <div class="metric-card"><small>Falhas de login (24 h)</small><strong>{{ d.login_failures_24h }}</strong></div>
+        <div class="metric-card"><small>Logins bloqueados agora</small><strong>{{ d.blocked_logins }}</strong></div>
+      </div>
+      {% if d.recent_events %}
+        <div class="table-responsive" tabindex="0"><table><thead><tr><th>Quando</th><th>Evento</th><th>Conta</th></tr></thead><tbody>
+          {% for event in d.recent_events %}<tr><td>{{ event.created_at|date:"d/m/Y H:i" }}</td><td><span class="status-pill {% if event.event_type == 'LOGIN_FALHA' %}status-danger{% elif event.event_type == 'LOGIN_SUCESSO' %}status-success{% else %}status-neutral{% endif %}">{{ event.get_event_type_display }}</span></td><td>{{ event.user.full_name|default:"—" }}</td></tr>{% endfor %}
+        </tbody></table></div>
+      {% else %}
+        <p class="empty-compact">Nenhum evento de acesso registrado.</p>
+      {% endif %}
+    </section>
+    <section class="surface" aria-labelledby="organizacoes-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Estrutura</span><h2 id="organizacoes-titulo">Organizações</h2></div></div>
+      <div class="status-summary-list">
+        <div><span>Organizações cadastradas</span><strong>{{ d.organizations_total }}</strong></div>
+        <div><span>Organizações ativas</span><strong>{{ d.organizations_active }}</strong></div>
+        <div><span>Setores cadastrados</span><strong>{{ d.sectors_total }}</strong></div>
+      </div>
+      <div class="action-list subsection">
+        <a class="button-link button-link-secondary button-link-small" href="{% url 'organizations:organization_list' %}">Organizações</a>
+        <a class="button-link button-link-secondary button-link-small" href="{% url 'organizations:sector_list' %}">Setores</a>
+      </div>
+    </section>
+  </div>
+
+  <section class="surface" aria-labelledby="atalhos-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Atalhos</span><h2 id="atalhos-titulo">Ações administrativas</h2></div></div>
+    <div class="module-grid">
+      <a class="module-card" href="{% url 'accounts_admin:fiscal_create' %}"><strong>Criar Fiscal</strong><span>Cadastrar uma conta de Fiscal com organização</span></a>
+      <a class="module-card" href="{% url 'accounts_admin:registration_list' %}"><strong>Solicitações de cadastro</strong><span>Aprovar ou rejeitar pedidos de acesso</span></a>
+      <a class="module-card" href="{% url 'accounts_admin:user_list' %}"><strong>Usuários</strong><span>Ativar, bloquear e gerenciar vínculos</span></a>
+      <a class="module-card" href="{% url 'audit:global' %}"><strong>Auditoria</strong><span>Histórico de acessos e alterações</span></a>
+    </div>
+  </section>
+  {% endwith %}
+{% endblock %}
