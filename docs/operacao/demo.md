@@ -25,6 +25,26 @@ momento da execução, lê a senha exclusivamente do secret temporário
 usuário, está ativa, possui perfil Administrador, superusuário e grupo técnico
 `ADMINISTRADOR`. Depois da criação confirmada, remova o secret temporário.
 
+## Recuperar a senha do administrador
+
+A recuperação por e-mail não funciona na demo, porque o envio de e-mails está
+desativado. Para definir uma nova senha sem expor o valor:
+
+1. No GitHub, crie (ou atualize) o secret temporário
+   `FISCALSEMA_DEMO_ADMIN_PASSWORD` com a nova senha, em *Settings → Secrets
+   and variables → Actions*. Nunca envie a senha por chat ou e-mail.
+2. Em *Actions*, execute manualmente o fluxo
+   **"Redefinir senha do administrador do FiscalSema Demo"**
+   (`.github/workflows/reset-demo-admin-password.yml`), informando o e-mail
+   (login) do Administrador e a palavra `REDEFINIR` como confirmação.
+3. O fluxo só altera a senha de um Administrador ativo existente: não cria
+   contas, não muda o login e registra o evento "Senha alterada" na auditoria.
+   Ao final, confirma que a nova senha autentica.
+4. Remova o secret temporário.
+
+Se houver muitas tentativas de login erradas antes, o login fica bloqueado por
+15 minutos (`AUTH_LOGIN_BLOCK_SECONDS`); aguarde esse prazo antes de entrar.
+
 ## Limpar a demonstração
 
 Não use o banco da VM e não importe dumps. Para reiniciar, descarte o banco demo
