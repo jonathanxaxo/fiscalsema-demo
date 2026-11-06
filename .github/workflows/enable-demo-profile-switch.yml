@@ -1,21 +1,16 @@
-name: Habilitar troca de perfil do administrador do FiscalSema Demo
+name: Habilitar troca de perfil do FiscalSema Demo
 
 on:
   workflow_dispatch:
     inputs:
+      fiscal_email:
+        description: E-mail (login) da conta Fiscal que podera atuar como Administrador
+        required: true
+        type: string
       admin_email:
-        description: E-mail (login) do Administrador que podera atuar como Fiscal
-        required: true
-        type: string
-      organization_name:
-        description: Organizacao usada quando atuar como Fiscal
-        required: true
-        default: SEMA
-        type: string
-      fiscal_name:
-        description: Nome exibido quando atuar como Fiscal
-        required: true
-        default: Admin
+        description: Opcional. Deixe em branco para usar o unico Administrador ativo da demo
+        required: false
+        default: ""
         type: string
       confirmacao:
         description: Digite HABILITAR para confirmar
@@ -41,9 +36,8 @@ jobs:
       ALLOWED_HOSTS: fiscalsema-demo.vercel.app
       CSRF_TRUSTED_ORIGINS: https://fiscalsema-demo.vercel.app
       FISCALSEMA_DEMO_DATABASE_URL: ${{ secrets.FISCALSEMA_DEMO_MIGRATION_DATABASE_URL }}
-      DEMO_ADMIN_EMAIL: ${{ inputs.admin_email }}
-      DEMO_SWITCH_ORGANIZATION: ${{ inputs.organization_name }}
-      DEMO_SWITCH_FISCAL_NAME: ${{ inputs.fiscal_name }}
+      DEMO_SWITCH_FISCAL_EMAIL: ${{ inputs.fiscal_email }}
+      DEMO_SWITCH_ADMIN_EMAIL: ${{ inputs.admin_email }}
       CONFIRMACAO: ${{ inputs.confirmacao }}
     steps:
       - name: Exigir confirmacao explicita
@@ -74,4 +68,4 @@ jobs:
 
       - name: Confirmar vinculo e protecoes
         run: |
-          python manage.py shell -c "import os; from accounts.models import ProfileSwitchLink, UserProfile; link = ProfileSwitchLink.objects.select_related('administrator', 'fiscal').get(administrator__email__iexact=os.environ['DEMO_ADMIN_EMAIL']); assert ProfileSwitchLink.objects.count() == 1; assert link.administrator.is_superuser and link.administrator.profile == UserProfile.ADMINISTRATOR; assert link.fiscal.profile == UserProfile.FISCAL and not link.fiscal.is_superuser; assert not link.fiscal.has_usable_password(); assert link.fiscal.organization.is_active; print('PASS | Troca de perfil exclusiva, sem senha propria e auditavel')"
+          python manage.py shell -c "import os; from accounts.models import ProfileSwitchLink, UserProfile; link = ProfileSwitchLink.objects.select_related('administrator', 'fiscal').get(fiscal__email__iexact=os.environ['DEMO_SWITCH_FISCAL_EMAIL']); assert ProfileSwitchLink.objects.count() == 1; assert link.administrator.is_superuser and link.administrator.profile == UserProfile.ADMINISTRATOR; assert link.fiscal.profile == UserProfile.FISCAL and not link.fiscal.is_superuser; print('PASS | Troca de perfil exclusiva de uma conta Fiscal e auditavel')"

@@ -10,82 +10,84 @@ from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from accounts.models import AccountStatus, AuthenticationEvent, ProfileSwitchLink, User, UserProfile
+from accounts.models import AccountStatus, AuthenticationEvent, ProfileSwitchLink, User
 from accounts.profile_switch import SESSION_KEY
 from contracts.tests import VALID_PASSWORD
 from organizations.models import Organization
 
-ADMIN_EMAIL = "admin@exemplo.com.br"
+FISCAL_EMAIL = "admin@exemplo.com.br"
+ADMIN_EMAIL = "administrador.inicial@exemplo.local"
+SWITCH_URL = "accounts:switch_profile"
 
 
-def enable(email=ADMIN_EMAIL, organization="SEMA", fiscal_name="Admin"):
+def enable(fiscal_email=FISCAL_EMAIL, admin_email=""):
     output = StringIO()
-    env = {
-        "DEMO_ADMIN_EMAIL": email,
-        "DEMO_SWITCH_ORGANIZATION": organization,
-        "DEMO_SWITCH_FISCAL_NAME": fiscal_name,
-    }
+    env = {"DEMO_SWITCH_FISCAL_EMAIL": fiscal_email, "DEMO_SWITCH_ADMIN_EMAIL": admin_email}
     with mock.patch.dict(os.environ, env):
         call_command("enable_demo_profile_switch", stdout=output)
     return output.getvalue()
 
 
-@override_settings(APP_ENVIRONMENT="demo")
-class EnableProfileSwitchCommandTests(TestCase):
+class ProfileSwitchBase(TestCase):
     def setUp(self):
+        self.organization = Organization.objects.create(name="SEMA")
         self.admin = User.objects.create_superuser(
-            email=ADMIN_EMAIL, full_name="Administrador Demonstração", password=VALID_PASSWORD
+            email=ADMIN_EMAIL, full_name="Administrador Inicial", password=VALID_PASSWORD
         )
-
-    def test_creates_organization_fiscal_without_password_and_link(self):
-        enable()
-        link = ProfileSwitchLink.objects.select_related("fiscal__organization").get()
-        self.assertEqual(link.administrator, self.admin)
-        self.assertEqual(link.fiscal.profile, UserProfile.FISCAL)
-        self.assertEqual(link.fiscal.full_name, "Admin")
-        self.assertEqual(link.fiscal.organization.name, "SEMA")
-        self.assertEqual(link.fiscal.status, AccountStatus.ACTIVE)
-        self.assertFalse(link.fiscal.has_usable_password())
-        self.assertFalse(link.fiscal.is_superuser)
-        self.assertEqual(link.fiscal.email, "admin+fiscal@exemplo.com.br")
-        self.assertTrue(
-            AuthenticationEvent.objects.filter(
-                user=link.fiscal, event_type=AuthenticationEvent.EventType.FISCAL_CREATED
-            ).exists()
-        )
-        self.assertEqual(
-            User.objects.filter(profile=UserProfile.ADMINISTRATOR).count(), 1
-        )
-
-    def test_reuses_existing_organization_and_is_idempotent(self):
-        Organization.objects.create(name="SEMA")
-        enable()
-        output = enable()
-        self.assertIn("já habilitada", output)
-        self.assertEqual(Organization.objects.count(), 1)
-        self.assertEqual(ProfileSwitchLink.objects.count(), 1)
-        self.assertEqual(User.objects.count(), 2)
-
-    def test_refuses_non_administrator_and_unknown_email(self):
-        fiscal = User.objects.create_user(
-            email="fiscal@exemplo.com.br",
-            full_name="Fiscal",
+        self.fiscal = User.objects.create_user(
+            email=FISCAL_EMAIL,
+            full_name="Admin",
             password=VALID_PASSWORD,
             status=AccountStatus.ACTIVE,
-            organization=Organization.objects.create(name="Outra"),
+            organization=self.organization,
         )
-        for email in (fiscal.email, "ninguem@exemplo.com.br"):
+
+    def other_fiscal(self):
+        return User.objects.create_user(
+            email="fiscal.comum@exemplo.com.br",
+            full_name="Fiscal Comum",
+            password=VALID_PASSWORD,
+            status=AccountStatus.ACTIVE,
+            organization=self.organization,
+        )
+
+
+@override_settings(APP_ENVIRONMENT="demo")
+class EnableProfileSwitchCommandTests(ProfileSwitchBase):
+    def test_links_fiscal_to_the_single_administrator_without_creating_accounts(self):
+        users_before = User.objects.count()
+        enable()
+        link = ProfileSwitchLink.objects.get()
+        self.assertEqual(link.fiscal, self.fiscal)
+        self.assertEqual(link.administrator, self.admin)
+        self.assertEqual(User.objects.count(), users_before)
+        self.fiscal.refresh_from_db()
+        self.assertTrue(self.fiscal.check_password(VALID_PASSWORD))
+
+    def test_is_idempotent(self):
+        enable()
+        self.assertIn("já habilitada", enable())
+        self.assertEqual(ProfileSwitchLink.objects.count(), 1)
+
+    def test_refuses_accounts_that_are_not_active_fiscal(self):
+        for email in (ADMIN_EMAIL, "ninguem@exemplo.com.br"):
             with self.subTest(email=email), self.assertRaises(CommandError):
-                enable(email=email)
+                enable(fiscal_email=email)
         self.assertFalse(ProfileSwitchLink.objects.exists())
+
+    def test_requires_exactly_one_administrator_when_not_informed(self):
+        User.objects.create_superuser(
+            email="segundo.admin@exemplo.local", full_name="Segundo", password=VALID_PASSWORD
+        )
+        with self.assertRaises(CommandError):
+            enable()
+        enable(admin_email=ADMIN_EMAIL)
+        self.assertEqual(ProfileSwitchLink.objects.get().administrator, self.admin)
 
     def test_only_one_account_can_hold_the_exception(self):
         enable()
-        other = User.objects.create_superuser(
-            email="outro.admin@exemplo.com.br", full_name="Outro", password=VALID_PASSWORD
-        )
         with self.assertRaises(CommandError):
-            enable(email=other.email)
+            enable(fiscal_email=self.other_fiscal().email)
         self.assertEqual(ProfileSwitchLink.objects.count(), 1)
 
     @override_settings(APP_ENVIRONMENT="production")
@@ -95,98 +97,76 @@ class EnableProfileSwitchCommandTests(TestCase):
 
 
 @override_settings(APP_ENVIRONMENT="demo")
-class ProfileSwitchFlowTests(TestCase):
+class ProfileSwitchFlowTests(ProfileSwitchBase):
     def setUp(self):
-        self.admin = User.objects.create_superuser(
-            email=ADMIN_EMAIL, full_name="Administrador Demonstração", password=VALID_PASSWORD
-        )
+        super().setUp()
         enable()
-        self.fiscal = ProfileSwitchLink.objects.get().fiscal
 
-    def login_admin(self):
-        self.assertTrue(self.client.login(email=ADMIN_EMAIL, password=VALID_PASSWORD))
+    def login_fiscal(self):
+        self.assertTrue(self.client.login(email=FISCAL_EMAIL, password=VALID_PASSWORD))
 
-    def test_linked_admin_sees_switch_button(self):
-        self.login_admin()
+    def test_fiscal_sees_switch_to_administrator(self):
+        self.login_fiscal()
         response = self.client.get(reverse("home"))
-        self.assertContains(response, "Atuar como Fiscal")
-        self.assertContains(response, reverse("accounts:switch_to_fiscal"))
+        self.assertContains(response, "Atuar como Administrador")
         self.assertContains(response, 'class="sidebar-switch"')
 
-    def test_switch_to_fiscal_and_back_with_audit(self):
-        self.login_admin()
-        response = self.client.post(reverse("accounts:switch_to_fiscal"))
-        self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
-        self.assertEqual(get_user(self.client), self.fiscal)
-        self.assertEqual(self.client.session[SESSION_KEY], self.admin.pk)
+    def test_switch_to_administrator_and_back_with_audit(self):
+        self.login_fiscal()
+        self.assertEqual(self.client.get(reverse("accounts_admin:user_list")).status_code, 403)
 
-        home = self.client.get(reverse("home"))
-        self.assertContains(home, "Você está atuando como")
-        self.assertContains(home, "Voltar a Administrador")
-        self.assertEqual(self.client.get(reverse("contracts:create")).status_code, 200)
-        self.assertNotEqual(self.client.get(reverse("accounts_admin:user_list")).status_code, 200)
-
-        response = self.client.post(reverse("accounts:switch_to_administrator"))
+        response = self.client.post(reverse(SWITCH_URL))
         self.assertRedirects(response, reverse("home"), fetch_redirect_response=False)
         self.assertEqual(get_user(self.client), self.admin)
-        self.assertNotIn(SESSION_KEY, self.client.session)
+        self.assertEqual(self.client.session[SESSION_KEY], self.fiscal.pk)
+        home = self.client.get(reverse("home"))
+        self.assertContains(home, "Você está atuando como <strong>Administrador</strong>", html=False)
+        self.assertContains(home, "Voltar a Fiscal")
         self.assertEqual(self.client.get(reverse("accounts_admin:user_list")).status_code, 200)
 
+        self.client.post(reverse(SWITCH_URL))
+        self.assertEqual(get_user(self.client), self.fiscal)
+        self.assertNotIn(SESSION_KEY, self.client.session)
+        self.assertContains(self.client.get(reverse("home")), "Atuar como Administrador")
+        self.assertEqual(self.client.get(reverse("contracts:create")).status_code, 200)
+
         events = list(
-            AuthenticationEvent.objects.filter(user=self.admin)
+            AuthenticationEvent.objects.filter(user=self.fiscal)
             .filter(event_type__in=["PERFIL_FISCAL", "PERFIL_ADMIN"])
             .order_by("created_at", "pk")
             .values_list("event_type", flat=True)
         )
-        self.assertEqual(events, ["PERFIL_FISCAL", "PERFIL_ADMIN"])
+        self.assertEqual(events, ["PERFIL_ADMIN", "PERFIL_FISCAL"])
 
-    def test_logout_and_login_again_returns_as_administrator(self):
-        self.login_admin()
-        self.client.post(reverse("accounts:switch_to_fiscal"))
+    def test_logout_and_login_again_starts_as_fiscal(self):
+        self.login_fiscal()
+        self.client.post(reverse(SWITCH_URL))
         self.client.post(reverse("accounts:logout"))
-        self.login_admin()
-        self.assertEqual(get_user(self.client), self.admin)
-        self.assertContains(self.client.get(reverse("home")), "Atuar como Fiscal")
+        self.login_fiscal()
+        self.assertEqual(get_user(self.client), self.fiscal)
 
     def test_switch_requires_post(self):
-        self.login_admin()
-        self.assertEqual(self.client.get(reverse("accounts:switch_to_fiscal")).status_code, 405)
+        self.login_fiscal()
+        self.assertEqual(self.client.get(reverse(SWITCH_URL)).status_code, 405)
 
     def test_other_accounts_cannot_switch(self):
-        other_admin = User.objects.create_superuser(
-            email="outro.admin@exemplo.com.br", full_name="Outro", password=VALID_PASSWORD
-        )
-        regular_fiscal = User.objects.create_user(
-            email="fiscal@exemplo.com.br",
-            full_name="Fiscal Comum",
-            password=VALID_PASSWORD,
-            status=AccountStatus.ACTIVE,
-            organization=Organization.objects.get(name="SEMA"),
-        )
-        self.client.force_login(other_admin)
-        self.assertNotContains(self.client.get(reverse("home")), "Atuar como Fiscal")
-        self.assertEqual(self.client.post(reverse("accounts:switch_to_fiscal")).status_code, 403)
-        self.assertEqual(get_user(self.client), other_admin)
+        regular = self.other_fiscal()
+        self.client.force_login(regular)
+        self.assertNotContains(self.client.get(reverse("home")), "Atuar como")
+        self.assertEqual(self.client.post(reverse(SWITCH_URL)).status_code, 403)
+        self.assertEqual(get_user(self.client), regular)
 
-        self.client.force_login(regular_fiscal)
         session = self.client.session
-        session[SESSION_KEY] = self.admin.pk
+        session[SESSION_KEY] = self.fiscal.pk
         session.save()
-        self.assertEqual(
-            self.client.post(reverse("accounts:switch_to_administrator")).status_code, 403
-        )
-        self.assertEqual(get_user(self.client), regular_fiscal)
+        self.assertEqual(self.client.post(reverse(SWITCH_URL)).status_code, 403)
+        self.assertEqual(get_user(self.client), regular)
 
-    def test_linked_fiscal_cannot_log_in_with_password(self):
-        self.assertFalse(self.client.login(email=self.fiscal.email, password=""))
-        self.assertFalse(self.client.login(email=self.fiscal.email, password=VALID_PASSWORD))
-
-    def test_inactive_administrator_cannot_switch(self):
-        self.login_admin()
+    def test_inactive_target_cannot_be_used(self):
+        self.login_fiscal()
         User.objects.filter(pk=self.admin.pk).update(status=AccountStatus.BLOCKED, is_active=False)
-        response = self.client.post(reverse("accounts:switch_to_fiscal"))
-        self.assertNotEqual(get_user(self.client), self.fiscal)
-        self.assertIn(response.status_code, {302, 403})
+        self.assertEqual(self.client.post(reverse(SWITCH_URL)).status_code, 403)
+        self.assertEqual(get_user(self.client), self.fiscal)
 
 
 class EnableProfileSwitchWorkflowTests(TestCase):

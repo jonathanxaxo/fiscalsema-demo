@@ -1,9 +1,9 @@
-"""Troca de perfil Administrador <-> Fiscal (exceção exclusiva da demo).
+"""Troca de perfil Fiscal <-> Administrador (exceção exclusiva da demo).
 
-Somente a conta administrativa que possui um ``ProfileSwitchLink`` pode
-alternar. A troca usa a conta Fiscal vinculada, que não possui senha própria;
-assim nenhuma regra de permissão existente precisa mudar. Toda troca é
-registrada na auditoria de autenticação.
+Um único ``ProfileSwitchLink`` liga a conta Fiscal usada no dia a dia ao
+Administrador da demo. Somente essas duas contas podem alternar entre si; as
+demais mantêm o perfil cadastrado. A troca não pede senha da outra conta,
+nenhuma regra de permissão existente muda e toda troca é auditada.
 """
 
 from django.conf import settings
@@ -11,14 +11,14 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import redirect
 from django.views import View
 
 from .models import AccountStatus, AuthenticationEvent, ProfileSwitchLink, UserProfile
 from .services import record_authentication_event
 
-SESSION_KEY = "fiscalsema_perfil_admin_origem"
+SESSION_KEY = "fiscalsema_perfil_conta_origem"
 AUTH_BACKEND = settings.AUTHENTICATION_BACKENDS[0]
 
 
@@ -26,72 +26,91 @@ def _is_active(user):
     return user.is_active and user.status == AccountStatus.ACTIVE
 
 
-def link_for_administrator(user):
-    if not (user.is_authenticated and user.is_superuser and user.profile == UserProfile.ADMINISTRATOR):
-        return None
-    return ProfileSwitchLink.objects.select_related("fiscal").filter(administrator=user).first()
+def _profile_label(user):
+    return "Administrador" if user.profile == UserProfile.ADMINISTRATOR else "Fiscal"
 
 
-def link_for_acting_fiscal(request):
-    administrator_id = request.session.get(SESSION_KEY)
-    if not administrator_id or not request.user.is_authenticated:
+def _other_account(link, user):
+    return link.fiscal if link.administrator_id == user.pk else link.administrator
+
+
+def link_for_user(user):
+    if not user.is_authenticated:
         return None
     return (
-        ProfileSwitchLink.objects.select_related("administrator")
-        .filter(administrator_id=administrator_id, fiscal=request.user)
+        ProfileSwitchLink.objects.select_related("administrator", "fiscal")
+        .filter(Q(administrator=user) | Q(fiscal=user))
         .first()
     )
 
 
-class SwitchToFiscalView(LoginRequiredMixin, View):
+def _acting_link(request):
+    """Vínculo válido quando a sessão está atuando no outro perfil."""
+    origin_id = request.session.get(SESSION_KEY)
+    if not origin_id:
+        return None
+    link = link_for_user(request.user)
+    if link is None or origin_id not in {link.administrator_id, link.fiscal_id}:
+        return None
+    if origin_id == request.user.pk:
+        return None
+    return link
+
+
+class SwitchProfileView(LoginRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, *args, **kwargs):
-        administrator = request.user
-        link = link_for_administrator(administrator)
-        if link is None or not _is_active(administrator) or not _is_active(link.fiscal):
-            raise PermissionDenied("Troca de perfil não autorizada para esta conta.")
-        with transaction.atomic():
-            record_authentication_event(
-                AuthenticationEvent.EventType.PROFILE_SWITCHED_TO_FISCAL,
-                request=request,
-                user=administrator,
-                details={"conta_fiscal_id": link.fiscal_id},
-            )
-        login(request, link.fiscal, backend=AUTH_BACKEND)
-        request.session[SESSION_KEY] = administrator.pk
-        messages.success(request, "Você está atuando como Fiscal.")
-        return redirect("home")
+        current = request.user
+        acting_link = _acting_link(request)
+        if acting_link is not None:
+            target = _other_account(acting_link, current)
+            origin = target
+        else:
+            if request.session.get(SESSION_KEY):
+                raise PermissionDenied("Troca de perfil não autorizada para esta sessão.")
+            link = link_for_user(current)
+            if link is None:
+                raise PermissionDenied("Troca de perfil não autorizada para esta conta.")
+            target = _other_account(link, current)
+            origin = current
 
+        if not _is_active(current) or not _is_active(target):
+            raise PermissionDenied("Troca de perfil não autorizada: conta inativa.")
 
-class SwitchToAdministratorView(LoginRequiredMixin, View):
-    http_method_names = ["post"]
-
-    def post(self, request, *args, **kwargs):
-        link = link_for_acting_fiscal(request)
-        if link is None or not _is_active(link.administrator):
-            raise PermissionDenied("Troca de perfil não autorizada para esta conta.")
-        with transaction.atomic():
-            record_authentication_event(
-                AuthenticationEvent.EventType.PROFILE_SWITCHED_TO_ADMIN,
-                request=request,
-                user=link.administrator,
-                details={"conta_fiscal_id": link.fiscal_id},
-            )
-        login(request, link.administrator, backend=AUTH_BACKEND)
-        request.session.pop(SESSION_KEY, None)
-        messages.success(request, "Você voltou ao perfil Administrador.")
+        event_type = (
+            AuthenticationEvent.EventType.PROFILE_SWITCHED_TO_ADMIN
+            if target.profile == UserProfile.ADMINISTRATOR
+            else AuthenticationEvent.EventType.PROFILE_SWITCHED_TO_FISCAL
+        )
+        record_authentication_event(
+            event_type,
+            request=request,
+            user=origin,
+            details={"conta_atual_id": current.pk, "conta_destino_id": target.pk},
+        )
+        login(request, target, backend=AUTH_BACKEND)
+        if target.pk != origin.pk:
+            request.session[SESSION_KEY] = origin.pk
+        else:
+            request.session.pop(SESSION_KEY, None)
+        messages.success(request, f"Você está atuando como {_profile_label(target)}.")
         return redirect("home")
 
 
 def profile_switch(request):
-    """Context processor: informa ao layout se a troca está disponível."""
+    """Context processor: rótulos da troca de perfil para o layout."""
+    context = {"profile_switch_target": "", "acting_as": "", "acting_return": ""}
     user = getattr(request, "user", None)
-    context = {"can_switch_to_fiscal": False, "acting_as_fiscal": False}
     if user is None or not user.is_authenticated:
         return context
     if request.session.get(SESSION_KEY):
-        context["acting_as_fiscal"] = link_for_acting_fiscal(request) is not None
-    elif user.is_superuser:
-        context["can_switch_to_fiscal"] = link_for_administrator(user) is not None
+        link = _acting_link(request)
+        if link is not None:
+            context["acting_as"] = _profile_label(user)
+            context["acting_return"] = _profile_label(_other_account(link, user))
+        return context
+    link = link_for_user(user)
+    if link is not None:
+        context["profile_switch_target"] = _profile_label(_other_account(link, user))
     return context
