@@ -26,15 +26,18 @@
       <div class="user-menu">
         <span class="user-avatar" aria-hidden="true">{{ request.user.get_short_name|first|upper }}</span>
         <span class="user-summary"><strong>{{ request.user.full_name }}</strong><small>{{ request.user.get_profile_display }}</small></span>
+        {% if profile_switch_target %}<form class="profile-switch-form" method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button class="button-quiet profile-switch" type="submit">Atuar como {{ profile_switch_target }}</button></form>{% elif acting_as %}<form class="profile-switch-form" method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button class="button-quiet profile-switch" type="submit">Voltar a {{ acting_return }}</button></form>{% endif %}
         <a href="{% url 'accounts:password_change' %}">Alterar senha</a>
         <form method="post" action="{% url 'accounts:logout' %}" data-no-submit-lock>
           {% csrf_token %}<button class="button-quiet" type="submit">Sair</button>
         </form>
       </div>
     </header>
+    {% if acting_as %}<div class="acting-banner" role="status"><span>Você está atuando como <strong>{{ acting_as }}</strong>.</span><form method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button class="button-link-small" type="submit">Voltar a {{ acting_return }}</button></form></div>{% endif %}
     <div class="app-shell">
       <aside class="sidebar" id="menu-principal" aria-label="Menu principal">
         <nav>
+          {% if profile_switch_target %}<form class="sidebar-switch" method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button type="submit">Atuar como {{ profile_switch_target }}</button></form>{% endif %}
           <p class="nav-label">Visão geral</p>
           <a href="{% url 'home' %}"{% if request.resolver_match.view_name == 'home' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="painel" %}Painel</a>
           <a href="{% url 'contracts:list' %}"{% if request.resolver_match.app_name == 'contracts' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="contratos" %}Contratos</a>

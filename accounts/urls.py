@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.views import PasswordChangeDoneView
 from django.urls import path
 
+from .profile_switch import SwitchProfileView
 from .views import (
     AccountLoginView,
     AccountLogoutView,
@@ -19,6 +20,7 @@ app_name = "accounts"
 urlpatterns = [
     path("entrar/", AccountLoginView.as_view(), name="login"),
     path("sair/", AccountLogoutView.as_view(), name="logout"),
+    path("perfil/alternar/", SwitchProfileView.as_view(), name="switch_profile"),
     path("alterar-senha/", AccountPasswordChangeView.as_view(), name="password_change"),
     path(
         "alterar-senha/concluida/",

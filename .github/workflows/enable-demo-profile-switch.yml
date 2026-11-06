@@ -1,0 +1,71 @@
+name: Habilitar troca de perfil do FiscalSema Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      fiscal_email:
+        description: E-mail (login) da conta Fiscal que podera atuar como Administrador
+        required: true
+        type: string
+      admin_email:
+        description: Opcional. Deixe em branco para usar o unico Administrador ativo da demo
+        required: false
+        default: ""
+        type: string
+      confirmacao:
+        description: Digite HABILITAR para confirmar
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fiscalsema-demo-initial-administrator
+  cancel-in-progress: false
+
+jobs:
+  enable-profile-switch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: python:3.14.7-slim-bookworm
+    env:
+      APP_ENVIRONMENT: demo
+      DJANGO_SETTINGS_MODULE: core.settings_demo
+      ALLOWED_HOSTS: fiscalsema-demo.vercel.app
+      CSRF_TRUSTED_ORIGINS: https://fiscalsema-demo.vercel.app
+      FISCALSEMA_DEMO_DATABASE_URL: ${{ secrets.FISCALSEMA_DEMO_MIGRATION_DATABASE_URL }}
+      DEMO_SWITCH_FISCAL_EMAIL: ${{ inputs.fiscal_email }}
+      DEMO_SWITCH_ADMIN_EMAIL: ${{ inputs.admin_email }}
+      CONFIRMACAO: ${{ inputs.confirmacao }}
+    steps:
+      - name: Exigir confirmacao explicita
+        run: test "$CONFIRMACAO" = "HABILITAR"
+
+      - name: Baixar codigo
+        uses: actions/checkout@v7
+
+      - name: Exigir o segredo do banco
+        run: test -n "$FISCALSEMA_DEMO_DATABASE_URL"
+
+      - name: Gerar chave Django efemera
+        run: python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(64))" >> "$GITHUB_ENV"
+
+      - name: Instalar dependencias verificadas
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --requirement requirements.txt
+          python -m pip check
+
+      - name: Validar configuracao e migrations aplicadas
+        run: |
+          python manage.py check --deploy
+          python manage.py migrate --check
+
+      - name: Habilitar a troca de perfil
+        run: python manage.py enable_demo_profile_switch
+
+      - name: Confirmar vinculo e protecoes
+        run: |
+          python manage.py shell -c "import os; from accounts.models import ProfileSwitchLink, UserProfile; link = ProfileSwitchLink.objects.select_related('administrator', 'fiscal').get(fiscal__email__iexact=os.environ['DEMO_SWITCH_FISCAL_EMAIL']); assert ProfileSwitchLink.objects.count() == 1; assert link.administrator.is_superuser and link.administrator.profile == UserProfile.ADMINISTRATOR; assert link.fiscal.profile == UserProfile.FISCAL and not link.fiscal.is_superuser; print('PASS | Troca de perfil exclusiva de uma conta Fiscal e auditavel')"

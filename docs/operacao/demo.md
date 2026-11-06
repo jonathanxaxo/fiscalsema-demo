@@ -25,6 +25,32 @@ momento da execução, lê a senha exclusivamente do secret temporário
 usuário, está ativa, possui perfil Administrador, superusuário e grupo técnico
 `ADMINISTRADOR`. Depois da criação confirmada, remova o secret temporário.
 
+## Troca de perfil Fiscal / Administrador (exceção da demo)
+
+Uma única conta Fiscal pode atuar também como o Administrador da demo, sem
+precisar da senha do Administrador. As demais contas mantêm o perfil
+cadastrado. O direito não pode ser concedido por nenhuma tela; ele é
+habilitado uma única vez por fluxo manual:
+
+1. Depois do merge que traz a migration `accounts.0008_profile_switch_link`,
+   execute imediatamente o fluxo **"Migracao manual do FiscalSema Demo"**
+   (`.github/workflows/migrate-demo.yml`). Até a migration ser aplicada, a
+   aplicação publicada pode falhar.
+2. Execute o fluxo **"Habilitar troca de perfil do FiscalSema Demo"**
+   (`.github/workflows/enable-demo-profile-switch.yml`) informando o e-mail
+   (login) da conta Fiscal e a confirmação `HABILITAR`. O e-mail do
+   Administrador é opcional: em branco, o fluxo usa o único Administrador
+   ativo. O fluxo não cria contas, não altera senhas, recusa execução com
+   migration pendente e pode ser repetido sem efeito.
+3. Entre com o login e a senha da conta Fiscal. Use **"Atuar como
+   Administrador"** (no topo; no celular, no topo do menu) e **"Voltar a
+   Fiscal"** (faixa azul). Ao sair e entrar de novo, a sessão começa como
+   Fiscal.
+
+Atenção: quem conhece a senha dessa conta Fiscal passa a ter os poderes do
+Administrador. Toda troca é registrada na auditoria ("Perfil alternado para
+Administrador" / "Perfil alternado para Fiscal") em nome da conta Fiscal.
+
 ## Limpar a demonstração
 
 Não use o banco da VM e não importe dumps. Para reiniciar, descarte o banco demo
