@@ -28,3 +28,5 @@ documental das entregas anteriores.
   contrato no topo, formulários em duas colunas, rascunhos da IA no layout do
   sistema e correção do menu móvel.
 - `sprint-08-painel`: prioridades no topo do painel e barra de atalhos.
+- `sprint-09-publicacao`: registro do PR nº 3, CI, Preview, merge e
+  conferência da produção.
