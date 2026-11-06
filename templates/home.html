@@ -31,6 +31,116 @@
       </div>
     </section>
 
+    <nav class="dashboard-shortcuts" aria-label="Atalhos do painel">
+      <a href="#central-titulo">Prioridades</a><a href="#financeiro-titulo">Financeiro</a><a href="#operacional-titulo">Operação</a><a href="#itens-titulo">Itens</a><a href="#empenhos-titulo">Empenhos</a><a href="#modulos-titulo">Módulos</a>
+    </nav>
+
+    <section class="surface" aria-labelledby="central-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Prioridades</span><h2 id="central-titulo">Central de trabalho</h2></div></div>
+      {% if dashboard.contract_is_expired %}<p class="alert alert-danger">A vigência do contrato terminou em {{ selected_contract.validity_end|date:"d/m/Y" }}.</p>{% else %}<p class="muted">Próximo prazo contratual cadastrado: fim da vigência em {{ selected_contract.validity_end|date:"d/m/Y" }}. Não foi presumida uma janela de “vencimento próximo”.</p>{% endif %}
+      {% if dashboard.contract_balance_is_low %}<p class="alert alert-warning">Saldo contratual abaixo de 20%: {{ dashboard.contract_balance_percentage|localize }}% disponível.</p>{% endif %}
+      {% for alert in dashboard.low_commitments %}<p class="alert alert-warning">Empenho <a href="{% url 'contracts:commitment_detail' selected_contract.pk alert.commitment.pk %}">{{ alert.commitment.number }}</a> com saldo de R$ {{ alert.available|localize }} ({{ alert.percentage|localize }}%).</p>{% endfor %}
+      {% for alert in dashboard.low_hour_items %}<p class="alert alert-warning">Item por hora <a href="{% url 'contracts:item_detail' selected_contract.pk alert.item.pk %}">{{ alert.item.number }}</a> com {{ alert.available|localize }} horas disponíveis ({{ alert.percentage|localize }}%).</p>{% endfor %}
+      {% for work_order in dashboard.work_orders_without_allocation %}<p class="alert alert-warning">A OS <a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">{{ work_order.number }}</a> produz efeito financeiro, mas não possui rateio ativo em empenho.</p>{% endfor %}
+      {% for work_order in dashboard.completed_work_orders_without_invoice %}<p class="alert alert-warning">A OS <a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">{{ work_order.number }}</a> está concluída e ainda não possui Nota Fiscal cadastrada.</p>{% endfor %}
+      {% if not dashboard.low_commitments and not dashboard.low_hour_items and not dashboard.work_orders_without_allocation and not dashboard.completed_work_orders_without_invoice and not dashboard.pending_invoices and not dashboard.divergent_invoices %}<div class="empty-compact">Nenhuma pendência automática identificada nos dados cadastrados.</div>{% endif %}
+      {% if pending_registration_count %}<p class="alert alert-warning"><a href="{% url 'accounts_admin:registration_list' %}">{{ pending_registration_count }} solicitação(ões) de cadastro pendente(s).</a></p>{% endif %}
+    </section>
+
+    <div class="dashboard-columns">
+      <section class="surface" id="prazos"><h2>Prazos de OS</h2>{% for work_order in dashboard.overdue_work_orders %}<p class="alert alert-danger"><a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">OS {{ work_order.number }}</a> venceu em {{ work_order.deadline|date:"d/m/Y" }} e está {{ work_order.get_status_display }}.</p>{% endfor %}{% if dashboard.upcoming_work_orders %}<div class="table-responsive"><table><thead><tr><th>Próximas OS</th><th>Prazo</th><th>Status</th></tr></thead><tbody>{% for work_order in dashboard.upcoming_work_orders|slice:":5" %}<tr><td><a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">{{ work_order.number }}</a></td><td>{{ work_order.deadline|date:"d/m/Y" }}</td><td>{{ work_order.get_status_display }}</td></tr>{% endfor %}</tbody></table></div>{% elif not dashboard.overdue_work_orders %}<div class="empty-compact">Nenhuma OS aberta com prazo cadastrado.</div>{% endif %}</section>
+      <section class="surface" id="notas-pendentes"><h2>Notas Fiscais pendentes</h2>{% for attention in dashboard.pending_invoices %}<p><a href="{% url 'contracts:invoice_detail' selected_contract.pk attention.invoice.work_order_id attention.invoice.pk %}">NF {{ attention.invoice.number }}/{{ attention.invoice.series }}</a> — {{ attention.status }}</p>{% empty %}<div class="empty-compact">Nenhuma NF com pendência determinística.</div>{% endfor %}</section>
+    </div>
+
+    <section class="surface" id="notas-divergentes"><h2>Notas Fiscais que exigem atenção</h2>{% for attention in dashboard.divergent_invoices %}<p><a href="{% url 'contracts:invoice_detail' selected_contract.pk attention.invoice.work_order_id attention.invoice.pk %}">NF {{ attention.invoice.number }}/{{ attention.invoice.series }}</a> — {{ attention.status }}</p>{% empty %}<div class="empty-compact">Nenhuma NF com divergência, bloqueio ou possível duplicidade.</div>{% endfor %}</section>
+
+    <section class="surface" aria-labelledby="financeiro-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Posição financeira</span><h2 id="financeiro-titulo">Como está meu contrato?</h2></div><span class="section-hint">Valores consolidados</span></div>
+      <div class="metric-grid">
+        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}"><small>Contratado</small><strong>R$ {{ selected_contract.current_value|localize }}</strong><span>Ver composição →</span></a>
+        <a class="metric-card" href="{% url 'contracts:commitment_list' selected_contract.pk %}"><small>Empenhado ativo</small><strong>R$ {{ dashboard.financial_position.total_committed_budget.value|localize }}</strong><span>Ver empenhos →</span></a>
+        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}#composicao-comprometido"><small>Comprometido</small><strong>R$ {{ dashboard.financial_position.committed_value.value|localize }}</strong><span>Ver composição →</span></a>
+        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}#composicao-executado"><small>Executado</small><strong>R$ {{ dashboard.financial_position.executed_value.value|localize }}</strong><span>Ver composição →</span></a>
+        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}#composicao-faturado"><small>Faturado bruto</small><strong>R$ {{ dashboard.financial_position.invoiced_gross_value.value|localize }}</strong><span>Ver notas →</span></a>
+        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}#composicao-pago"><small>Pago</small><strong>R$ {{ dashboard.financial_position.paid_value.value|localize }}</strong><span>Ver pagamentos →</span></a>
+        <a class="metric-card metric-card-highlight" href="{% url 'contracts:detail' selected_contract.pk %}"><small>Saldo contratual</small><strong>R$ {{ dashboard.financial_position.contract_balance.value|localize }}</strong><span>Abrir contrato →</span></a>
+      </div>
+      {% if not dashboard.has_operational_data %}<div class="empty-state"><span aria-hidden="true">▤</span><div><strong>O contrato ainda não possui movimentação operacional.</strong><p>Cadastre itens, empenhos e Ordens de Serviço para alimentar os indicadores sem criar valores artificiais.</p>{% if can_create_item %}<a class="button-link" href="{% url 'contracts:item_create' selected_contract.pk %}">Cadastrar primeiro item</a>{% endif %}</div></div>{% endif %}
+    </section>
+
+    <section class="surface" aria-labelledby="operacional-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Acompanhamento</span><h2 id="operacional-titulo">Situação operacional</h2></div></div>
+      <div class="metric-grid metric-grid-compact">
+        <a class="metric-card" href="{% url 'contracts:work_order_list' selected_contract.pk %}"><small>OS em aberto</small><strong>{{ dashboard.open_work_orders|length }}</strong></a>
+        <a class="metric-card" href="#notas-pendentes"><small>NF pendentes</small><strong>{{ dashboard.pending_invoices|length }}</strong></a>
+        <a class="metric-card" href="#notas-divergentes"><small>NF que exigem atenção</small><strong>{{ dashboard.divergent_invoices|length }}</strong></a>
+        <a class="metric-card" href="#prazos"><small>OS vencidas</small><strong>{{ dashboard.overdue_work_orders|length }}</strong></a>
+      </div>
+    </section>
+
+    <div class="dashboard-columns">
+      <section class="surface" aria-labelledby="status-os-titulo">
+        <div class="section-heading"><div><span class="eyebrow">Fluxo operacional</span><h2 id="status-os-titulo">OS por situação</h2></div><a href="{% url 'contracts:work_order_list' selected_contract.pk %}">Abrir OS</a></div>
+        {% if dashboard.work_order_statuses %}<div class="status-summary-list">{% for entry in dashboard.work_order_statuses %}<div><span>{{ entry.label }}</span><strong>{{ entry.count }}</strong></div>{% endfor %}</div>{% else %}<div class="empty-compact">Nenhuma OS operacional cadastrada.</div>{% endif %}
+      </section>
+      <section class="surface" aria-labelledby="ciclo-titulo">
+        <div class="section-heading"><div><span class="eyebrow">Ciclo documental</span><h2 id="ciclo-titulo">NF e pagamentos</h2></div></div>
+        <div class="metric-grid metric-grid-compact dashboard-two-metrics"><div class="metric-card"><small>Notas Fiscais</small><strong>{{ dashboard.invoice_count }}</strong></div><div class="metric-card"><small>Pagamentos</small><strong>{{ dashboard.payment_count }}</strong></div></div>
+        <p class="muted">Pagamento somente após a documentação obrigatória validada pelo backend.</p>
+      </section>
+    </div>
+
+    <section class="surface" aria-labelledby="itens-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Composição contratual</span><h2 id="itens-titulo">Consumo e saldo por item</h2></div><a href="{% url 'contracts:item_list' selected_contract.pk %}">Abrir todos os itens</a></div>
+      <div class="metric-grid metric-grid-compact dashboard-summary-grid">
+        <div class="metric-card"><small>Itens ativos</small><strong>{{ dashboard.active_item_count }}</strong></div>
+        <div class="metric-card"><small>Itens inativos</small><strong>{{ dashboard.inactive_item_count }}</strong></div>
+        <div class="metric-card"><small>Total dos itens</small><strong>R$ {{ dashboard.item_total|localize }}</strong></div>
+        <div class="metric-card"><small>Valor do contrato</small><strong>R$ {{ selected_contract.current_value|localize }}</strong></div>
+      </div>
+      {% if dashboard.item_positions %}
+        <div class="table-responsive"><table><thead><tr><th>Item</th><th>Modalidade</th><th>Contratado</th><th>Utilizado</th><th>Saldo</th><th>Valor total</th><th>Saldo financeiro</th><th>Situação</th></tr></thead><tbody>
+          {% for entry in dashboard.item_positions %}<tr>
+            <td><a href="{% url 'contracts:item_detail' selected_contract.pk entry.item.pk %}">{{ entry.item.number }}</a>{% if entry.item.external_code %}<small class="table-note">Cód. {{ entry.item.external_code }}</small>{% endif %}</td>
+            <td>{{ entry.item.description|truncatechars:70 }}<small class="table-note">{{ entry.item.unit_display }}</small></td>
+            <td>{{ entry.item.contracted_quantity|floatformat:"-4" }}</td>
+            <td>{{ entry.position.used_quantity.value|floatformat:"-4" }}</td>
+            <td>{{ entry.position.quantity_balance.value|floatformat:"-4" }}</td>
+            <td>R$ {{ entry.position.total_value.value|localize }}</td>
+            <td>R$ {{ entry.position.financial_balance.value|localize }}</td>
+            <td>{% if entry.item.is_active %}<span class="status-pill status-success">Ativo</span>{% else %}<span class="status-pill status-neutral">Inativo</span>{% endif %}{% if entry.used_percentage is not None %}<small class="table-note">{{ entry.used_percentage|localize }}% consumido</small>{% endif %}</td>
+          </tr>{% endfor %}
+        </tbody></table></div>
+      {% else %}<div class="empty-compact">Nenhum item contratual cadastrado. Não foram criados valores estimados.</div>{% endif %}
+      {% if dashboard.item_total != selected_contract.current_value %}<p class="alert alert-warning">A soma dos itens (R$ {{ dashboard.item_total|localize }}) diverge do valor atual do contrato (R$ {{ selected_contract.current_value|localize }}). Confira o cadastro e a fonte oficial.</p>{% endif %}
+    </section>
+
+    <section class="surface" aria-labelledby="empenhos-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Disponibilidade orçamentária</span><h2 id="empenhos-titulo">Posição dos empenhos</h2></div><a href="{% url 'contracts:commitment_list' selected_contract.pk %}">Abrir empenhos</a></div>
+      {% if dashboard.commitment_positions %}<div class="table-responsive"><table><thead><tr><th>Empenho</th><th>Exercício</th><th>PED</th><th>Fonte</th><th>Valor atual</th><th>Rateado em OS</th><th>Disponível</th><th>Novos rateios</th><th>Uso</th></tr></thead><tbody>
+        {% for entry in dashboard.commitment_positions %}<tr><td><a href="{% url 'contracts:commitment_detail' selected_contract.pk entry.commitment.pk %}">{{ entry.commitment.number }}</a></td><td>{{ entry.commitment.fiscal_year|unlocalize }}</td><td>{{ entry.commitment.ped }}</td><td>{{ entry.commitment.source }}</td><td>R$ {{ entry.position.current_value.value|localize }}</td><td>R$ {{ entry.position.committed_value.value|localize }}</td><td>R$ {{ entry.position.available_balance.value|localize }}</td><td>{% if entry.commitment.closed_for_new_allocations_at %}Encerrados por estorno{% else %}Permitidos{% endif %}</td><td>{% if entry.used_percentage is not None %}{{ entry.used_percentage|localize }}%{% else %}—{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty-compact">Nenhum empenho ativo cadastrado. A disponibilidade orçamentária não foi presumida.</div>{% endif %}
+    </section>
+
+    <section class="surface" aria-labelledby="calendario-financeiro-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Calendário financeiro</span><h2 id="calendario-financeiro-titulo">Prazo de encaminhamento da NF</h2></div><span class="section-hint">Data de emissão + {{ dashboard.finance_submission_days }} dias</span></div>
+      <p class="muted">Regra vigente comprovada na fonte. O sistema recalcula as datas e a situação a cada consulta, mas não presume que o processo foi enviado ao Financeiro.</p>
+      {% if dashboard.invoice_financial_deadlines %}<div class="table-responsive"><table><thead><tr><th>NF</th><th>OS</th><th>Emissão</th><th>Prazo calculado</th><th>Situação do prazo</th></tr></thead><tbody>{% for entry in dashboard.invoice_financial_deadlines %}<tr><td><a href="{% url 'contracts:invoice_detail' selected_contract.pk entry.invoice.work_order_id entry.invoice.pk %}">{{ entry.invoice.number }}/{{ entry.invoice.series }}</a></td><td>{{ entry.invoice.work_order.number }}</td><td>{{ entry.invoice.issue_date|date:"d/m/Y" }}</td><td>{{ entry.deadline|date:"d/m/Y" }}</td><td>{% if entry.is_overdue %}<span class="status-pill status-danger">Prazo ultrapassado; conferir envio</span>{% else %}<span class="status-pill status-warning">A conferir</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-compact">Aguardando Nota Fiscal. Nenhum prazo financeiro foi criado sem documento de origem.</div>{% endif %}
+    </section>
+
+    <section class="surface" aria-labelledby="modulos-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Navegação do contrato</span><h2 id="modulos-titulo">Módulos de fiscalização</h2></div><span class="section-hint">Mesmas permissões do seu perfil</span></div>
+      <nav class="module-grid" aria-label="Módulos do contrato">
+        <a class="module-card" href="{% url 'contracts:item_list' selected_contract.pk %}"><strong>Itens contratuais</strong><span>Quantidades, consumo e saldo</span></a>
+        <a class="module-card" href="{% url 'contracts:commitment_list' selected_contract.pk %}"><strong>Empenhos</strong><span>Valor atual, rateado e disponível</span></a>
+        <a class="module-card" href="{% url 'contracts:work_order_list' selected_contract.pk %}"><strong>Ordens de Serviço</strong><span>Execução, rateios, NF e pagamentos</span></a>
+        {% if file_features_enabled %}<a class="module-card" href="{% url 'documents:list' selected_contract.pk %}"><strong>Documentos</strong><span>Evidências e rastreabilidade</span></a>{% endif %}
+        <a class="module-card" href="{% url 'contracts:table_mode' selected_contract.pk %}"><strong>Modo tabela</strong><span>Consulta consolidada e objetiva</span></a>
+        <a class="module-card" href="{% url 'contracts:accountability' selected_contract.pk %}"><strong>Prestação de contas</strong><span>Posição financeira verificável</span></a>
+        <a class="module-card" href="{% url 'contracts:report' selected_contract.pk %}"><strong>Relatório gerencial</strong><span>Resumo para fiscal, gestor e gerente</span></a>
+      </nav>
+    </section>
+
     <section class="surface" aria-labelledby="periodos-anuais-titulo">
       <div class="section-heading"><div><span class="eyebrow">Referências temporais oficiais</span><h2 id="periodos-anuais-titulo">Fechamento e ano do contrato</h2></div><span class="section-hint">{{ dashboard.closing_rule }}</span></div>
       <p class="helptext">Estas informações não criam cobranças nem alteram saldos. Elas organizam os mesmos dados de duas formas: pelo calendário oficial e pelo aniversário do contrato. Você pode ocultar ou mostrar cada quadro.</p>
@@ -68,110 +178,6 @@
         </div>
       </details>
     </section>
-
-    <section class="surface" aria-labelledby="modulos-titulo">
-      <div class="section-heading"><div><span class="eyebrow">Navegação do contrato</span><h2 id="modulos-titulo">Módulos de fiscalização</h2></div><span class="section-hint">Mesmas permissões do seu perfil</span></div>
-      <nav class="module-grid" aria-label="Módulos do contrato">
-        <a class="module-card" href="{% url 'contracts:item_list' selected_contract.pk %}"><strong>Itens contratuais</strong><span>Quantidades, consumo e saldo</span></a>
-        <a class="module-card" href="{% url 'contracts:commitment_list' selected_contract.pk %}"><strong>Empenhos</strong><span>Valor atual, rateado e disponível</span></a>
-        <a class="module-card" href="{% url 'contracts:work_order_list' selected_contract.pk %}"><strong>Ordens de Serviço</strong><span>Execução, rateios, NF e pagamentos</span></a>
-        {% if file_features_enabled %}<a class="module-card" href="{% url 'documents:list' selected_contract.pk %}"><strong>Documentos</strong><span>Evidências e rastreabilidade</span></a>{% endif %}
-        <a class="module-card" href="{% url 'contracts:table_mode' selected_contract.pk %}"><strong>Modo tabela</strong><span>Consulta consolidada e objetiva</span></a>
-        <a class="module-card" href="{% url 'contracts:accountability' selected_contract.pk %}"><strong>Prestação de contas</strong><span>Posição financeira verificável</span></a>
-        <a class="module-card" href="{% url 'contracts:report' selected_contract.pk %}"><strong>Relatório gerencial</strong><span>Resumo para fiscal, gestor e gerente</span></a>
-      </nav>
-    </section>
-
-    <section class="surface" aria-labelledby="financeiro-titulo">
-      <div class="section-heading"><div><span class="eyebrow">Posição financeira</span><h2 id="financeiro-titulo">Como está meu contrato?</h2></div><span class="section-hint">Valores consolidados</span></div>
-      <div class="metric-grid">
-        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}"><small>Contratado</small><strong>R$ {{ selected_contract.current_value|localize }}</strong><span>Ver composição →</span></a>
-        <a class="metric-card" href="{% url 'contracts:commitment_list' selected_contract.pk %}"><small>Empenhado ativo</small><strong>R$ {{ dashboard.financial_position.total_committed_budget.value|localize }}</strong><span>Ver empenhos →</span></a>
-        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}#composicao-comprometido"><small>Comprometido</small><strong>R$ {{ dashboard.financial_position.committed_value.value|localize }}</strong><span>Ver composição →</span></a>
-        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}#composicao-executado"><small>Executado</small><strong>R$ {{ dashboard.financial_position.executed_value.value|localize }}</strong><span>Ver composição →</span></a>
-        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}#composicao-faturado"><small>Faturado bruto</small><strong>R$ {{ dashboard.financial_position.invoiced_gross_value.value|localize }}</strong><span>Ver notas →</span></a>
-        <a class="metric-card" href="{% url 'contracts:detail' selected_contract.pk %}#composicao-pago"><small>Pago</small><strong>R$ {{ dashboard.financial_position.paid_value.value|localize }}</strong><span>Ver pagamentos →</span></a>
-        <a class="metric-card metric-card-highlight" href="{% url 'contracts:detail' selected_contract.pk %}"><small>Saldo contratual</small><strong>R$ {{ dashboard.financial_position.contract_balance.value|localize }}</strong><span>Abrir contrato →</span></a>
-      </div>
-      {% if not dashboard.has_operational_data %}<div class="empty-state"><span aria-hidden="true">▤</span><div><strong>O contrato ainda não possui movimentação operacional.</strong><p>Cadastre itens, empenhos e Ordens de Serviço para alimentar os indicadores sem criar valores artificiais.</p>{% if can_create_item %}<a class="button-link" href="{% url 'contracts:item_create' selected_contract.pk %}">Cadastrar primeiro item</a>{% endif %}</div></div>{% endif %}
-    </section>
-
-    <section class="surface" aria-labelledby="itens-titulo">
-      <div class="section-heading"><div><span class="eyebrow">Composição contratual</span><h2 id="itens-titulo">Consumo e saldo por item</h2></div><a href="{% url 'contracts:item_list' selected_contract.pk %}">Abrir todos os itens</a></div>
-      <div class="metric-grid metric-grid-compact dashboard-summary-grid">
-        <div class="metric-card"><small>Itens ativos</small><strong>{{ dashboard.active_item_count }}</strong></div>
-        <div class="metric-card"><small>Itens inativos</small><strong>{{ dashboard.inactive_item_count }}</strong></div>
-        <div class="metric-card"><small>Total dos itens</small><strong>R$ {{ dashboard.item_total|localize }}</strong></div>
-        <div class="metric-card"><small>Valor do contrato</small><strong>R$ {{ selected_contract.current_value|localize }}</strong></div>
-      </div>
-      {% if dashboard.item_positions %}
-        <div class="table-responsive"><table><thead><tr><th>Item</th><th>Modalidade</th><th>Contratado</th><th>Utilizado</th><th>Saldo</th><th>Valor total</th><th>Saldo financeiro</th><th>Situação</th></tr></thead><tbody>
-          {% for entry in dashboard.item_positions %}<tr>
-            <td><a href="{% url 'contracts:item_detail' selected_contract.pk entry.item.pk %}">{{ entry.item.number }}</a>{% if entry.item.external_code %}<small class="table-note">Cód. {{ entry.item.external_code }}</small>{% endif %}</td>
-            <td>{{ entry.item.description|truncatechars:70 }}<small class="table-note">{{ entry.item.unit_display }}</small></td>
-            <td>{{ entry.item.contracted_quantity|floatformat:"-4" }}</td>
-            <td>{{ entry.position.used_quantity.value|floatformat:"-4" }}</td>
-            <td>{{ entry.position.quantity_balance.value|floatformat:"-4" }}</td>
-            <td>R$ {{ entry.position.total_value.value|localize }}</td>
-            <td>R$ {{ entry.position.financial_balance.value|localize }}</td>
-            <td>{% if entry.item.is_active %}<span class="status-pill status-success">Ativo</span>{% else %}<span class="status-pill status-neutral">Inativo</span>{% endif %}{% if entry.used_percentage is not None %}<small class="table-note">{{ entry.used_percentage|localize }}% consumido</small>{% endif %}</td>
-          </tr>{% endfor %}
-        </tbody></table></div>
-      {% else %}<div class="empty-compact">Nenhum item contratual cadastrado. Não foram criados valores estimados.</div>{% endif %}
-      {% if dashboard.item_total != selected_contract.current_value %}<p class="alert alert-warning">A soma dos itens (R$ {{ dashboard.item_total|localize }}) diverge do valor atual do contrato (R$ {{ selected_contract.current_value|localize }}). Confira o cadastro e a fonte oficial.</p>{% endif %}
-    </section>
-
-    <section class="surface" aria-labelledby="empenhos-titulo">
-      <div class="section-heading"><div><span class="eyebrow">Disponibilidade orçamentária</span><h2 id="empenhos-titulo">Posição dos empenhos</h2></div><a href="{% url 'contracts:commitment_list' selected_contract.pk %}">Abrir empenhos</a></div>
-      {% if dashboard.commitment_positions %}<div class="table-responsive"><table><thead><tr><th>Empenho</th><th>Exercício</th><th>PED</th><th>Fonte</th><th>Valor atual</th><th>Rateado em OS</th><th>Disponível</th><th>Novos rateios</th><th>Uso</th></tr></thead><tbody>
-        {% for entry in dashboard.commitment_positions %}<tr><td><a href="{% url 'contracts:commitment_detail' selected_contract.pk entry.commitment.pk %}">{{ entry.commitment.number }}</a></td><td>{{ entry.commitment.fiscal_year|unlocalize }}</td><td>{{ entry.commitment.ped }}</td><td>{{ entry.commitment.source }}</td><td>R$ {{ entry.position.current_value.value|localize }}</td><td>R$ {{ entry.position.committed_value.value|localize }}</td><td>R$ {{ entry.position.available_balance.value|localize }}</td><td>{% if entry.commitment.closed_for_new_allocations_at %}Encerrados por estorno{% else %}Permitidos{% endif %}</td><td>{% if entry.used_percentage is not None %}{{ entry.used_percentage|localize }}%{% else %}—{% endif %}</td></tr>{% endfor %}
-      </tbody></table></div>{% else %}<div class="empty-compact">Nenhum empenho ativo cadastrado. A disponibilidade orçamentária não foi presumida.</div>{% endif %}
-    </section>
-
-    <section class="surface" aria-labelledby="operacional-titulo">
-      <div class="section-heading"><div><span class="eyebrow">Acompanhamento</span><h2 id="operacional-titulo">Situação operacional</h2></div></div>
-      <div class="metric-grid metric-grid-compact">
-        <a class="metric-card" href="{% url 'contracts:work_order_list' selected_contract.pk %}"><small>OS em aberto</small><strong>{{ dashboard.open_work_orders|length }}</strong></a>
-        <a class="metric-card" href="#notas-pendentes"><small>NF pendentes</small><strong>{{ dashboard.pending_invoices|length }}</strong></a>
-        <a class="metric-card" href="#notas-divergentes"><small>NF que exigem atenção</small><strong>{{ dashboard.divergent_invoices|length }}</strong></a>
-        <a class="metric-card" href="#prazos"><small>OS vencidas</small><strong>{{ dashboard.overdue_work_orders|length }}</strong></a>
-      </div>
-    </section>
-
-    <div class="dashboard-columns">
-      <section class="surface" aria-labelledby="status-os-titulo">
-        <div class="section-heading"><div><span class="eyebrow">Fluxo operacional</span><h2 id="status-os-titulo">OS por situação</h2></div><a href="{% url 'contracts:work_order_list' selected_contract.pk %}">Abrir OS</a></div>
-        {% if dashboard.work_order_statuses %}<div class="status-summary-list">{% for entry in dashboard.work_order_statuses %}<div><span>{{ entry.label }}</span><strong>{{ entry.count }}</strong></div>{% endfor %}</div>{% else %}<div class="empty-compact">Nenhuma OS operacional cadastrada.</div>{% endif %}
-      </section>
-      <section class="surface" aria-labelledby="ciclo-titulo">
-        <div class="section-heading"><div><span class="eyebrow">Ciclo documental</span><h2 id="ciclo-titulo">NF e pagamentos</h2></div></div>
-        <div class="metric-grid metric-grid-compact dashboard-two-metrics"><div class="metric-card"><small>Notas Fiscais</small><strong>{{ dashboard.invoice_count }}</strong></div><div class="metric-card"><small>Pagamentos</small><strong>{{ dashboard.payment_count }}</strong></div></div>
-        <p class="muted">Pagamento somente após a documentação obrigatória validada pelo backend.</p>
-      </section>
-    </div>
-
-    <section class="surface" aria-labelledby="central-titulo">
-      <div class="section-heading"><div><span class="eyebrow">Prioridades</span><h2 id="central-titulo">Central de trabalho</h2></div></div>
-      {% if dashboard.contract_is_expired %}<p class="alert alert-danger">A vigência do contrato terminou em {{ selected_contract.validity_end|date:"d/m/Y" }}.</p>{% else %}<p class="muted">Próximo prazo contratual cadastrado: fim da vigência em {{ selected_contract.validity_end|date:"d/m/Y" }}. Não foi presumida uma janela de “vencimento próximo”.</p>{% endif %}
-      {% if dashboard.contract_balance_is_low %}<p class="alert alert-warning">Saldo contratual abaixo de 20%: {{ dashboard.contract_balance_percentage|localize }}% disponível.</p>{% endif %}
-      {% for alert in dashboard.low_commitments %}<p class="alert alert-warning">Empenho <a href="{% url 'contracts:commitment_detail' selected_contract.pk alert.commitment.pk %}">{{ alert.commitment.number }}</a> com saldo de R$ {{ alert.available|localize }} ({{ alert.percentage|localize }}%).</p>{% endfor %}
-      {% for alert in dashboard.low_hour_items %}<p class="alert alert-warning">Item por hora <a href="{% url 'contracts:item_detail' selected_contract.pk alert.item.pk %}">{{ alert.item.number }}</a> com {{ alert.available|localize }} horas disponíveis ({{ alert.percentage|localize }}%).</p>{% endfor %}
-      {% for work_order in dashboard.work_orders_without_allocation %}<p class="alert alert-warning">A OS <a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">{{ work_order.number }}</a> produz efeito financeiro, mas não possui rateio ativo em empenho.</p>{% endfor %}
-      {% for work_order in dashboard.completed_work_orders_without_invoice %}<p class="alert alert-warning">A OS <a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">{{ work_order.number }}</a> está concluída e ainda não possui Nota Fiscal cadastrada.</p>{% endfor %}
-      {% if not dashboard.low_commitments and not dashboard.low_hour_items and not dashboard.work_orders_without_allocation and not dashboard.completed_work_orders_without_invoice and not dashboard.pending_invoices and not dashboard.divergent_invoices %}<div class="empty-compact">Nenhuma pendência automática identificada nos dados cadastrados.</div>{% endif %}
-      {% if pending_registration_count %}<p class="alert alert-warning"><a href="{% url 'accounts_admin:registration_list' %}">{{ pending_registration_count }} solicitação(ões) de cadastro pendente(s).</a></p>{% endif %}
-    </section>
-
-    <div class="dashboard-columns">
-      <section class="surface" id="prazos"><h2>Prazos de OS</h2>{% for work_order in dashboard.overdue_work_orders %}<p class="alert alert-danger"><a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">OS {{ work_order.number }}</a> venceu em {{ work_order.deadline|date:"d/m/Y" }} e está {{ work_order.get_status_display }}.</p>{% endfor %}{% if dashboard.upcoming_work_orders %}<div class="table-responsive"><table><thead><tr><th>Próximas OS</th><th>Prazo</th><th>Status</th></tr></thead><tbody>{% for work_order in dashboard.upcoming_work_orders|slice:":5" %}<tr><td><a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">{{ work_order.number }}</a></td><td>{{ work_order.deadline|date:"d/m/Y" }}</td><td>{{ work_order.get_status_display }}</td></tr>{% endfor %}</tbody></table></div>{% elif not dashboard.overdue_work_orders %}<div class="empty-compact">Nenhuma OS aberta com prazo cadastrado.</div>{% endif %}</section>
-      <section class="surface" id="notas-pendentes"><h2>Notas Fiscais pendentes</h2>{% for attention in dashboard.pending_invoices %}<p><a href="{% url 'contracts:invoice_detail' selected_contract.pk attention.invoice.work_order_id attention.invoice.pk %}">NF {{ attention.invoice.number }}/{{ attention.invoice.series }}</a> — {{ attention.status }}</p>{% empty %}<div class="empty-compact">Nenhuma NF com pendência determinística.</div>{% endfor %}</section>
-    </div>
-    <section class="surface" aria-labelledby="calendario-financeiro-titulo">
-      <div class="section-heading"><div><span class="eyebrow">Calendário financeiro</span><h2 id="calendario-financeiro-titulo">Prazo de encaminhamento da NF</h2></div><span class="section-hint">Data de emissão + {{ dashboard.finance_submission_days }} dias</span></div>
-      <p class="muted">Regra vigente comprovada na fonte. O sistema recalcula as datas e a situação a cada consulta, mas não presume que o processo foi enviado ao Financeiro.</p>
-      {% if dashboard.invoice_financial_deadlines %}<div class="table-responsive"><table><thead><tr><th>NF</th><th>OS</th><th>Emissão</th><th>Prazo calculado</th><th>Situação do prazo</th></tr></thead><tbody>{% for entry in dashboard.invoice_financial_deadlines %}<tr><td><a href="{% url 'contracts:invoice_detail' selected_contract.pk entry.invoice.work_order_id entry.invoice.pk %}">{{ entry.invoice.number }}/{{ entry.invoice.series }}</a></td><td>{{ entry.invoice.work_order.number }}</td><td>{{ entry.invoice.issue_date|date:"d/m/Y" }}</td><td>{{ entry.deadline|date:"d/m/Y" }}</td><td>{% if entry.is_overdue %}<span class="status-pill status-danger">Prazo ultrapassado; conferir envio</span>{% else %}<span class="status-pill status-warning">A conferir</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-compact">Aguardando Nota Fiscal. Nenhum prazo financeiro foi criado sem documento de origem.</div>{% endif %}
-    </section>
-    <section class="surface" id="notas-divergentes"><h2>Notas Fiscais que exigem atenção</h2>{% for attention in dashboard.divergent_invoices %}<p><a href="{% url 'contracts:invoice_detail' selected_contract.pk attention.invoice.work_order_id attention.invoice.pk %}">NF {{ attention.invoice.number }}/{{ attention.invoice.series }}</a> — {{ attention.status }}</p>{% empty %}<div class="empty-compact">Nenhuma NF com divergência, bloqueio ou possível duplicidade.</div>{% endfor %}</section>
   {% else %}
     <section class="surface empty-state"><span aria-hidden="true">▣</span><div><h2>Nenhum contrato disponível</h2><p>Você ainda não possui contratos. O painel será exibido quando sua conta possuir acesso a um contrato.</p>{% if can_create_contract %}<a class="button-link" href="{% url 'contracts:create' %}">Cadastrar primeiro contrato</a>{% endif %}</div></section>
   {% endif %}

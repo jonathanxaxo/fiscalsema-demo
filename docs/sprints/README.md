@@ -27,3 +27,4 @@ documental das entregas anteriores.
 - `sprint-07-padronizacao-telas`: listas operacionais padronizadas, ações do
   contrato no topo, formulários em duas colunas, rascunhos da IA no layout do
   sistema e correção do menu móvel.
+- `sprint-08-painel`: prioridades no topo do painel e barra de atalhos.
