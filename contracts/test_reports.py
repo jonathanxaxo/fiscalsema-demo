@@ -146,11 +146,11 @@ class ContractReportTests(WorkOrderBase):
         self.assertNotContains(screen, "data-auto-print")
         self.assertNotContains(screen, "report_print.js")
         printed = self.client.get(url, {"section": "billing", "print": "1"})
-        self.assertContains(printed, "<body data-auto-print>", html=False)
+        self.assertContains(printed, "<span data-auto-print hidden></span>", html=False)
         self.assertContains(printed, "contracts/report_print.js")
         self.assertContains(printed, "@page { size: landscape; margin: 10mm; }")
         self.assertContains(printed, "Salvar como PDF")
-        self.assertContains(printed, '<p class="help no-print">Versão preparada para impressão', html=False)
+        self.assertContains(printed, '<p class="helptext no-print">Versão preparada para impressão', html=False)
         self.assertNotContains(printed, "Imprimir / Salvar PDF")
 
     def test_invalid_filter_is_explained_without_server_error(self):

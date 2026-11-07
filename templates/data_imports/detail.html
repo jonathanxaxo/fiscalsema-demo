@@ -24,5 +24,5 @@
   {% elif spreadsheet_import.status == "CONCLUIDO" %}
     <p class="notice"><strong>Importação concluída:</strong> {{ spreadsheet_import.report.importados }} registro(s) criado(s); {{ spreadsheet_import.report.duplicados_ignorados }} duplicidade(s) ignorada(s).</p>
   {% else %}<p><a href="{% url 'data_imports:mapping' contract.pk spreadsheet_import.pk %}">Mapear colunas</a></p>{% endif %}
-  <p><a href="{% url 'data_imports:upload' contract.pk %}">Voltar às importações</a> · <a href="{% url 'contracts:detail' contract.pk %}">Abrir contrato</a></p>
+  <p class="toolbar"><a href="{% url 'data_imports:upload' contract.pk %}">Voltar às importações</a><a href="{% url 'contracts:detail' contract.pk %}">Abrir contrato</a></p>
 {% endblock %}

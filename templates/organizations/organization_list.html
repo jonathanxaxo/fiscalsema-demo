@@ -3,7 +3,7 @@
 {% block content %}
   <h1>Organizações</h1>
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
-  <p><a href="{% url 'organizations:organization_create' %}">Nova organização</a> · <a href="{% url 'organizations:sector_list' %}">Setores</a> · {% if show_inactive %}<a href="{% url 'organizations:organization_list' %}">Mostrar ativas</a>{% else %}<a href="?inativos=1">Mostrar inativas</a>{% endif %}</p>
+  <p class="toolbar"><a href="{% url 'organizations:organization_create' %}">Nova organização</a><a href="{% url 'organizations:sector_list' %}">Setores</a>{% if show_inactive %}<a href="{% url 'organizations:organization_list' %}">Mostrar ativas</a>{% else %}<a href="?inativos=1">Mostrar inativas</a>{% endif %}</p>
   <table>
     <thead><tr><th>Nome</th><th>Status</th><th>Setores</th><th>Ação</th></tr></thead>
     <tbody>

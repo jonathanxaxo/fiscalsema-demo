@@ -32,13 +32,13 @@
     <dt>Saldo faturável objetivo</dt><dd>R$ {{ invoice_position.billable_balance.value|localize }}</dd>
   </dl>
   <h2>Conferência determinística</h2>
-  <p><strong>Resultado geral:</strong> {{ check_report.overall_status }}</p>
+  <p><strong>Resultado geral:</strong> <span class="status-pill {{ check_report.overall_status|tom_conferencia }}">{{ check_report.overall_status|status_conferencia }}</span></p>
   <table>
     <thead><tr><th>Verificação</th><th>Resultado</th><th>Esperado</th><th>Encontrado</th><th>Diferença</th><th>Explicação</th></tr></thead>
     <tbody>
       {% for check in check_report.checks %}
         <tr>
-          <td>{{ check.label }}</td><td>{{ check.status }}</td>
+          <td>{{ check.label }}</td><td><span class="status-pill {{ check.status|tom_conferencia }}">{{ check.status|status_conferencia }}</span></td>
           <td>{{ check.expected|default:"—" }}</td><td>{{ check.actual|default:"—" }}</td>
           <td>{{ check.difference|default:"—" }}</td><td>{{ check.message }}</td>
         </tr>
@@ -77,7 +77,7 @@
   {% if can_add_payment %}<p><a href="{% url 'contracts:payment_create' contract.pk work_order.pk invoice.pk %}">Registrar pagamento</a></p>{% endif %}
   <p class="warning">O limite de pagamento é provisório e não representa autorização ou recomendação.</p>
   <p class="actions">
-    {% if can_edit %}<a href="{% url 'contracts:invoice_update' contract.pk work_order.pk invoice.pk %}">Editar Nota Fiscal</a> · {% endif %}
+    {% if can_edit %}<a href="{% url 'contracts:invoice_update' contract.pk work_order.pk invoice.pk %}">Editar Nota Fiscal</a>{% endif %}
     <a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Voltar para a OS</a>
   </p>
 {% endblock %}

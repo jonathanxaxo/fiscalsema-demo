@@ -39,7 +39,7 @@
   <p class="helptext">Os saldos são derivados dos registros de execução e nunca armazenados como valores editáveis.</p>
   <p class="helptext">O limite anual usa os aniversários da vigência. O fechamento oficial permanece no fim de cada ano civil.</p>
   <p class="actions">
-    {% if can_edit %}<a href="{% url 'contracts:item_update' contract.pk item.pk %}">Editar</a> · {% endif %}
+    {% if can_edit %}<a href="{% url 'contracts:item_update' contract.pk item.pk %}">Editar</a>{% endif %}
     <a href="{% url 'contracts:item_list' contract.pk %}">Voltar</a>
   </p>
 {% endblock %}

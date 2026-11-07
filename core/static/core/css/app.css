@@ -28,7 +28,7 @@ body { margin: 0; background: var(--canvas); color: var(--ink); font-size: 15px;
 a { color: var(--green-800); text-underline-offset: 3px; }
 a:hover { color: var(--green-950); }
 button, input, select, textarea { font: inherit; }
-button, .button-link { min-height: 42px; border: 1px solid transparent; border-radius: 9px; padding: .65rem 1rem; background: var(--green-800); color: #fff; font-weight: 750; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; transition: background .15s ease, transform .15s ease, box-shadow .15s ease; }
+button, .button-link { min-height: 40px; border: 1px solid transparent; border-radius: 9px; padding: .45rem .95rem; font-size: .9rem; line-height: 1.25; background: var(--green-800); color: #fff; font-weight: 750; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; transition: background .15s ease, transform .15s ease, box-shadow .15s ease; }
 button:hover, .button-link:hover { background: var(--green-950); color: #fff; box-shadow: 0 6px 18px rgba(11, 93, 59, .18); }
 button:active, .button-link:active { transform: translateY(1px); }
 button:disabled { opacity: .65; cursor: wait; }
@@ -244,13 +244,27 @@ form > button[type="submit"] { margin-top: 1.2rem; }
 .button-link-secondary:hover { background: var(--green-50); color: var(--green-950); box-shadow: none; }
 .button-link-danger { background: #fff; color: var(--danger-ink); border-color: #dca9a5; }
 .button-link-danger:hover { background: var(--danger-bg); color: #6f1e17; box-shadow: none; }
-.button-link-small { min-height: 34px; padding: .38rem .68rem; font-size: .84rem; }
+.button-link-small { min-height: 34px; padding: .3rem .7rem; font-size: .84rem; }
 .selector > button { margin-top: 0; }
 .inline-form { display: inline; }
-.inline-form button { min-height: 34px; margin: 0 0 0 .35rem; padding: .35rem .62rem; background: #fff; color: var(--green-800); border-color: var(--line-strong); }
+.inline-form button { min-height: 34px; margin: 0 0 0 .35rem; padding: .3rem .7rem; font-size: .84rem; background: #fff; color: var(--green-800); border-color: var(--line-strong); }
 .inline-form button:hover { background: var(--green-50); color: var(--green-950); box-shadow: none; }
 .actions { display: flex; flex-wrap: wrap; gap: .45rem .8rem; align-items: center; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 .actions a { font-weight: 700; }
+/* Padrão único de botões (Sprint 16): ações de rodapé e barras de ferramentas
+   viram botões secundários do mesmo tamanho nas telas internas. */
+.toolbar { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin: .25rem 0 1rem; }
+.app-page .actions > a:not(.button-link), .app-page .toolbar > a:not(.button-link) { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: .45rem .95rem; line-height: 1.25; border: 1px solid var(--line-strong); border-radius: 9px; background: #fff; color: var(--green-800); font-size: .9rem; font-weight: 750; text-decoration: none; }
+.app-page .actions > a:not(.button-link):hover, .app-page .toolbar > a:not(.button-link):hover { background: var(--green-50); color: var(--green-950); }
+.app-page .actions, .app-page .toolbar { gap: .45rem; }
+.button-link-quiet { background: transparent; color: var(--green-800); border-color: transparent; text-decoration: underline; text-underline-offset: 3px; }
+.button-link-quiet:hover { background: var(--green-50); color: var(--green-950); box-shadow: none; }
+.filter-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 1rem; align-items: start; }
+.filter-grid label { margin-top: .75rem; }
+.filter-actions { margin-top: 1rem; padding-top: 0; border-top: 0; }
+.report-meta { padding: .75rem .9rem; border-radius: 9px; background: var(--green-50); color: var(--green-950); }
+.report-section + .report-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.report-totals { margin: .75rem 0; }
 .row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; min-width: 180px; }
 .action-groups { display: grid; gap: .8rem; margin-top: 1.25rem; }
 .action-cluster { padding: 1rem; border: 1px solid var(--line); border-radius: 11px; background: #fbfdfc; }
@@ -303,6 +317,7 @@ td a { font-weight: 700; }
 .demo-banner { background: #f5b301; color: #2b1d00; font-weight: 700; letter-spacing: .025em; border-bottom: 1px solid #d99a00; }
 
 @media (max-width: 900px) {
+  .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi-card-highlight { grid-column: 1 / -1; }
   .action-bar-links { margin-left: 0; width: 100%; }
@@ -327,6 +342,7 @@ td a { font-weight: 700; }
 }
 
 @media (max-width: 600px) {
+  .filter-grid { grid-template-columns: 1fr; }
   .notifications-panel { position: fixed; top: var(--menu-top, 72px); right: .75rem; left: .75rem; width: auto; }
   .attention-list li { flex-direction: column; align-items: flex-start; gap: .35rem; }
   .kpi-card strong { font-size: 1.08rem; }

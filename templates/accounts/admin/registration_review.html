@@ -35,5 +35,5 @@
   {% else %}
     <p class="notice">Solicitação arquivada.</p>
   {% endif %}
-  <p class="actions"><a href="{% url 'accounts_admin:registration_list' %}">Voltar às solicitações</a> · <a href="{% url 'organizations:organization_list' %}">Organizações</a></p>
+  <p class="actions"><a href="{% url 'accounts_admin:registration_list' %}">Voltar às solicitações</a><a href="{% url 'organizations:organization_list' %}">Organizações</a></p>
 {% endblock %}
