@@ -107,3 +107,56 @@ class SeedDemoPresentationTests(TestCase):
     def test_refuses_outside_demo(self):
         with self.assertRaises(CommandError):
             seed()
+
+
+@override_settings(APP_ENVIRONMENT="demo")
+class FixDemoPresentationDatesTests(TestCase):
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.fiscal = User.objects.create_user(
+            email=FISCAL_EMAIL, full_name="Admin", password=VALID_PASSWORD,
+            status=AccountStatus.ACTIVE, organization=Organization.objects.create(name="SEMA"),
+        )
+        self.contract = create_contract(
+            actor=self.fiscal,
+            **contract_data(
+                number="000885/2026",
+                signature_date=self.today - timedelta(days=22),
+                validity_start=self.today - timedelta(days=22),
+                validity_end=self.today.replace(year=self.today.year + 4),
+                original_value=Decimal("600000.00"),
+            ),
+        )
+
+    def run_fix(self):
+        output = StringIO()
+        env = {"DEMO_CONTRACT_NUMBER": "000885/2026", "DEMO_FISCAL_EMAIL": FISCAL_EMAIL}
+        with mock.patch.dict(os.environ, env):
+            call_command("fix_demo_presentation_dates", stdout=output)
+        return output.getvalue()
+
+    def historical_dates(self):
+        dates = list(WorkOrderExecution.objects.filter(work_order__contract=self.contract).values_list("execution_date", flat=True))
+        dates += list(Invoice.objects.filter(contract=self.contract).values_list("issue_date", flat=True))
+        dates += list(Payment.objects.filter(invoice__contract=self.contract).values_list("payment_date", flat=True))
+        return dates
+
+    def test_new_seed_never_creates_future_historical_dates(self):
+        seed()
+        self.assertTrue(all(value <= self.today for value in self.historical_dates()))
+        self.assertIn("nada foi alterado", self.run_fix())
+
+    def test_fix_moves_future_dates_to_the_past_keeping_values(self):
+        future_today = self.today + timedelta(days=40)
+        with mock.patch(
+            "contracts.management.commands.seed_demo_presentation.timezone.localdate",
+            return_value=future_today,
+        ):
+            seed()
+        self.assertTrue(any(value > self.today for value in self.historical_dates()))
+        paid_before = contract_financial_position(self.contract).paid_value.value
+        self.assertIn("corrigidas", self.run_fix())
+        self.assertTrue(all(value <= self.today for value in self.historical_dates()))
+        self.assertEqual(contract_financial_position(self.contract).paid_value.value, paid_before)
+        self.assertEqual(WorkOrder.objects.filter(contract=self.contract).count(), 5)
+        self.assertIn("nada foi alterado", self.run_fix())

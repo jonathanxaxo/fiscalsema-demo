@@ -23,10 +23,22 @@ OPEN_WORK_ORDER_STATUSES = (
 )
 
 
+INVOICE_ATTENTION_LABELS = {
+    OverallStatus.PENDING: "Pendente de conferência",
+    OverallStatus.DIVERGENCE: "Com divergência",
+    OverallStatus.POSSIBLE_DUPLICATE: "Possível duplicidade",
+    OverallStatus.BLOCKED: "Bloqueada",
+}
+
+
 @dataclass(frozen=True)
 class InvoiceAttention:
     invoice: object
     status: str
+
+    @property
+    def status_label(self):
+        return INVOICE_ATTENTION_LABELS.get(self.status, self.status)
 
 
 @dataclass(frozen=True)
@@ -125,6 +137,21 @@ class DashboardSnapshot:
     annual_item_limits: tuple[AnnualItemLimitSummary, ...]
     current_calendar_period: object | None
     current_contract_year: object | None
+
+    @property
+    def attention_count(self):
+        """Quantidade de pendências exibidas na lista "Precisa da sua atenção"."""
+        return (
+            int(self.contract_is_expired)
+            + int(self.contract_balance_is_low)
+            + len(self.overdue_work_orders)
+            + len(self.low_commitments)
+            + len(self.low_hour_items)
+            + len(self.work_orders_without_allocation)
+            + len(self.completed_work_orders_without_invoice)
+            + len(self.pending_invoices)
+            + len(self.divergent_invoices)
+        )
 
 
 def _percentage(available, total):
