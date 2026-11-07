@@ -23,4 +23,9 @@ Capturas antes/depois em `capturas/`.
 
 ## Produção
 
-PENDENTE — merge e execução do fluxo "Corrigir datas dos dados ficticios".
+| Etapa | Resultado |
+|---|---|
+| Merge do PR nº 7 | `e54820d` |
+| Fluxo "Corrigir datas" (execução nº `42321305996`) | correção aplicada ("Datas dos dados de apresentação corrigidas com segurança."); **verificação final falhou** |
+| Causa da falha | a verificação conferia todos os registros do contrato, inclusive os cadastrados pelo próprio Fiscal (fora do escopo da correção); deveria olhar apenas os registros `DEMO-` |
+| Correção | verificação restrita a `DEMO-OS-` / `DEMO-NF-`; fluxo executado novamente (ver abaixo) |
