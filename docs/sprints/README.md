@@ -40,3 +40,5 @@ documental das entregas anteriores.
   datas dos dados fictícios.
 - `sprint-14-notificacoes`: sino de notificações no topo, trazido do sistema
   principal e adaptado à demonstração.
+- `sprint-15-impressao-relatorio`: botão de impressão/PDF do relatório com
+  abertura automática e página em paisagem.

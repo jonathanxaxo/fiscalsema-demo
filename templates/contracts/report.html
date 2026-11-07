@@ -1,4 +1,4 @@
-{% load l10n %}
+{% load l10n static %}
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -29,6 +29,7 @@
     th, td { padding: .55rem; border-bottom: 1px solid #dce7df; text-align: left; vertical-align: top; }
     .actions { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; }
     @media print {
+      @page { size: landscape; margin: 10mm; }
       body { background: #fff; font-size: 10pt; }
       main { max-width: none; margin: 0; padding: 0; }
       section { border: 0; box-shadow: none; padding: .35rem 0; break-inside: avoid; }
@@ -38,15 +39,16 @@
       tr { break-inside: avoid; }
     }
   </style>
+  {% if print_mode %}<script src="{% static 'contracts/report_print.js' %}" defer></script>{% endif %}
 </head>
-<body>
+<body{% if print_mode %} data-auto-print{% endif %}>
 <main>
   <section>
     <h1>Relatório do contrato</h1>
     {% if is_read_only_access %}<p class="meta"><strong>Somente leitura</strong></p>{% endif %}
     <p class="meta"><strong>Contrato {{ contract.number }}</strong> · Processo {{ contract.process_number }} · Fornecedor {{ contract.supplier_name }} · {{ contract.get_status_display }}</p>
     <p class="warning">Relatório de consulta gerado com os registros cadastrados. Não constitui atesto, homologação, liquidação nem autorização ou recomendação de pagamento.</p>
-    {% if print_mode %}<p class="help">Versão preparada para impressão. Use o comando de impressão do navegador. Nenhum PDF ou arquivo foi armazenado pelo sistema.</p>{% endif %}
+    {% if print_mode %}<p class="help no-print">Versão preparada para impressão. A janela de impressão será aberta automaticamente; nela, escolha a impressora ou “Salvar como PDF”. Se a janela for fechada, use Ctrl+P para abri-la novamente. Nenhum PDF ou arquivo foi armazenado pelo sistema.</p>{% endif %}
   </section>
 
   {% if not print_mode %}<section class="no-print">
@@ -54,7 +56,7 @@
     <form method="get" novalidate>
       {{ filter_form.non_field_errors }}
       <div class="filters">{% for field in filter_form %}<div>{{ field.label_tag }}{{ field.errors }}{{ field }}</div>{% endfor %}</div>
-      <p class="actions"><button type="submit">Gerar relatório</button>{% if can_export %}<a class="button" href="{% url 'contracts:export_csv' contract.pk %}{% if export_query %}?{{ export_query }}{% endif %}">Exportar CSV</a>{% endif %}<a class="button" href="?{{ print_query }}">Versão para impressão</a><a href="{% url 'contracts:report' contract.pk %}">Limpar</a></p>
+      <p class="actions"><button type="submit">Gerar relatório</button>{% if can_export %}<a class="button" href="{% url 'contracts:export_csv' contract.pk %}{% if export_query %}?{{ export_query }}{% endif %}">Exportar CSV</a>{% endif %}<a class="button" href="?{{ print_query }}" target="_blank" rel="noopener">Imprimir / Salvar PDF</a><a href="{% url 'contracts:report' contract.pk %}">Limpar</a></p>
     </form>
   </section>{% endif %}
 
