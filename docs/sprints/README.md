@@ -36,3 +36,5 @@ documental das entregas anteriores.
   controle de acessos.
 - `sprint-12-dados-apresentacao`: fluxo manual que preenche um contrato com
   dados fictícios de apresentação.
+- `sprint-13-painel-fiscal`: painel profissional do Fiscal e correção das
+  datas dos dados fictícios.

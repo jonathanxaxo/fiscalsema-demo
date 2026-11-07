@@ -48,6 +48,40 @@ def _competence(day):
     return day.strftime("%m/%Y")
 
 
+def presentation_timeline(contract, today):
+    """Datas da apresentação: histórico entre o início da janela e hoje; prazos no futuro.
+
+    Nenhuma data de execução, Nota Fiscal ou pagamento fica depois de hoje.
+    """
+    end = contract.validity_end
+    window_start = max(contract.validity_start, today - timedelta(days=75))
+    last_day = min(today, end)
+    span = max((last_day - window_start).days, 0)
+
+    def past(fraction):
+        return window_start + timedelta(days=round(span * fraction))
+
+    def future(days):
+        return max(min(today + timedelta(days=days), end), last_day)
+
+    return {
+        "commitment": past(0),
+        "os01": {"opening": past(0.05), "signature": past(0.05), "start": past(0.10),
+                 "deadline": past(0.70), "completion": past(0.60)},
+        "os01_execution": past(0.60),
+        "os01_invoice": past(0.65),
+        "os01_payment": past(0.90),
+        "os02": {"opening": past(0.40), "signature": past(0.40), "start": past(0.45),
+                 "deadline": future(30)},
+        "os02_execution": past(0.80),
+        "os02_invoice": past(0.85),
+        "os03": {"opening": past(0.15), "signature": past(0.15), "start": past(0.20),
+                 "deadline": past(0.50)},
+        "os04": {"opening": last_day, "signature": last_day, "deadline": future(45)},
+        "os05": {"opening": last_day, "deadline": future(60)},
+    }
+
+
 class Command(BaseCommand):
     help = "Preenche um contrato da demo com itens, empenhos, OS, execuções, NFs e pagamento fictícios."
 
@@ -78,20 +112,14 @@ class Command(BaseCommand):
         if budget < MIN_BUDGET:
             raise CommandError("Operação recusada: saldo do contrato insuficiente para os dados de apresentação.")
 
-        today = timezone.localdate()
-        start = max(contract.validity_start, today - timedelta(days=75))
-        end = contract.validity_end
-
-        def day(offset):
-            value = start + timedelta(days=offset)
-            return min(max(value, contract.validity_start), end)
+        timeline = presentation_timeline(contract, timezone.localdate())
 
         with transaction.atomic():
-            self._seed(contract, fiscal, budget, day, today, end)
+            self._seed(contract, fiscal, budget, timeline)
 
         self.stdout.write(self.style.SUCCESS("Dados de apresentação criados com segurança."))
 
-    def _seed(self, contract, actor, budget, day, today, end):
+    def _seed(self, contract, actor, budget, t):
         note = f"{MARKER} Dado fictício para apresentação."
         items_spec = [
             ("DEMO-1", "Suporte técnico especializado", ContractItemUnit.HOUR, Decimal("200.00"), Decimal("0.45")),
@@ -123,9 +151,9 @@ class Command(BaseCommand):
             create_budget_commitment(
                 contract_id=contract.pk,
                 actor=actor,
-                number=f"{today.year}NE90000{index}",
-                ped=f"{today.year}PD90000{index}",
-                commitment_date=day(1),
+                number=f"{t['commitment'].year}NE90000{index}",
+                ped=f"{t['commitment'].year}PD90000{index}",
+                commitment_date=t["commitment"],
                 initial_value=_money(budget * share),
                 source="Fonte fictícia de demonstração",
                 notes=note,
@@ -207,17 +235,18 @@ class Command(BaseCommand):
 
         completed = order(
             "DEMO-OS-01", item1, Decimal("0.20"), WorkOrderStatus.COMPLETED,
-            day(5), day(40), signature_date=day(5), start_date=day(6), completion_date=day(35),
+            t["os01"]["opening"], t["os01"]["deadline"], signature_date=t["os01"]["signature"],
+            start_date=t["os01"]["start"], completion_date=t["os01"]["completion"],
         )
         allocate(completed, commitments[0])
-        execute(completed, Decimal("1"), day(35))
-        nf_paid = invoice(completed, "DEMO-NF-01", completed.total_value, day(36))
+        execute(completed, Decimal("1"), t["os01_execution"])
+        nf_paid = invoice(completed, "DEMO-NF-01", completed.total_value, t["os01_invoice"])
         create_payment(
             invoice_id=nf_paid.pk,
             actor=actor,
             amount=nf_paid.accepted_value,
-            payment_date=day(45),
-            competence=_competence(day(45)),
+            payment_date=t["os01_payment"],
+            competence=_competence(t["os01_payment"]),
             status="Pago conforme fonte",
             process_number="PROC-DEMO-PAG-01",
             attestation_reference="Atesto fictício 01",
@@ -229,22 +258,23 @@ class Command(BaseCommand):
 
         in_progress = order(
             "DEMO-OS-02", item2, Decimal("0.25"), WorkOrderStatus.IN_PROGRESS,
-            day(30), min(today + timedelta(days=30), end), signature_date=day(30), start_date=day(31),
+            t["os02"]["opening"], t["os02"]["deadline"], signature_date=t["os02"]["signature"],
+            start_date=t["os02"]["start"],
         )
         allocate(in_progress, commitments[1])
-        partial = execute(in_progress, Decimal("0.5"), min(day(55), today))
-        invoice(in_progress, "DEMO-NF-02", partial.executed_value, min(day(56), today))
+        partial = execute(in_progress, Decimal("0.5"), t["os02_execution"])
+        invoice(in_progress, "DEMO-NF-02", partial.executed_value, t["os02_invoice"])
 
         order(
             "DEMO-OS-03", item1, Decimal("0.15"), WorkOrderStatus.IN_PROGRESS,
-            day(10), max(min(today - timedelta(days=5), end), day(10)),
-            signature_date=day(10), start_date=day(11),
+            t["os03"]["opening"], t["os03"]["deadline"], signature_date=t["os03"]["signature"],
+            start_date=t["os03"]["start"],
         )
         order(
             "DEMO-OS-04", item3, Decimal("0.25"), WorkOrderStatus.SIGNED,
-            min(today, end), min(today + timedelta(days=45), end), signature_date=min(today, end),
+            t["os04"]["opening"], t["os04"]["deadline"], signature_date=t["os04"]["signature"],
         )
         order(
             "DEMO-OS-05", item2, Decimal("0.10"), WorkOrderStatus.DRAFT,
-            min(today, end), min(today + timedelta(days=60), end),
+            t["os05"]["opening"], t["os05"]["deadline"],
         )
