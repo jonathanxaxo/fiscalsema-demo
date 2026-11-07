@@ -38,3 +38,5 @@ documental das entregas anteriores.
   dados fictícios de apresentação.
 - `sprint-13-painel-fiscal`: painel profissional do Fiscal e correção das
   datas dos dados fictícios.
+- `sprint-14-notificacoes`: sino de notificações no topo, trazido do sistema
+  principal e adaptado à demonstração.

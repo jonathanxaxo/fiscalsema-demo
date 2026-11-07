@@ -38,6 +38,20 @@
     wrapper.appendChild(table);
   });
 
+  const notifications = document.querySelector('[data-notifications]');
+  if (notifications) {
+    notifications.addEventListener('toggle', () => { if (notifications.open) updateMenuTop(); });
+    document.addEventListener('click', (event) => {
+      if (notifications.open && !notifications.contains(event.target)) notifications.open = false;
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && notifications.open) {
+        notifications.open = false;
+        notifications.querySelector('summary')?.focus();
+      }
+    });
+  }
+
   const scrollHints = [];
   document.querySelectorAll('.table-responsive').forEach((wrapper) => {
     const hint = document.createElement('p');
