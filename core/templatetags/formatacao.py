@@ -37,3 +37,26 @@ def cnpj_cpf(value):
     if len(digits) == 11:
         return f"{digits[:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:]}"
     return value
+
+
+CHECK_STATUS_LABELS = {
+    "CONFERIDA": ("Conferida", "status-success"),
+    "OK": ("OK", "status-success"),
+    "NAO_APLICAVEL": ("Não se aplica", "status-neutral"),
+    "COM_PENDENCIA": ("Pendente de conferência", "status-warning"),
+    "COM_DIVERGENCIA": ("Com divergência", "status-danger"),
+    "POSSIVEL_DUPLICIDADE": ("Possível duplicidade", "status-danger"),
+    "BLOQUEADA": ("Bloqueada", "status-danger"),
+}
+
+
+@register.filter
+def status_conferencia(value):
+    """Texto legível para os códigos da conferência de Nota Fiscal."""
+    return CHECK_STATUS_LABELS.get(value, (value, ""))[0]
+
+
+@register.filter
+def tom_conferencia(value):
+    """Classe de cor (status-pill) para os códigos da conferência de Nota Fiscal."""
+    return CHECK_STATUS_LABELS.get(value, ("", "status-neutral"))[1]

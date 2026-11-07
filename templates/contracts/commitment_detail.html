@@ -45,8 +45,8 @@
   <p class="helptext">O comprometido é derivado dos rateios ativos de OS com efeito financeiro confirmado; não existe campo de saldo editável.</p>
   <p class="warning">Valores executado, faturado e pago permanecem separados e serão alimentados somente nas etapas correspondentes.</p>
   <p class="actions">
-    {% if can_edit %}<a href="{% url 'contracts:commitment_update' contract.pk commitment.pk %}">Editar empenho</a> · {% endif %}
-    {% if can_add_movement %}<a href="{% url 'contracts:commitment_movement_create' contract.pk commitment.pk %}">Registrar reforço, anulação ou estorno</a> · {% endif %}
+    {% if can_edit %}<a href="{% url 'contracts:commitment_update' contract.pk commitment.pk %}">Editar empenho</a>{% endif %}
+    {% if can_add_movement %}<a href="{% url 'contracts:commitment_movement_create' contract.pk commitment.pk %}">Registrar reforço, anulação ou estorno</a>{% endif %}
     <a href="{% url 'contracts:commitment_list' contract.pk %}">Voltar</a>
   </p>
 {% endblock %}

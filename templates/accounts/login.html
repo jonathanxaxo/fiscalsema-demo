@@ -13,6 +13,6 @@
   </form>
   <p class="actions">
     <a href="{% url 'accounts:password_reset' %}">Esqueci minha senha</a>
-    {% if public_registration_enabled %} · <a href="{% url 'accounts:register' %}">Cadastrar</a>{% endif %}
+    {% if public_registration_enabled %}<a href="{% url 'accounts:register' %}">Cadastrar</a>{% endif %}
   </p>
 {% endblock %}

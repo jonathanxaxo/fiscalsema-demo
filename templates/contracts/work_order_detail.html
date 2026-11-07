@@ -113,11 +113,11 @@
   <p class="helptext">O saldo faturável usa o total bruto como limite objetivo. A fórmula definitiva do valor aceito permanece pendente de confirmação.</p>
   <p class="warning">Documentos da OS serão incluídos pelo módulo protegido de documentos na Etapa 31.</p>
   <p class="actions">
-    {% if can_add_invoice %}<a href="{% url 'contracts:invoice_create' contract.pk work_order.pk %}">Cadastrar Nota Fiscal</a> · {% endif %}
-    {% if can_add_execution %}<a href="{% url 'contracts:execution_create' contract.pk work_order.pk %}">Registrar execução</a> · {% endif %}
-    {% if can_add_allocation %}<a href="{% url 'contracts:allocation_create' contract.pk work_order.pk %}">Novo rateio</a> · {% endif %}
-    {% if can_edit %}<a href="{% url 'contracts:work_order_update' contract.pk work_order.pk %}">Editar OS</a> · {% endif %}
-    {% if can_cancel %}<a href="{% url 'contracts:work_order_cancel' contract.pk work_order.pk %}">Cancelar OS</a> · {% endif %}
+    {% if can_add_invoice %}<a href="{% url 'contracts:invoice_create' contract.pk work_order.pk %}">Cadastrar Nota Fiscal</a>{% endif %}
+    {% if can_add_execution %}<a href="{% url 'contracts:execution_create' contract.pk work_order.pk %}">Registrar execução</a>{% endif %}
+    {% if can_add_allocation %}<a href="{% url 'contracts:allocation_create' contract.pk work_order.pk %}">Novo rateio</a>{% endif %}
+    {% if can_edit %}<a href="{% url 'contracts:work_order_update' contract.pk work_order.pk %}">Editar OS</a>{% endif %}
+    {% if can_cancel %}<a href="{% url 'contracts:work_order_cancel' contract.pk work_order.pk %}">Cancelar OS</a>{% endif %}
     <a href="{% url 'contracts:work_order_list' contract.pk %}">Voltar</a>
   </p>
 {% endblock %}

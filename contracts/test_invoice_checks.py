@@ -129,6 +129,6 @@ class InvoiceCheckTests(WorkOrderBase):
             args=[self.contract.pk, self.order.pk, invoice.pk],
         ))
         self.assertContains(response, "Conferência determinística")
-        self.assertContains(response, "CONFERIDA")
+        self.assertContains(response, "Conferida")  # texto legível (Sprint 16); antes exibia o código CONFERIDA
         self.assertContains(response, "Saldo faturável")
         self.assertContains(response, "Não usa IA")

@@ -25,7 +25,7 @@
   </dl>
   <p class="warning">O status é mantido como texto da fonte e não exclui valores do total. O ciclo oficial de pagamentos ainda precisa ser confirmado.</p>
   <p class="actions">
-    {% if can_edit %}<a href="{% url 'contracts:payment_update' contract.pk work_order.pk invoice.pk payment.pk %}">Editar pagamento</a> · {% endif %}
+    {% if can_edit %}<a href="{% url 'contracts:payment_update' contract.pk work_order.pk invoice.pk payment.pk %}">Editar pagamento</a>{% endif %}
     <a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk invoice.pk %}">Voltar para a NF</a>
   </p>
 {% endblock %}
