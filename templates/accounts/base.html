@@ -24,6 +24,25 @@
         </a>
       </div>
       <div class="user-menu">
+        {% with notes=topbar_notifications %}
+        <details class="notifications" data-notifications>
+          <summary class="notifications-toggle" aria-label="Notificações: {{ notes.count }} pendência(s)" title="Notificações">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            {% if notes.count %}<span class="notifications-count">{{ notes.count }}</span>{% endif %}
+          </summary>
+          <div class="notifications-panel" role="region" aria-label="Notificações">
+            <div class="notifications-head"><strong>Notificações</strong><small>{% if notes.count %}{{ notes.count }} pendência(s) para conferir{% else %}Tudo em dia{% endif %}</small></div>
+            {% if notes.items %}
+              <ul class="notifications-list">
+                {% for note in notes.items %}<li><a class="notification notification-{{ note.level }}" href="{{ note.url }}"><strong>{{ note.title }}</strong><small>{{ note.contract }} · <span class="notification-hint">{{ note.hint }} →</span></small></a></li>{% endfor %}
+              </ul>
+              {% if notes.hidden_count %}<p class="notifications-more">E mais {{ notes.hidden_count }}. Veja a Central de trabalho no painel do contrato.</p>{% endif %}
+            {% else %}
+              <p class="notifications-empty">Nenhuma pendência identificada nos dados cadastrados.</p>
+            {% endif %}
+          </div>
+        </details>
+        {% endwith %}
         <span class="user-avatar" aria-hidden="true">{{ request.user.get_short_name|first|upper }}</span>
         <span class="user-summary"><strong>{{ request.user.full_name }}</strong><small>{{ request.user.get_profile_display }}</small></span>
         {% if profile_switch_target %}<form class="profile-switch-form" method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button class="button-quiet profile-switch" type="submit">Atuar como {{ profile_switch_target }}</button></form>{% elif acting_as %}<form class="profile-switch-form" method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button class="button-quiet profile-switch" type="submit">Voltar a {{ acting_return }}</button></form>{% endif %}

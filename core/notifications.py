@@ -1,0 +1,196 @@
+"""Notificações do topo (sino): pendências dos contratos, uma a uma.
+
+Recurso trazido do sistema principal e adaptado à demonstração (Sprint 14).
+Não cria regra nova: cada aviso vem dos mesmos cálculos de
+`build_contract_dashboard`. Somente leitura; não grava dados.
+
+- Administrador: apenas solicitações de cadastro pendentes.
+- Demais perfis: contratos visíveis, ativos ou suspensos. Dentro das telas de
+  um contrato, somente aquele contrato é considerado, para que dados de
+  contratos diferentes não se misturem.
+- Quem pode alterar o contrato é levado ao registro exato para corrigir (OS,
+  NF, empenho, item ou contrato). Quem só consulta é levado ao painel
+  individual do contrato.
+"""
+
+from django.urls import reverse
+from django.utils.formats import number_format
+
+from accounts.models import RegistrationRequest, RegistrationStatus, UserProfile
+
+MAX_LISTED_NOTIFICATIONS = 30
+
+
+def _money(value):
+    return "R$ " + number_format(value, decimal_pos=2, use_l10n=True, force_grouping=True)
+
+
+def _percent(value):
+    return number_format(value, decimal_pos=2, use_l10n=True) + "%"
+
+
+def _date(value):
+    return f"{value:%d/%m/%Y}"
+
+
+def _plural(count, singular, plural):
+    return f"{count} {singular if count == 1 else plural}"
+
+
+def _contract_notifications(contract, dashboard, *, can_fix):
+    pk = contract.pk
+    panel_url = reverse("contracts:dashboard", args=[pk])
+    label = f"Contrato {contract.number}"
+    entries = []
+
+    def add(level, title, url, hint):
+        entries.append(
+            {
+                "level": level,
+                "title": title,
+                "contract": label,
+                "url": url if can_fix else panel_url,
+                "hint": hint if can_fix else "Ver no painel do contrato",
+            }
+        )
+
+    def work_order_url(work_order):
+        return reverse("contracts:work_order_detail", args=[pk, work_order.pk])
+
+    def invoice_url(invoice):
+        return reverse("contracts:invoice_detail", args=[pk, invoice.work_order_id, invoice.pk])
+
+    if dashboard.contract_is_expired:
+        add(
+            "danger",
+            f"A vigência do contrato terminou em {_date(contract.validity_end)}",
+            reverse("contracts:detail", args=[pk]),
+            "Abrir contrato",
+        )
+    for work_order in dashboard.overdue_work_orders:
+        add(
+            "danger",
+            f"OS {work_order.number} com prazo vencido ({_date(work_order.deadline)})",
+            work_order_url(work_order),
+            "Abrir OS para atualizar",
+        )
+    for attention in dashboard.divergent_invoices:
+        invoice = attention.invoice
+        add(
+            "danger",
+            f"NF {invoice.number}/{invoice.series} {attention.status_label.lower()}",
+            invoice_url(invoice),
+            "Abrir NF para conferir",
+        )
+    if dashboard.item_total != contract.current_value:
+        add(
+            "warning",
+            f"A soma dos itens ({_money(dashboard.item_total)}) diverge do valor atual "
+            f"do contrato ({_money(contract.current_value)})",
+            reverse("contracts:item_list", args=[pk]),
+            "Abrir itens para conferir",
+        )
+    if dashboard.contract_balance_is_low:
+        add(
+            "warning",
+            f"Saldo contratual abaixo de 20%: {_percent(dashboard.contract_balance_percentage)} disponível",
+            reverse("contracts:detail", args=[pk]),
+            "Abrir contrato",
+        )
+    for entry in dashboard.invoice_financial_deadlines:
+        invoice = entry.invoice
+        situation = "vencido" if entry.is_overdue else "a conferir"
+        add(
+            "danger" if entry.is_overdue else "warning",
+            f"Prazo de encaminhamento da NF {invoice.number}/{invoice.series}: "
+            f"{_date(entry.deadline)} ({situation})",
+            invoice_url(invoice),
+            "Abrir NF",
+        )
+    for alert in dashboard.low_commitments:
+        add(
+            "warning",
+            f"Empenho {alert.commitment.number} com saldo de {_money(alert.available)} "
+            f"({_percent(alert.percentage)})",
+            reverse("contracts:commitment_detail", args=[pk, alert.commitment.pk]),
+            "Abrir empenho",
+        )
+    for alert in dashboard.low_hour_items:
+        add(
+            "warning",
+            f"Item por hora {alert.item.number} com saldo abaixo de 20% "
+            f"({_percent(alert.percentage)})",
+            reverse("contracts:item_detail", args=[pk, alert.item.pk]),
+            "Abrir item",
+        )
+    for work_order in dashboard.work_orders_without_allocation:
+        add(
+            "warning",
+            f"OS {work_order.number} sem rateio ativo",
+            work_order_url(work_order),
+            "Abrir OS para cadastrar o rateio",
+        )
+    for work_order in dashboard.completed_work_orders_without_invoice:
+        add(
+            "warning",
+            f"OS {work_order.number} concluída sem NF",
+            work_order_url(work_order),
+            "Abrir OS para cadastrar a NF",
+        )
+    for attention in dashboard.pending_invoices:
+        invoice = attention.invoice
+        add(
+            "warning",
+            f"NF {invoice.number}/{invoice.series} pendente de conferência",
+            invoice_url(invoice),
+            "Abrir NF para conferir",
+        )
+    return entries
+
+
+def build_notifications(user, *, contract_id=None):
+    from contracts.dashboard import build_contract_dashboard
+    from contracts.models import ContractStatus
+    from contracts.services import contracts_visible_to, contracts_writable_by
+
+    entries = []
+    if user.has_perm("accounts.review_registration"):
+        pending = RegistrationRequest.objects.filter(status=RegistrationStatus.PENDING).count()
+        if pending:
+            entries.append(
+                {
+                    "level": "warning",
+                    "title": _plural(
+                        pending,
+                        "solicitação de cadastro pendente",
+                        "solicitações de cadastro pendentes",
+                    ),
+                    "contract": "Administração",
+                    "url": reverse("accounts_admin:registration_list"),
+                    "hint": "Abrir solicitações",
+                }
+            )
+
+    if user.profile != UserProfile.ADMINISTRATOR:
+        contracts = contracts_visible_to(user).filter(
+            status__in=(ContractStatus.ACTIVE, ContractStatus.SUSPENDED)
+        ).order_by("number", "pk")
+        if contract_id is not None:
+            contracts = contracts.filter(pk=contract_id)
+        writable_ids = set(contracts_writable_by(user).values_list("pk", flat=True))
+        for contract in contracts:
+            entries.extend(
+                _contract_notifications(
+                    contract,
+                    build_contract_dashboard(contract),
+                    can_fix=contract.pk in writable_ids,
+                )
+            )
+
+    # Itens críticos primeiro, preservando a ordem de cálculo dentro de cada nível.
+    entries.sort(key=lambda entry: 0 if entry["level"] == "danger" else 1)
+    return {
+        "count": len(entries),
+        "items": entries[:MAX_LISTED_NOTIFICATIONS],
+        "hidden_count": max(len(entries) - MAX_LISTED_NOTIFICATIONS, 0),
+    }
