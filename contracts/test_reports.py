@@ -136,6 +136,23 @@ class ContractReportTests(WorkOrderBase):
         self.assertContains(response, "Não constitui atesto")
         self.assertContains(response, "R$ 10.000,00")
 
+    def test_print_button_opens_auto_print_version_in_new_tab(self):
+        self.client.force_login(self.owner)
+        url = reverse("contracts:report", args=[self.contract.pk])
+        screen = self.client.get(url, {"section": "billing"})
+        self.assertContains(screen, "Imprimir / Salvar PDF")
+        self.assertContains(screen, 'target="_blank" rel="noopener"')
+        self.assertContains(screen, "print=1")
+        self.assertNotContains(screen, "data-auto-print")
+        self.assertNotContains(screen, "report_print.js")
+        printed = self.client.get(url, {"section": "billing", "print": "1"})
+        self.assertContains(printed, "<body data-auto-print>", html=False)
+        self.assertContains(printed, "contracts/report_print.js")
+        self.assertContains(printed, "@page { size: landscape; margin: 10mm; }")
+        self.assertContains(printed, "Salvar como PDF")
+        self.assertContains(printed, '<p class="help no-print">Versão preparada para impressão', html=False)
+        self.assertNotContains(printed, "Imprimir / Salvar PDF")
+
     def test_invalid_filter_is_explained_without_server_error(self):
         self.client.force_login(self.owner)
         response = self.client.get(
