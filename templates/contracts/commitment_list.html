@@ -18,11 +18,11 @@
             <td>{{ commitment.fiscal_year|unlocalize }}</td>
             <td>{{ commitment.ped }}</td>
             <td>{{ commitment.commitment_date|date:"d/m/Y" }}</td>
-            <td>R$ {{ commitment.initial_value|localize }}</td>
-            <td>R$ {{ totals.0|localize }}</td>
-            <td>R$ {{ breakdown.cancellations|localize }}</td>
-            <td>R$ {{ breakdown.reversals|localize }}</td>
-            <td>R$ {{ commitment.current_value|localize }}</td>
+            <td>R$&nbsp;{{ commitment.initial_value|localize }}</td>
+            <td>R$&nbsp;{{ totals.0|localize }}</td>
+            <td>R$&nbsp;{{ breakdown.cancellations|localize }}</td>
+            <td>R$&nbsp;{{ breakdown.reversals|localize }}</td>
+            <td>R$&nbsp;{{ commitment.current_value|localize }}</td>
             <td>{% if commitment.closed_for_new_allocations_at %}Encerrados em {{ commitment.closed_for_new_allocations_at|date:"d/m/Y" }}{% else %}Permitidos{% endif %}</td>
             <td>{% if commitment.is_active %}<span class="status-pill status-success">Ativo</span>{% else %}<span class="status-pill status-neutral">Inativo</span>{% endif %}</td>
             <td><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:commitment_detail' contract.pk commitment.pk %}">Abrir</a></td>

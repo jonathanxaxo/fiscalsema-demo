@@ -18,8 +18,8 @@
           <td>{{ work_order.annual_period_context.calendar.label|default:"Fora da vigência" }}</td>
           <td>{{ work_order.annual_period_context.contract.label|default:"Fora da vigência" }}</td>
           <td>{{ work_order.measure|quantidade }} {{ work_order.unit_name }}</td>
-          <td>R$ {{ work_order.unit_value|localize }}</td>
-          <td>R$ {{ work_order.total_value|localize }}</td>
+          <td>R$&nbsp;{{ work_order.unit_value|localize }}</td>
+          <td>R$&nbsp;{{ work_order.total_value|localize }}</td>
           <td>{{ work_order.deadline|date:"d/m/Y"|default:"—" }}</td>
           <td><span class="status-pill {% if work_order.status == 'EM_EXECUCAO' or work_order.status == 'CONCLUIDA' %}status-success{% elif work_order.status == 'SUSPENSA' %}status-warning{% elif work_order.status == 'CANCELADA' %}status-danger{% else %}status-neutral{% endif %}">{{ work_order.get_status_display }}</span></td>
           <td><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Abrir</a></td>

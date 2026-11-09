@@ -14,9 +14,9 @@
     <dt>CNPJ/CPF</dt><dd>{{ invoice.supplier_tax_id|cnpj_cpf }}</dd>
     <dt>Emissão</dt><dd>{{ invoice.issue_date|date:"d/m/Y" }}</dd>
     <dt>Competência</dt><dd>{{ invoice.competence }}</dd>
-    <dt>Valor bruto</dt><dd>R$ {{ invoice.gross_value|localize }}</dd>
-    <dt>Glosa</dt><dd>R$ {{ invoice.deduction_value|localize }}</dd>
-    <dt>Valor aceito</dt><dd>R$ {{ invoice.accepted_value|localize }}</dd>
+    <dt>Valor bruto</dt><dd>R$&nbsp;{{ invoice.gross_value|localize }}</dd>
+    <dt>Glosa</dt><dd>R$&nbsp;{{ invoice.deduction_value|localize }}</dd>
+    <dt>Valor aceito</dt><dd>R$&nbsp;{{ invoice.accepted_value|localize }}</dd>
     <dt>Processo</dt><dd>{{ invoice.process_number|default:"—" }}</dd>
     <dt>Status informado</dt><dd>{{ invoice.status }}</dd>
     <dt>Referência do documento</dt><dd>{{ invoice.document_reference|default:"—" }}</dd>
@@ -25,11 +25,11 @@
   </dl>
   <h2>Limite objetivo da OS após esta inclusão</h2>
   <dl>
-    <dt>Valor da OS</dt><dd>R$ {{ invoice_position.work_order_value.value|localize }}</dd>
-    <dt>Total antes desta NF</dt><dd>R$ {{ total_before_invoice|localize }}</dd>
-    <dt>Valor bruto desta NF</dt><dd>R$ {{ invoice.gross_value|localize }}</dd>
-    <dt>Total após inclusão</dt><dd>R$ {{ invoice_position.invoiced_gross_value.value|localize }}</dd>
-    <dt>Saldo faturável objetivo</dt><dd>R$ {{ invoice_position.billable_balance.value|localize }}</dd>
+    <dt>Valor da OS</dt><dd>R$&nbsp;{{ invoice_position.work_order_value.value|localize }}</dd>
+    <dt>Total antes desta NF</dt><dd>R$&nbsp;{{ total_before_invoice|localize }}</dd>
+    <dt>Valor bruto desta NF</dt><dd>R$&nbsp;{{ invoice.gross_value|localize }}</dd>
+    <dt>Total após inclusão</dt><dd>R$&nbsp;{{ invoice_position.invoiced_gross_value.value|localize }}</dd>
+    <dt>Saldo faturável objetivo</dt><dd>R$&nbsp;{{ invoice_position.billable_balance.value|localize }}</dd>
   </dl>
   <h2>Conferência determinística</h2>
   <p><strong>Resultado geral:</strong> <span class="status-pill {{ check_report.overall_status|tom_conferencia }}">{{ check_report.overall_status|status_conferencia }}</span></p>
@@ -50,16 +50,16 @@
     <p class="warning">Possível duplicidade detectada. Isto não é confirmação automática; revise:</p>
     <ul>
       {% for duplicate in possible_duplicates %}
-        <li><a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk duplicate.pk %}">NF {{ duplicate.number }}/{{ duplicate.series }} — R$ {{ duplicate.gross_value|localize }}</a></li>
+        <li><a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk duplicate.pk %}">NF {{ duplicate.number }}/{{ duplicate.series }} — R$&nbsp;{{ duplicate.gross_value|localize }}</a></li>
       {% endfor %}
     </ul>
   {% endif %}
   <p class="warning">A fórmula definitiva entre valor bruto, glosa e valor aceito ainda depende de confirmação. Nenhum pagamento é inferido desta NF.</p>
   <h2>Pagamentos</h2>
   <dl>
-    <dt>Limite provisório</dt><dd>R$ {{ payment_position.provisional_payable_limit.value|localize }}</dd>
-    <dt>Total pago</dt><dd>R$ {{ payment_position.paid_total.value|localize }}</dd>
-    <dt>Saldo provisório</dt><dd>R$ {{ payment_position.payment_balance.value|localize }}</dd>
+    <dt>Limite provisório</dt><dd>R$&nbsp;{{ payment_position.provisional_payable_limit.value|localize }}</dd>
+    <dt>Total pago</dt><dd>R$&nbsp;{{ payment_position.paid_total.value|localize }}</dd>
+    <dt>Saldo provisório</dt><dd>R$&nbsp;{{ payment_position.payment_balance.value|localize }}</dd>
   </dl>
   {% if payments %}
     <table>
@@ -68,7 +68,7 @@
         {% for payment in payments %}
           <tr>
             <td><a href="{% url 'contracts:payment_detail' contract.pk work_order.pk invoice.pk payment.pk %}">{{ payment.payment_date|date:"d/m/Y" }}</a></td>
-            <td>R$ {{ payment.amount|localize }}</td><td>{{ payment.status }}</td><td>{{ payment.process_number|default:"—" }}</td>
+            <td>R$&nbsp;{{ payment.amount|localize }}</td><td>{{ payment.status }}</td><td>{{ payment.process_number|default:"—" }}</td>
           </tr>
         {% endfor %}
       </tbody>

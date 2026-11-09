@@ -13,8 +13,8 @@
   <div class="summary-strip" aria-label="Resumo do contrato">
     <div><small>Fiscal responsável</small><strong>{{ contract.responsible_fiscal.full_name }}</strong></div>
     <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</strong></div>
-    <div><small>Valor atual</small><strong>R$ {{ contract.current_value|localize }}</strong></div>
-    <div><small>Saldo contratual</small><strong>R$ {{ financial_position.contract_balance.value|localize }}</strong></div>
+    <div><small>Valor atual</small><strong>R$&nbsp;{{ contract.current_value|localize }}</strong></div>
+    <div><small>Saldo contratual</small><strong>R$&nbsp;{{ financial_position.contract_balance.value|localize }}</strong></div>
   </div>
   <nav class="action-groups" aria-label="Ações do contrato">
     <section class="action-cluster"><h2>Operação</h2><p>Cadastros e acompanhamento da execução contratual.</p><div class="action-list"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:item_list' contract.pk %}">Itens</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:commitment_list' contract.pk %}">Empenhos</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_list' contract.pk %}">Ordens de serviço</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:table_mode' contract.pk %}">Modo tabela</a>{% if file_features_enabled %}<a class="button-link button-link-secondary button-link-small" href="{% url 'documents:list' contract.pk %}">Documentos</a>{% if can_edit %}<a class="button-link button-link-secondary button-link-small" href="{% url 'data_imports:upload' contract.pk %}">Importar planilha</a>{% endif %}{% endif %}</div></section>
@@ -29,14 +29,14 @@
     <dt>CNPJ/CPF</dt><dd>{{ contract.supplier_tax_id|cnpj_cpf }}</dd>
     <dt>Assinatura</dt><dd>{{ contract.signature_date|date:"d/m/Y" }}</dd>
     <dt>Vigência</dt><dd>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</dd>
-    <dt>Valor original</dt><dd>R$ {{ contract.original_value|localize }}</dd>
-    <dt>Valor atual</dt><dd>R$ {{ contract.current_value|localize }}</dd>
-    <dt>Total empenhado ativo</dt><dd>R$ {{ financial_position.total_committed_budget.value|localize }}</dd>
-    <dt>Valor comprometido por OS</dt><dd>R$ {{ financial_position.committed_value.value|localize }}</dd>
-    <dt>Valor executado</dt><dd>R$ {{ financial_position.executed_value.value|localize }}</dd>
-    <dt>Total bruto de Notas Fiscais</dt><dd>R$ {{ financial_position.invoiced_gross_value.value|localize }}</dd>
-    <dt>Total pago</dt><dd>R$ {{ financial_position.paid_value.value|localize }}</dd>
-    <dt>Saldo contratual</dt><dd>R$ {{ financial_position.contract_balance.value|localize }}</dd>
+    <dt>Valor original</dt><dd>R$&nbsp;{{ contract.original_value|localize }}</dd>
+    <dt>Valor atual</dt><dd>R$&nbsp;{{ contract.current_value|localize }}</dd>
+    <dt>Total empenhado ativo</dt><dd>R$&nbsp;{{ financial_position.total_committed_budget.value|localize }}</dd>
+    <dt>Valor comprometido por OS</dt><dd>R$&nbsp;{{ financial_position.committed_value.value|localize }}</dd>
+    <dt>Valor executado</dt><dd>R$&nbsp;{{ financial_position.executed_value.value|localize }}</dd>
+    <dt>Total bruto de Notas Fiscais</dt><dd>R$&nbsp;{{ financial_position.invoiced_gross_value.value|localize }}</dd>
+    <dt>Total pago</dt><dd>R$&nbsp;{{ financial_position.paid_value.value|localize }}</dd>
+    <dt>Saldo contratual</dt><dd>R$&nbsp;{{ financial_position.contract_balance.value|localize }}</dd>
     <dt>Status</dt><dd>{{ contract.get_status_display }}</dd>
     {% if contract.closed_at %}
       <dt>Encerrado em</dt><dd>{{ contract.closed_at|date:"d/m/Y H:i" }}</dd>
@@ -52,31 +52,31 @@
   <h2>Composição do total empenhado</h2>
   <ul>
     {% for evidence in financial_position.total_committed_budget.evidence %}
-      <li>{{ evidence.description }}: R$ {{ evidence.value|localize }}</li>
+      <li>{{ evidence.description }}: R$&nbsp;{{ evidence.value|localize }}</li>
     {% empty %}<li>Nenhum empenho ativo compõe o total.</li>{% endfor %}
   </ul>
   <h2 id="composicao-executado">Composição do valor executado</h2>
   <ul>
     {% for evidence in financial_position.executed_value.evidence %}
-      <li>{{ evidence.description }}: R$ {{ evidence.value|localize }}</li>
+      <li>{{ evidence.description }}: R$&nbsp;{{ evidence.value|localize }}</li>
     {% empty %}<li>Nenhum registro de execução compõe o total.</li>{% endfor %}
   </ul>
   <h2 id="composicao-faturado">Composição do total bruto de Notas Fiscais</h2>
   <ul>
     {% for evidence in financial_position.invoiced_gross_value.evidence %}
-      <li>{{ evidence.description }}: R$ {{ evidence.value|localize }}</li>
+      <li>{{ evidence.description }}: R$&nbsp;{{ evidence.value|localize }}</li>
     {% empty %}<li>Nenhuma Nota Fiscal compõe o total.</li>{% endfor %}
   </ul>
   <h2 id="composicao-pago">Composição do total pago</h2>
   <ul>
     {% for evidence in financial_position.paid_value.evidence %}
-      <li>{{ evidence.description }}: R$ {{ evidence.value|localize }}</li>
+      <li>{{ evidence.description }}: R$&nbsp;{{ evidence.value|localize }}</li>
     {% empty %}<li>Nenhum pagamento compõe o total.</li>{% endfor %}
   </ul>
   <h2 id="composicao-comprometido">Composição do valor comprometido</h2>
   <ul>
     {% for evidence in financial_position.committed_value.evidence %}
-      <li>{{ evidence.description }}: R$ {{ evidence.value|localize }}</li>
+      <li>{{ evidence.description }}: R$&nbsp;{{ evidence.value|localize }}</li>
     {% empty %}<li>Nenhuma OS em estado financeiro confirmado compõe o comprometido.</li>{% endfor %}
   </ul>
   <p class="helptext">O comprometimento por empenho é calculado a partir dos rateios das OS. Estados de OS ainda sem decisão financeira não são presumidos.</p>

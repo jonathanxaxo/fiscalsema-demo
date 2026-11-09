@@ -12,13 +12,13 @@
       <dt>PED</dt><dd>{{ commitment.ped }}</dd>
       <dt>Data</dt><dd>{{ commitment.commitment_date|date:"d/m/Y" }}</dd>
       <dt>Fonte</dt><dd>{{ commitment.source }}</dd>
-      <dt>Valor inicial</dt><dd>R$ {{ commitment.initial_value|localize }}</dd>
-      <dt>Reforços</dt><dd>R$ {{ totals.0|localize }}</dd>
-      <dt>Anulações</dt><dd>R$ {{ breakdown.cancellations|localize }}</dd>
-      <dt>Estornos de saldo</dt><dd>R$ {{ breakdown.reversals|localize }}</dd>
-      <dt>Valor atual derivado</dt><dd>R$ {{ commitment.current_value|localize }}</dd>
-      <dt>Valor comprometido</dt><dd>R$ {{ financial_position.committed_value.value|localize }}</dd>
-      <dt>Saldo disponível</dt><dd>R$ {{ financial_position.available_balance.value|localize }}</dd>
+      <dt>Valor inicial</dt><dd>R$&nbsp;{{ commitment.initial_value|localize }}</dd>
+      <dt>Reforços</dt><dd>R$&nbsp;{{ totals.0|localize }}</dd>
+      <dt>Anulações</dt><dd>R$&nbsp;{{ breakdown.cancellations|localize }}</dd>
+      <dt>Estornos de saldo</dt><dd>R$&nbsp;{{ breakdown.reversals|localize }}</dd>
+      <dt>Valor atual derivado</dt><dd>R$&nbsp;{{ commitment.current_value|localize }}</dd>
+      <dt>Valor comprometido</dt><dd>R$&nbsp;{{ financial_position.committed_value.value|localize }}</dd>
+      <dt>Saldo disponível</dt><dd>R$&nbsp;{{ financial_position.available_balance.value|localize }}</dd>
       <dt>Status</dt><dd>{% if commitment.is_active %}Ativo{% else %}Inativo{% endif %}</dd>
       <dt>Novos rateios</dt><dd>{% if commitment.closed_for_new_allocations_at %}Encerrados por estorno em {{ commitment.closed_for_new_allocations_at|date:"d/m/Y" }}{% else %}Permitidos enquanto houver saldo e autorização{% endif %}</dd>
       <dt>Observação</dt><dd>{{ commitment.notes|default:"—" }}</dd>
@@ -29,7 +29,7 @@
     <thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Documento oficial</th><th>Responsável</th><th>Observação</th></tr></thead>
     <tbody>
       {% for movement in commitment.movements.all %}
-        <tr><td>{{ movement.movement_date|date:"d/m/Y" }}</td><td>{{ movement.get_movement_type_display }}</td><td>R$ {{ movement.amount|localize }}</td><td>{{ movement.document_reference|default:"—" }}</td><td>{{ movement.created_by|default:"—" }}</td><td>{{ movement.notes|default:"—" }}</td></tr>
+        <tr><td>{{ movement.movement_date|date:"d/m/Y" }}</td><td>{{ movement.get_movement_type_display }}</td><td>R$&nbsp;{{ movement.amount|localize }}</td><td>{{ movement.document_reference|default:"—" }}</td><td>{{ movement.created_by|default:"—" }}</td><td>{{ movement.notes|default:"—" }}</td></tr>
       {% empty %}<tr><td colspan="6">Nenhum reforço, anulação ou estorno registrado.</td></tr>{% endfor %}
     </tbody>
   </table>
@@ -38,7 +38,7 @@
     <thead><tr><th>Data</th><th>OS</th><th>Valor</th><th>Status</th></tr></thead>
     <tbody>
       {% for allocation in commitment.allocations.all %}
-        <tr><td>{{ allocation.allocation_date|date:"d/m/Y" }}</td><td><a href="{% url 'contracts:work_order_detail' contract.pk allocation.work_order_id %}">{{ allocation.work_order.number }}</a></td><td>R$ {{ allocation.amount|localize }}</td><td>{{ allocation.get_status_display }}</td></tr>
+        <tr><td>{{ allocation.allocation_date|date:"d/m/Y" }}</td><td><a href="{% url 'contracts:work_order_detail' contract.pk allocation.work_order_id %}">{{ allocation.work_order.number }}</a></td><td>R$&nbsp;{{ allocation.amount|localize }}</td><td>{{ allocation.get_status_display }}</td></tr>
       {% empty %}<tr><td colspan="4">Nenhum rateio registrado.</td></tr>{% endfor %}
     </tbody>
   </table>

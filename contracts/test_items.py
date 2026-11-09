@@ -210,9 +210,9 @@ class ContractItemAccessTests(TestCase):
             reverse("contracts:item_list", args=[self.contract.pk])
         )
 
-        self.assertContains(detail, "R$ 25.000,00")
+        self.assertContains(detail, "R$&nbsp;25.000,00")
         self.assertNotContains(detail, "25.000,000000")
-        self.assertContains(listing, "R$ 25.000,00")
+        self.assertContains(listing, "R$&nbsp;25.000,00")
         self.assertNotContains(listing, "25.000,000000")
 
     def test_other_fiscal_cannot_discover_or_change_item(self):

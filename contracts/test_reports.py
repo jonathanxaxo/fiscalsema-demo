@@ -134,7 +134,7 @@ class ContractReportTests(WorkOrderBase):
         self.assertContains(response, "Notas Fiscais")
         self.assertNotContains(response, "Gerar relatório")
         self.assertContains(response, "Não constitui atesto")
-        self.assertContains(response, "R$ 10.000,00")
+        self.assertContains(response, "R$&nbsp;10.000,00")
 
     def test_print_button_opens_auto_print_version_in_new_tab(self):
         self.client.force_login(self.owner)
