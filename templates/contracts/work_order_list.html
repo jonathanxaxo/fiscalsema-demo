@@ -13,7 +13,7 @@
     <tbody>
       {% for work_order in work_orders %}
         <tr>
-          <td>{{ work_order.number }}</td>
+          <td>{{ work_order.number }}{% if work_order.monthly_follow_up or work_order.item.unit == "MES" %} <span class="status-pill status-warning">Mensal</span>{% endif %}</td>
           <td>{{ work_order.item.number }}</td>
           <td>{{ work_order.annual_period_context.calendar.label|default:"Fora da vigência" }}</td>
           <td>{{ work_order.annual_period_context.contract.label|default:"Fora da vigência" }}</td>

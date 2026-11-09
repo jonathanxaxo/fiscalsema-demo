@@ -145,6 +145,17 @@ def _contract_notifications(contract, dashboard, *, can_fix):
             invoice_url(invoice),
             "Abrir NF para conferir",
         )
+    # Acompanhamento mensal (Sprint 19): só o que ainda pede ação; o verde não notifica.
+    for monthly in dashboard.monthly_work_order_attentions:
+        if monthly.tone == "success":
+            continue
+        add(
+            monthly.tone,
+            f"OS {monthly.work_order.number} (mensal) — competência {monthly.competence}: "
+            f"{monthly.state}",
+            work_order_url(monthly.work_order),
+            "Abrir OS para atualizar o mês",
+        )
     return entries
 
 

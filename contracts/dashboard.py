@@ -105,6 +105,70 @@ class AnnualItemLimitSummary:
 
 
 @dataclass(frozen=True)
+class MonthlyWorkOrderAttention:
+    work_order: object
+    competence: str
+    state: str
+    tone: str
+    source: str
+
+
+def work_order_requires_monthly_follow_up(work_order):
+    return work_order.monthly_follow_up or work_order.item.unit == ContractItemUnit.MONTH
+
+
+def _monthly_work_order_attentions(work_orders, *, today):
+    """Situação da competência do mês atual das OS com acompanhamento mensal.
+
+    Regra trazida do sistema principal (Sprint 19). Somente leitura: o aviso não
+    autoriza pagamento nem substitui Atesto, RAER ou Termo de Homologação.
+    """
+    competence = f"{today.month:02d}/{today.year}"
+    attentions = []
+    for work_order in work_orders:
+        if (
+            not work_order_requires_monthly_follow_up(work_order)
+            or work_order.status not in OPEN_WORK_ORDER_STATUSES
+        ):
+            continue
+        executions = [e for e in work_order.executions.all() if e.competence == competence]
+        invoices = [i for i in work_order.invoices.all() if i.competence == competence]
+        payments = [
+            payment
+            for invoice in invoices
+            for payment in invoice.payments.all()
+            if payment.competence == competence
+        ]
+        if work_order.status == WorkOrderStatus.SUSPENDED:
+            state, tone = "OS suspensa; conferir providência e vigência", "warning"
+        elif payments:
+            state, tone = "Pagamento registrado para a competência", "success"
+        elif invoices:
+            state, tone = (
+                "NF cadastrada; conferir Atesto, RAER, homologação e pagamento",
+                "warning",
+            )
+        elif executions:
+            state, tone = "Execução atualizada; aguardando NF e conferência documental", "warning"
+        else:
+            state, tone = "Atualização da competência pendente", "danger"
+        attentions.append(
+            MonthlyWorkOrderAttention(
+                work_order=work_order,
+                competence=competence,
+                state=state,
+                tone=tone,
+                source=(
+                    "marcação explícita da OS"
+                    if work_order.monthly_follow_up
+                    else "unidade contratual Mês"
+                ),
+            )
+        )
+    return tuple(attentions)
+
+
+@dataclass(frozen=True)
 class DashboardSnapshot:
     contract: object
     financial_position: object
@@ -137,6 +201,7 @@ class DashboardSnapshot:
     annual_item_limits: tuple[AnnualItemLimitSummary, ...]
     current_calendar_period: object | None
     current_contract_year: object | None
+    monthly_work_order_attentions: tuple[MonthlyWorkOrderAttention, ...] = ()
 
     @property
     def attention_count(self):
@@ -218,7 +283,7 @@ def build_contract_dashboard(contract, *, today=None):
 
     work_orders = tuple(
         contract.work_orders.select_related("item").prefetch_related(
-            "allocations", "invoices", "executions"
+            "allocations", "invoices__payments", "executions"
         )
     )
     open_work_orders = tuple(
@@ -478,4 +543,5 @@ def build_contract_dashboard(contract, *, today=None):
         annual_item_limits=annual_item_limits,
         current_calendar_period=period_for_date(calendar_periods, today),
         current_contract_year=period_for_date(contract_periods, today),
+        monthly_work_order_attentions=_monthly_work_order_attentions(work_orders, today=today),
     )

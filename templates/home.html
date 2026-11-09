@@ -74,6 +74,16 @@
       {% if not dashboard.contract_is_expired %}<p class="muted attention-footnote">Próximo prazo contratual cadastrado: fim da vigência em {{ selected_contract.validity_end|date:"d/m/Y" }}. Não foi presumida uma janela de “vencimento próximo”.</p>{% endif %}
     </section>
 
+    {% if dashboard.monthly_work_order_attentions %}
+    <section class="surface" id="acompanhamento-mensal" aria-labelledby="mensal-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Competência {{ dashboard.monthly_work_order_attentions.0.competence }}</span><h2 id="mensal-titulo">Acompanhamento mensal de OS</h2></div><span class="section-hint">OS marcadas pelo Fiscal ou com item de unidade Mês</span></div>
+      <ul class="attention-list">
+        {% for entry in dashboard.monthly_work_order_attentions %}<li class="attention-{{ entry.tone }}"><span><strong>OS {{ entry.work_order.number }}</strong> — {{ entry.state }}.<small class="table-note">Situação da OS: {{ entry.work_order.get_status_display }}. Origem: {{ entry.source }}.</small></span><a href="{% url 'contracts:work_order_detail' selected_contract.pk entry.work_order.pk %}">Abrir OS</a></li>{% endfor %}
+      </ul>
+      <p class="muted attention-footnote">O aviso não autoriza pagamento e não substitui Atesto, RAER ou Termo de Homologação.</p>
+    </section>
+    {% endif %}
+
     <div class="dashboard-columns">
       <section class="surface" id="prazos" aria-labelledby="operacional-titulo">
         <div class="section-heading"><div><span class="eyebrow">Execução</span><h2 id="operacional-titulo">Ordens de Serviço</h2></div><a href="{% url 'contracts:work_order_list' selected_contract.pk %}">Ver todas</a></div>
