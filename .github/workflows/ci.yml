@@ -71,5 +71,8 @@ jobs:
       - name: Auditar segredos e dados reais
         run: python scripts/security/scan_repository.py
 
+      - name: Testar adaptador MCP
+        run: python -m unittest scripts.test_mcp_server
+
       - name: Executar testes integrais
         run: python manage.py test --settings=core.settings_test --noinput --verbosity=1

@@ -44,3 +44,5 @@ documental das entregas anteriores.
   abertura automática e página em paisagem.
 - `sprint-16-padrao-botoes`: padrão único de botões (40/34 px), relatório no
   layout do sistema e conferência de NF com texto legível.
+- `sprint-17-workflow-ia-mcp`: API, adaptador MCP, proposta não executada,
+  aprovação humana, matriz de autonomia, testes e roteiro de apresentação.

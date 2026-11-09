@@ -6,26 +6,34 @@
     <div class="page-header-actions"><a class="button-link button-link-secondary" href="{% url 'assistant_drafts:list' %}">Voltar aos rascunhos</a></div>
   </header>
   {% for message in messages %}<p class="notice"><strong>{{ message }}</strong></p>{% endfor %}
+  {% if draft.status == 'PENDENTE' %}
+    <p class="warning"><strong>NÃO EXECUTADO:</strong> esta é apenas uma proposta da IA. Somente uma decisão humana autenticada pode autorizar a gravação.</p>
+  {% elif draft.target_id %}
+    <p class="notice"><strong>Executado após confirmação humana</strong> por {{ draft.reviewed_by }} em {{ draft.reviewed_at }}.</p>
+  {% else %}
+    <p class="notice"><strong>Não executado:</strong> a proposta foi rejeitada por {{ draft.reviewed_by }} em {{ draft.reviewed_at }}.</p>
+  {% endif %}
   <dl>
     <dt>Lote</dt><dd>{{ draft.batch_id }}</dd>
     <dt>Origem</dt><dd>{{ draft.source_summary }}</dd>
     <dt>Autoridade</dt><dd>{{ draft.get_source_authority_display }}</dd>
     <dt>Confiança</dt><dd>{{ draft.get_confidence_level_display }}</dd>
+    <dt>Revisão humana</dt><dd>{% if draft.reviewed_by %}{{ draft.reviewed_by }} — {{ draft.reviewed_at }}{% else %}Pendente{% endif %}</dd>
   </dl>
   <h2>Dados propostos</h2><pre class="code-block">{{ payload_json }}</pre>
-  <h2>Comparação com o sistema</h2><pre class="code-block">{{ comparison_json }}</pre>
+  <h2>Comparação: estado atual e proposta</h2><pre class="code-block">{{ comparison_json }}</pre>
   <h2>Fontes e evidências</h2><pre class="code-block">{{ evidence_json }}</pre>
   {% if draft.status == 'PENDENTE' %}
-    <p class="warning"><strong>Atenção:</strong> confirmar executará novamente permissões, regras financeiras, saldos, constraints e concorrência.</p>
-    <form method="post" action="{% url 'assistant_drafts:confirm' draft.pk %}">{% csrf_token %}<button type="submit">Confirmar e gravar</button></form>
+    <p class="warning"><strong>Atenção:</strong> confirmar reavaliará permissões, regras financeiras, saldos, constraints e concorrência no backend.</p>
+    <form method="post" action="{% url 'assistant_drafts:confirm' draft.pk %}">{% csrf_token %}<button type="submit">Aprovar e executar</button></form>
     <section class="confirmation-panel confirmation-panel-danger subsection">
-      <h2>Rejeitar</h2>
+      <h2>Rejeitar sem executar</h2>
       <form method="post" action="{% url 'assistant_drafts:reject' draft.pk %}">{% csrf_token %}<label for="reason">Motivo</label><textarea id="reason" name="reason" required></textarea><button class="button-link-danger" type="submit">Rejeitar rascunho</button></form>
     </section>
   {% elif draft.target_id %}
     <p class="notice"><strong>Registro gravado:</strong> {{ draft.target_model }} #{{ draft.target_id }}</p>
-    <h2>Verificação de consistência</h2><pre class="code-block">{{ consistency_json }}</pre>
+    <h2>Resultado e verificação de consistência</h2><pre class="code-block">{{ consistency_json }}</pre>
   {% else %}
-    <p class="notice"><strong>Motivo:</strong> {{ draft.rejection_reason }}</p>
+    <p class="notice"><strong>Motivo da rejeição:</strong> {{ draft.rejection_reason }}</p>
   {% endif %}
 {% endblock %}
