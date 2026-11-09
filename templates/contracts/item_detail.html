@@ -14,14 +14,14 @@
     <dt>Quantidade operacional total</dt><dd>{{ item.contracted_quantity|quantidade }}</dd>
     <dt>Referência por ano contratual</dt><dd>{% if item.annual_reference_quantity is not None %}{{ item.annual_reference_quantity|floatformat:"-7" }} {{ item.annual_reference_unit|default:item.unit_display }}{% else %}—{% endif %}</dd>
     <dt>Limite de OS por ano contratual</dt><dd>{% if item.annual_operational_limit is not None %}{{ item.annual_operational_limit|floatformat:"-4" }} {{ item.unit_display }}{% else %}Pendente de definição na fonte oficial{% endif %}</dd>
-    <dt>Valor unitário</dt><dd>R$ {{ item.unit_value|localize }}</dd>
-    <dt>Valor total derivado</dt><dd>R$ {{ item.total_value|localize }}</dd>
+    <dt>Valor unitário</dt><dd>R$&nbsp;{{ item.unit_value|localize }}</dd>
+    <dt>Valor total derivado</dt><dd>R$&nbsp;{{ item.total_value|localize }}</dd>
     <dt>Regra de cálculo</dt><dd>{{ item.calculation_rule|default:"—" }}</dd>
     <dt>Fonte de referência</dt><dd>{{ item.source_reference|default:"—" }}</dd>
     <dt>Quantidade utilizada</dt><dd>{{ financial_position.used_quantity.value|quantidade }}</dd>
     <dt>Saldo quantitativo</dt><dd>{{ financial_position.quantity_balance.value|quantidade }}</dd>
-    <dt>Valor utilizado</dt><dd>R$ {{ financial_position.used_value.value|localize }}</dd>
-    <dt>Saldo financeiro</dt><dd>R$ {{ financial_position.financial_balance.value|localize }}</dd>
+    <dt>Valor utilizado</dt><dd>R$&nbsp;{{ financial_position.used_value.value|localize }}</dd>
+    <dt>Saldo financeiro</dt><dd>R$&nbsp;{{ financial_position.financial_balance.value|localize }}</dd>
     <dt>Status</dt><dd>{% if item.is_active %}Ativo{% else %}Inativo{% endif %}</dd>
   </dl>
   <h2>Composição da quantidade utilizada</h2>
@@ -33,7 +33,7 @@
   <h2>Composição do valor utilizado</h2>
   <ul>
     {% for evidence in financial_position.used_value.evidence %}
-      <li>{{ evidence.description }}: R$ {{ evidence.value|localize }}</li>
+      <li>{{ evidence.description }}: R$&nbsp;{{ evidence.value|localize }}</li>
     {% empty %}<li>Nenhum registro de execução compõe o valor utilizado.</li>{% endfor %}
   </ul>
   <p class="helptext">Os saldos são derivados dos registros de execução e nunca armazenados como valores editáveis.</p>

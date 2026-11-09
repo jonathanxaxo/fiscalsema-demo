@@ -374,3 +374,11 @@ td a { font-weight: 700; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+/* Sprint 18: valores em R$ sem quebra. O valor fica em uma linha e a letra se
+   ajusta à largura do quadro, para todos os quadros ficarem iguais. */
+.kpi-card, .metric-card, .summary-strip > div { container-type: inline-size; }
+.kpi-card strong, .metric-card strong, .summary-strip strong { white-space: nowrap; overflow-wrap: normal; font-variant-numeric: tabular-nums; }
+.kpi-card strong { font-size: min(1.28rem, 9.4cqi); }
+.metric-card strong { font-size: min(1.22rem, 9.4cqi); }
+.summary-strip strong { font-size: min(1rem, 9.4cqi); }

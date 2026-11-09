@@ -12,10 +12,10 @@
     <dt>Quantidade</dt><dd>{{ work_order.quantity|quantidade|default:"—" }}</dd>
     <dt>Horas</dt><dd>{{ work_order.hours|quantidade|default:"—" }}</dd>
     <dt>Unidade de referência</dt><dd>{{ work_order.unit_name }}</dd>
-    <dt>Valor unitário de referência</dt><dd>R$ {{ work_order.unit_value|localize }}</dd>
-    <dt>Valor unitário atual do item</dt><dd>R$ {{ work_order.item.unit_value|localize }}</dd>
-    <dt>Diferença para o item atual</dt><dd>R$ {{ work_order.current_item_value_difference|localize }}</dd>
-    <dt>Valor total derivado</dt><dd>R$ {{ work_order.total_value|localize }}</dd>
+    <dt>Valor unitário de referência</dt><dd>R$&nbsp;{{ work_order.unit_value|localize }}</dd>
+    <dt>Valor unitário atual do item</dt><dd>R$&nbsp;{{ work_order.item.unit_value|localize }}</dd>
+    <dt>Diferença para o item atual</dt><dd>R$&nbsp;{{ work_order.current_item_value_difference|localize }}</dd>
+    <dt>Valor total derivado</dt><dd>R$&nbsp;{{ work_order.total_value|localize }}</dd>
     <dt>Responsável</dt><dd>{{ work_order.responsible }}</dd>
     <dt>Abertura</dt><dd>{{ work_order.opening_date|date:"d/m/Y" }}</dd>
     <dt>Fechamento civil</dt><dd>{% if work_order.annual_period_context.calendar %}{{ work_order.annual_period_context.calendar.label }} — {{ work_order.annual_period_context.calendar.start_date|date:"d/m/Y" }} a {{ work_order.annual_period_context.calendar.end_date|date:"d/m/Y" }}{% else %}Fora da vigência{% endif %}</dd>
@@ -42,8 +42,8 @@
   {% endif %}
   <h2>Rateios</h2>
   <dl>
-    <dt>Total ativo rateado</dt><dd>R$ {{ active_allocated|localize }}</dd>
-    <dt>Saldo da OS a ratear</dt><dd>R$ {{ allocation_balance|localize }}</dd>
+    <dt>Total ativo rateado</dt><dd>R$&nbsp;{{ active_allocated|localize }}</dd>
+    <dt>Saldo da OS a ratear</dt><dd>R$&nbsp;{{ allocation_balance|localize }}</dd>
   </dl>
   <table>
     <thead><tr><th>Data</th><th>Empenho</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
@@ -52,7 +52,7 @@
         <tr>
           <td>{{ allocation.allocation_date|date:"d/m/Y" }}</td>
           <td><a href="{% url 'contracts:commitment_detail' contract.pk allocation.commitment_id %}">{{ allocation.commitment.number }}</a></td>
-          <td>R$ {{ allocation.amount|localize }}</td>
+          <td>R$&nbsp;{{ allocation.amount|localize }}</td>
           <td>{{ allocation.get_status_display }}</td>
           <td>
             {% if can_edit and allocation.status != "CANCELADO" %}
@@ -69,8 +69,8 @@
   <dl>
     <dt>Quantidade/horas executadas</dt><dd>{{ executed_quantity|quantidade }}</dd>
     <dt>Saldo quantitativo da OS</dt><dd>{{ execution_quantity_balance|quantidade }}</dd>
-    <dt>Valor executado</dt><dd>R$ {{ executed_value|localize }}</dd>
-    <dt>Saldo de execução da OS</dt><dd>R$ {{ execution_value_balance|localize }}</dd>
+    <dt>Valor executado</dt><dd>R$&nbsp;{{ executed_value|localize }}</dd>
+    <dt>Saldo de execução da OS</dt><dd>R$&nbsp;{{ execution_value_balance|localize }}</dd>
   </dl>
   <table>
     <thead><tr><th>Data</th><th>Competência</th><th>Quantidade</th><th>Valor</th><th>Evidência</th><th>Ação</th></tr></thead>
@@ -80,7 +80,7 @@
           <td>{{ execution.execution_date|date:"d/m/Y" }}</td>
           <td>{{ execution.competence|default:"—" }}</td>
           <td>{{ execution.executed_quantity|quantidade }}</td>
-          <td>R$ {{ execution.executed_value|localize }}</td>
+          <td>R$&nbsp;{{ execution.executed_value|localize }}</td>
           <td>{{ execution.evidence_reference|default:"—" }}</td>
           <td>{% if can_edit %}<a href="{% url 'contracts:execution_update' contract.pk work_order.pk execution.pk %}">Editar</a>{% else %}—{% endif %}</td>
         </tr>
@@ -90,9 +90,9 @@
   <p class="helptext">Execução, faturamento e pagamento são eventos distintos.</p>
   <h2>Notas fiscais</h2>
   <dl>
-    <dt>Valor da OS</dt><dd>R$ {{ invoice_position.work_order_value.value|localize }}</dd>
-    <dt>Total bruto já faturado</dt><dd>R$ {{ invoice_position.invoiced_gross_value.value|localize }}</dd>
-    <dt>Saldo faturável objetivo</dt><dd>R$ {{ invoice_position.billable_balance.value|localize }}</dd>
+    <dt>Valor da OS</dt><dd>R$&nbsp;{{ invoice_position.work_order_value.value|localize }}</dd>
+    <dt>Total bruto já faturado</dt><dd>R$&nbsp;{{ invoice_position.invoiced_gross_value.value|localize }}</dd>
+    <dt>Saldo faturável objetivo</dt><dd>R$&nbsp;{{ invoice_position.billable_balance.value|localize }}</dd>
   </dl>
   <table>
     <thead><tr><th>Emissão</th><th>Número/série</th><th>Competência</th><th>Valor bruto</th><th>Glosa</th><th>Valor aceito</th><th>Status informado</th></tr></thead>
@@ -102,9 +102,9 @@
           <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
           <td><a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk invoice.pk %}">{{ invoice.number }}/{{ invoice.series }}</a></td>
           <td>{{ invoice.competence }}</td>
-          <td>R$ {{ invoice.gross_value|localize }}</td>
-          <td>R$ {{ invoice.deduction_value|localize }}</td>
-          <td>R$ {{ invoice.accepted_value|localize }}</td>
+          <td>R$&nbsp;{{ invoice.gross_value|localize }}</td>
+          <td>R$&nbsp;{{ invoice.deduction_value|localize }}</td>
+          <td>R$&nbsp;{{ invoice.accepted_value|localize }}</td>
           <td>{{ invoice.status }}</td>
         </tr>
       {% empty %}<tr><td colspan="7">Nenhuma Nota Fiscal registrada.</td></tr>{% endfor %}

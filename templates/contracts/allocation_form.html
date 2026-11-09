@@ -2,7 +2,7 @@
 {% block title %}Rateio da OS {{ work_order.number }} — FiscalSema{% endblock %}
 {% block content %}
   <h1>{% if object %}Editar{% else %}Novo{% endif %} rateio da OS {{ work_order.number }}</h1>
-  <p>Valor total da OS: R$ {{ work_order.total_value }}</p>
+  <p>Valor total da OS: R$&nbsp;{{ work_order.total_value }}</p>
   <form method="post" novalidate>
     {% csrf_token %}
     {{ form.non_field_errors }}

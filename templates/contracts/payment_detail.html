@@ -6,7 +6,7 @@
   {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
   <dl>
-    <dt>Valor</dt><dd>R$ {{ payment.amount|localize }}</dd>
+    <dt>Valor</dt><dd>R$&nbsp;{{ payment.amount|localize }}</dd>
     <dt>Data</dt><dd>{{ payment.payment_date|date:"d/m/Y" }}</dd>
     <dt>Competência</dt><dd>{{ payment.competence|default:"—" }}</dd>
     <dt>Status informado</dt><dd>{{ payment.status }}</dd>
@@ -19,9 +19,9 @@
   </dl>
   <h2>Posição desta Nota Fiscal</h2>
   <dl>
-    <dt>Limite provisório</dt><dd>R$ {{ payment_position.provisional_payable_limit.value|localize }}</dd>
-    <dt>Total pago</dt><dd>R$ {{ payment_position.paid_total.value|localize }}</dd>
-    <dt>Saldo provisório</dt><dd>R$ {{ payment_position.payment_balance.value|localize }}</dd>
+    <dt>Limite provisório</dt><dd>R$&nbsp;{{ payment_position.provisional_payable_limit.value|localize }}</dd>
+    <dt>Total pago</dt><dd>R$&nbsp;{{ payment_position.paid_total.value|localize }}</dd>
+    <dt>Saldo provisório</dt><dd>R$&nbsp;{{ payment_position.payment_balance.value|localize }}</dd>
   </dl>
   <p class="warning">O status é mantido como texto da fonte e não exclui valores do total. O ciclo oficial de pagamentos ainda precisa ser confirmado.</p>
   <p class="actions">

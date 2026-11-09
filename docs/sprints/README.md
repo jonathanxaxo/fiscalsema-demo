@@ -46,3 +46,5 @@ documental das entregas anteriores.
   layout do sistema e conferência de NF com texto legível.
 - `sprint-17-workflow-ia-mcp`: API, adaptador MCP, proposta não executada,
   aprovação humana, matriz de autonomia, testes e roteiro de apresentação.
+- `sprint-18-valores-sem-quebra`: "R$" nunca separado do número; quadros com
+  o valor em uma linha e do mesmo tamanho.

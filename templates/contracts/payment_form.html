@@ -4,9 +4,9 @@
 {% block content %}
   <h1>{% if form.instance.pk %}Editar{% else %}Registrar{% endif %} pagamento da NF {{ invoice.number }}/{{ invoice.series }}</h1>
   <dl>
-    <dt>Limite provisório</dt><dd>R$ {{ payment_position.provisional_payable_limit.value|localize }}</dd>
-    <dt>Total já pago</dt><dd>R$ {{ payment_position.paid_total.value|localize }}</dd>
-    <dt>Saldo provisório</dt><dd>R$ {{ payment_position.payment_balance.value|localize }}</dd>
+    <dt>Limite provisório</dt><dd>R$&nbsp;{{ payment_position.provisional_payable_limit.value|localize }}</dd>
+    <dt>Total já pago</dt><dd>R$&nbsp;{{ payment_position.paid_total.value|localize }}</dd>
+    <dt>Saldo provisório</dt><dd>R$&nbsp;{{ payment_position.payment_balance.value|localize }}</dd>
   </dl>
   <p class="warning">O limite provisório é o menor valor entre o bruto e o aceito informado na NF. Isso não autoriza nem recomenda pagamento.</p>
   <p class="helptext">Atesto, RAER e Termo de Homologação são referências obrigatórias. A fórmula oficial e o ciclo oficial de status ainda dependem de fonte documental.</p>

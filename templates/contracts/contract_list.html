@@ -18,7 +18,7 @@
           <td>{{ contract.number }}</td>
           <td>{{ contract.supplier_name }}</td>
           <td>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</td>
-          <td>R$ {{ contract.current_value|localize }}</td>
+          <td>R$&nbsp;{{ contract.current_value|localize }}</td>
           <td><span class="status-pill {% if contract.status == 'ATIVO' %}status-success{% elif contract.status == 'SUSPENSO' %}status-warning{% elif contract.status == 'CANCELADO' %}status-danger{% else %}status-neutral{% endif %}">{{ contract.get_status_display }}</span>{% if contract.pk in read_only_contract_ids %}<br><span class="status-pill status-neutral">Somente leitura</span>{% elif contract.pk in substitute_contract_ids %}<br><span class="status-pill status-warning">Fiscal substituto</span>{% endif %}</td>
           <td><div class="row-actions"><a class="button-link button-link-small" href="{% url 'contracts:dashboard' contract.pk %}">Dashboard</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:detail' contract.pk %}">Abrir cadastro</a></div></td>
         </tr>

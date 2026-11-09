@@ -22,7 +22,7 @@ MAX_LISTED_NOTIFICATIONS = 30
 
 
 def _money(value):
-    return "R$ " + number_format(value, decimal_pos=2, use_l10n=True, force_grouping=True)
+    return "R$\u00a0" + number_format(value, decimal_pos=2, use_l10n=True, force_grouping=True)
 
 
 def _percent(value):
