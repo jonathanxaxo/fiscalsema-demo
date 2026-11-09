@@ -26,6 +26,7 @@
     <dt>Conclusão</dt><dd>{{ work_order.completion_date|date:"d/m/Y"|default:"—" }}</dd>
     <dt>Status</dt><dd>{{ work_order.get_status_display }}</dd>
     <dt>Processo</dt><dd>{{ work_order.process_number }}</dd>
+    <dt>Acompanhamento mensal</dt><dd>{% if work_order.monthly_follow_up %}Sim — acompanhar a competência no painel{% elif work_order.item.unit == "MES" %}Sim — unidade contratual Mês{% else %}Não{% endif %}</dd>
     <dt>Observação</dt><dd>{{ work_order.notes|default:"—" }}</dd>
     {% if work_order.status == "CANCELADA" %}
       <dt>Motivo do cancelamento</dt><dd>{{ work_order.cancellation_reason }}</dd>

@@ -48,3 +48,5 @@ documental das entregas anteriores.
   aprovação humana, matriz de autonomia, testes e roteiro de apresentação.
 - `sprint-18-valores-sem-quebra`: "R$" nunca separado do número; quadros com
   o valor em uma linha e do mesmo tamanho.
+- `sprint-19-acompanhamento-mensal`: OS com acompanhamento mensal no painel,
+  no sino, na lista e no detalhe; migração aditiva.

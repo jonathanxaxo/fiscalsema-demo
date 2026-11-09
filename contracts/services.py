@@ -2208,6 +2208,7 @@ def work_order_snapshot(work_order):
         "status": work_order.status,
         "efeito_financeiro": work_order.financial_effect,
         "processo": work_order.process_number,
+        "acompanhamento_mensal": work_order.monthly_follow_up,
         "observacao": work_order.notes,
         "motivo_cancelamento": work_order.cancellation_reason,
         "periodo_anual": {

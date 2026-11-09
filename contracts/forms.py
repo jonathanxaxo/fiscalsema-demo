@@ -455,6 +455,7 @@ class WorkOrderForm(forms.ModelForm):
             "signature_date",
             "start_date",
             "deadline",
+            "monthly_follow_up",
             "completion_date",
             "status",
             "process_number",
@@ -474,6 +475,11 @@ class WorkOrderForm(forms.ModelForm):
             "hours": "Use somente quando a unidade do item for Hora.",
             "item": "O valor unitário será copiado do item e não poderá ser digitado.",
             "status": "O cancelamento é realizado em ação própria, com motivo obrigatório.",
+            "monthly_follow_up": (
+                "Marque apenas quando a OS exigir atualização, medição ou "
+                "faturamento mensal conforme fonte oficial. Itens com unidade Mês "
+                "já entram no acompanhamento automaticamente."
+            ),
         }
 
     def __init__(self, *args, contract, **kwargs):

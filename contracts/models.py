@@ -1068,6 +1068,14 @@ class WorkOrder(models.Model):
         db_index=True,
     )
     process_number = models.CharField("processo", max_length=100, db_index=True)
+    monthly_follow_up = models.BooleanField(
+        "exige acompanhamento mensal",
+        default=False,
+        help_text=(
+            "Marque somente quando a fonte oficial exigir atualização, "
+            "medição ou faturamento mensal desta OS."
+        ),
+    )
     notes = models.TextField("observação", blank=True)
     cancellation_reason = models.TextField("motivo do cancelamento", blank=True)
     canceled_at = models.DateTimeField("cancelada em", null=True, blank=True)
