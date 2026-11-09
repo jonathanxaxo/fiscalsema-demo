@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "fiscalsema-demo": {
+      "command": "python",
+      "args": ["scripts/mcp_server.py"],
+      "env": {
+        "FISCALSEMA_API_URL": "http://127.0.0.1:8000"
+      }
+    }
+  }
+}
