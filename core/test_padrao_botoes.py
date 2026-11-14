@@ -54,7 +54,7 @@ class PadraoBotoesTests(WorkOrderBase):
     def test_two_standard_button_sizes(self):
         with open(finders.find("core/css/app.css"), encoding="utf-8") as stylesheet:
             css = stylesheet.read()
-        self.assertIn("button, .button-link { min-height: 40px;", css)
-        self.assertIn(".button-link-small { min-height: 34px;", css)
-        self.assertIn(".inline-form button { min-height: 34px;", css)
-        self.assertIn(".app-page .actions > a:not(.button-link), .app-page .toolbar > a:not(.button-link) { min-height: 40px;", css)
+        self.assertIn("button, .button-link { min-height: 32px;", css)
+        self.assertIn(".button-link-small { min-height: 28px;", css)
+        self.assertIn(".inline-form button { min-height: 28px;", css)
+        self.assertIn(".app-page .actions > a:not(.button-link), .app-page .toolbar > a:not(.button-link) { min-height: 32px;", css)

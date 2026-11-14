@@ -1,0 +1,101 @@
+{% extends "accounts/base.html" %}
+{% block title %}Metodologia — FiscalSema{% endblock %}
+{% block main_class %}method-page{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Sobre o sistema</span>
+      <h1>Metodologia de desenvolvimento</h1>
+      <p>Como o FiscalSema Demo foi construído: método, tecnologias, uso de IA com autorização humana, segurança e testes.</p>
+    </div>
+  </header>
+
+  <nav class="method-index" aria-label="Seções desta página">
+    <a href="#metodo">Método</a><a href="#sprints">Sprints</a><a href="#tecnologias">Tecnologias</a><a href="#ia">IA e ferramentas</a><a href="#seguranca">Segurança e testes</a>
+  </nav>
+
+  <section class="surface" id="metodo" aria-labelledby="metodo-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Método</span><h2 id="metodo-titulo">Ciclo de cada entrega</h2></div><span class="section-hint">Nenhuma etapa é pulada</span></div>
+    <ol class="method-steps">
+      <li><strong>Entender</strong><span>História de usuário organizada em COMO / QUERO / PARA, com regras, riscos e dúvidas.</span></li>
+      <li><strong>Planejar</strong><span>Arquivos, comandos, testes e riscos apresentados antes de qualquer alteração.</span></li>
+      <li><strong>Autorizar</strong><span>O responsável aprova cada etapa, inclusive commit, merge, migração e publicação.</span></li>
+      <li><strong>Executar</strong><span>Mudanças pequenas, somente da sprint autorizada.</span></li>
+      <li><strong>Testar</strong><span>Suíte automatizada, auditoria de segurança e conferência no navegador.</span></li>
+      <li><strong>Revisar</strong><span>Leitura do diff, capturas antes/depois e checagem dos critérios de aceite.</span></li>
+      <li><strong>Registrar</strong><span>Escopo, arquivos, decisões e evidências documentados em cada sprint.</span></li>
+    </ol>
+    <p class="muted method-note">Cada sprint gera uma pasta em <code>docs/sprints/</code> com <code>escopo.md</code>, <code>arquivos.md</code>, <code>decisoes.md</code> e <code>testes.md</code>. Sprints anteriores não são reescritas: correções viram nova sprint.</p>
+  </section>
+
+  <section class="surface" id="sprints" aria-labelledby="sprints-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Histórico</span><h2 id="sprints-titulo">Sprints realizadas</h2></div><span class="section-hint">Entregas pequenas e verificáveis</span></div>
+    <div class="method-timeline">
+      <div><h3>Base e governança</h3><ul><li><b>01</b><span>Cópia independente e adaptação para a Vercel</span></li><li><b>02</b><span>Integração com PostgreSQL exclusivo</span></li><li><b>03</b><span>Regras do agente de IA (<code>CLAUDE.md</code>)</span></li><li><b>09</b><span>Publicação com CI, Preview e conferência</span></li></ul></div>
+      <div><h3>Visual e usabilidade</h3><ul><li><b>04</b><span>Diagnóstico visual com capturas</span></li><li><b>05</b><span>Correções de leitura e formatos</span></li><li><b>06</b><span>Identidade visual e ícones próprios</span></li><li><b>07</b><span>Padronização das telas</span></li><li><b>08</b><span>Prioridades no painel</span></li><li><b>16</b><span>Padrão único de botões</span></li><li><b>18</b><span>Valores em R$ sem quebra</span></li><li><b>20</b><span>Metodologia e visual compacto</span></li></ul></div>
+      <div><h3>Perfis e dados de apresentação</h3><ul><li><b>10</b><span>Troca de perfil auditada</span></li><li><b>11</b><span>Painel do Administrador</span></li><li><b>12</b><span>Dados fictícios de apresentação</span></li><li><b>13</b><span>Painel profissional do Fiscal</span></li></ul></div>
+      <div><h3>Recursos para o fiscal</h3><ul><li><b>14</b><span>Sino de notificações</span></li><li><b>15</b><span>Impressão do relatório em PDF</span></li><li><b>17</b><span>Workflow com IA e MCP</span></li><li><b>19</b><span>Acompanhamento mensal de OS</span></li></ul></div>
+    </div>
+  </section>
+
+  <section class="surface" id="tecnologias" aria-labelledby="tec-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Tecnologias</span><h2 id="tec-titulo">Com o que o sistema é feito</h2></div></div>
+    <div class="method-grid">
+      <article><h3>Python 3.14 e Django 5.2</h3><p>Aplicação web com regras de negócio no backend, formulários validados, permissões e migrações.</p></article>
+      <article><h3>PostgreSQL</h3><p>Banco exclusivo da demonstração, acessado com psycopg 3 e configurado por variável de ambiente.</p></article>
+      <article><h3>Vercel</h3><p>Publicação como função serverless; arquivos estáticos servidos pelo WhiteNoise; Preview antes da produção.</p></article>
+      <article><h3>GitHub e GitHub Actions</h3><p>Versionamento com Git, Pull Requests, CI com PostgreSQL a cada mudança e fluxos manuais com confirmação.</p></article>
+      <article><h3>HTML, CSS e SVG próprios</h3><p>Interface sem bibliotecas visuais externas: identidade, ícones e estilos feitos para o sistema.</p></article>
+      <article><h3>Playwright</h3><p>Navegador automatizado para capturas antes/depois e verificação visual em computador e celular.</p></article>
+    </div>
+  </section>
+
+  <section class="surface" id="ia" aria-labelledby="ia-titulo">
+    <div class="section-heading"><div><span class="eyebrow">IA, skills e ferramentas</span><h2 id="ia-titulo">Desenvolvimento assistido por IA, com controle humano</h2></div></div>
+    <div class="method-grid">
+      <article><h3>Claude Code e Codex</h3><p>Agentes de IA usados para planejar, programar, testar e documentar, sempre dentro da pasta do projeto.</p></article>
+      <article><h3><code>CLAUDE.md</code> e <code>AGENTS.md</code></h3><p>Arquivos de contexto com as regras do agente: ler a documentação, responder em português, pedir autorização e não acessar segredos.</p></article>
+      <article><h3>MCP com menor privilégio</h3><p>Adaptador que consulta somente a API autorizada e cria apenas rascunhos marcados como não executados.</p></article>
+      <article><h3>Skills do curso</h3><p>História de usuário, requisitos, sprints, revisão de plano, evidências, tratamento de prompt injection e registro de decisões.</p></article>
+    </div>
+    <h3 class="method-subtitle">Matriz de autonomia</h3>
+    <div class="table-responsive"><table class="table-compact">
+      <thead><tr><th>Situação</th><th>Agente / MCP</th><th>Decisão humana</th></tr></thead>
+      <tbody>
+        <tr><td>Consultar ou resumir dados autorizados</td><td>Pode, somente leitura</td><td>Não exigida</td></tr>
+        <tr><td>Propor criação ou alteração</td><td>Cria rascunho não executado</td><td>Obrigatória</td></tr>
+        <tr><td>Confirmar ou rejeitar proposta</td><td>Não pode</td><td>Obrigatória, na interface</td></tr>
+        <tr><td>Homologar, atestar ou pagar</td><td>Não pode</td><td>Fora da integração</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted method-note">O agente auxilia; a decisão e a validação continuam humanas.</p>
+  </section>
+
+  <section class="surface" id="seguranca" aria-labelledby="seg-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Segurança e testes</span><h2 id="seg-titulo">Como a qualidade é garantida</h2></div></div>
+    <div class="method-columns">
+      <div>
+        <h3>Controles de segurança</h3>
+        <ul class="method-checks">
+          <li>Somente dados fictícios; aviso permanente de demonstração</li>
+          <li><code>DEBUG</code> desativado, CSRF e cookies seguros</li>
+          <li>Limite de tentativas e bloqueio de login</li>
+          <li>Permissões no backend e auditoria de acessos e alterações</li>
+          <li>Segredos apenas nas variáveis da Vercel; nada no Git</li>
+          <li>Banco exclusivo com usuário de privilégio mínimo</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Testes e evidências</h3>
+        <ul class="method-checks">
+          <li>Suíte automatizada do Django (474 testes na Sprint 19)</li>
+          <li>CI no GitHub Actions com PostgreSQL em cada Pull Request</li>
+          <li>Auditoria do repositório contra segredos e dados reais</li>
+          <li>Verificação de migrações pendentes</li>
+          <li>Testes do limite de confiança do adaptador MCP</li>
+          <li>Capturas antes/depois registradas em cada sprint</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+{% endblock %}

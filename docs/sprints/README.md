@@ -50,3 +50,5 @@ documental das entregas anteriores.
   o valor em uma linha e do mesmo tamanho.
 - `sprint-19-acompanhamento-mensal`: OS com acompanhamento mensal no painel,
   no sino, na lista e no detalhe; migração aditiva.
+- `sprint-20-metodologia-visual-compacto`: página "Metodologia" para todos os
+  usuários logados e botões/menu compactos (32/28 px).
