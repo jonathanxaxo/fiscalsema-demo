@@ -86,4 +86,8 @@ FILE_FEATURES_ENABLED = False
 PUBLIC_REGISTRATION_ENABLED = False
 DOCUMENT_MAX_UPLOAD_SIZE = 4 * 1024 * 1024
 SPREADSHEET_MAX_UPLOAD_SIZE = 4 * 1024 * 1024
-EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
+# E-mail (Sprint 26): SMTP só quando usuário e senha do servidor estiverem
+# configurados na Vercel; caso contrário continua o envio fictício.
+from .email_config import email_settings  # noqa: E402
+
+globals().update(email_settings(os.environ))
