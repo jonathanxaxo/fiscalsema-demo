@@ -66,3 +66,6 @@ documental das entregas anteriores.
 
 - `sprint-25-login-google`: login com Google (OIDC próprio), vínculo
   seguro a cadastro existente e Minha conta.
+
+- `sprint-26-email-redefinicao-senha`: envio real do e-mail de redefinição
+  de senha (Gmail/SMTP) e fluxo manual de senha temporária.
