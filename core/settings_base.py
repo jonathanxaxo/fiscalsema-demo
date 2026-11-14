@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "documents.apps.DocumentsConfig",
     "audit.apps.AuditConfig",
     "data_imports.apps.DataImportsConfig",
+    "assistant.apps.AssistantConfig",
     "core.apps.CoreConfig",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -74,6 +75,7 @@ TEMPLATES = [
                 "core.context_processors.application_environment",
                 "core.context_processors.topbar_notifications",
                 "accounts.profile_switch.profile_switch",
+                "assistant.context_processors.assistant_menu",
             ],
         },
     }
@@ -132,6 +134,18 @@ AUTH_LOGIN_BLOCK_SECONDS = env_int("AUTH_LOGIN_BLOCK_SECONDS", 900)
 API_RATE_LIMIT_PER_MINUTE = env_int("API_RATE_LIMIT_PER_MINUTE", 60)
 API_DEFAULT_PAGE_SIZE = env_int("API_DEFAULT_PAGE_SIZE", 25)
 API_MAX_PAGE_SIZE = env_int("API_MAX_PAGE_SIZE", 100)
+
+# Assistente IA (Sprint 21). A chave fica só no backend, em variável de ambiente.
+ASSISTANT_ENABLED = env_bool("ASSISTANT_ENABLED", False)
+ASSISTANT_API_KEY = os.getenv("ASSISTANT_API_KEY", "")
+ASSISTANT_BASE_URL = os.getenv(
+    "ASSISTANT_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai"
+)
+ASSISTANT_MODELS = env_list("ASSISTANT_MODELS")
+ASSISTANT_TIMEOUT_SECONDS = env_int("ASSISTANT_TIMEOUT_SECONDS", 12)
+ASSISTANT_DAILY_LIMIT = env_int("ASSISTANT_DAILY_LIMIT", 60)
+ASSISTANT_PER_MINUTE = env_int("ASSISTANT_PER_MINUTE", 6)
+ASSISTANT_RETENTION_DAYS = env_int("ASSISTANT_RETENTION_DAYS", 30)
 
 EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND", "django.core.mail.backends.dummy.EmailBackend"

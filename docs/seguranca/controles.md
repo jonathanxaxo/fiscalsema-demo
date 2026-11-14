@@ -22,6 +22,7 @@
 | `.gitignore` e `.dockerignore` | Protegem artefatos operacionais | Reforçados para demo | Adaptado | Excluem bancos, dumps, documentos, mídias, logs e chaves |
 | Banco | PostgreSQL da VM | PostgreSQL demo exclusivo | Adaptado | Isolamento absoluto |
 | Privilégio do banco | Usuário próprio da aplicação | Usuário exclusivo e mínimo da demo | Igual | Sem conta administrativa na aplicação |
+| Assistente IA (Sprint 21) | Não existe | Chat somente de ajuda, chave só no backend, limite por minuto/dia, conversas isoladas por usuário (30 dias), auditoria só de metadados | Novo na demo | Blocos do prompt tratados como dados; sem acesso da IA ao banco |
 
 Nenhum dado, credencial, documento, usuário ou histórico do banco real pode ser
 copiado para este projeto.

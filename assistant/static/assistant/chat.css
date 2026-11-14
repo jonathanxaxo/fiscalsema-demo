@@ -1,0 +1,49 @@
+/* Assistente IA (Sprint 21) — segue os tokens e o padrão compacto do app.css. */
+.assistant-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1rem; align-items: start; }
+.assistant-history { position: sticky; top: 88px; padding: 1rem; }
+.assistant-new { width: 100%; }
+.assistant-history-title { margin: 1rem 0 .4rem; color: var(--muted); font-size: .72rem; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
+.assistant-history ul { display: grid; gap: .15rem; max-height: 52vh; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.assistant-history li a { display: block; padding: .42rem .55rem; border-radius: 7px; color: var(--ink); font-size: .84rem; text-decoration: none; }
+.assistant-history li a:hover { background: var(--green-50); }
+.assistant-history li a[aria-current="page"] { background: var(--green-50); box-shadow: inset 3px 0 0 var(--green-700); }
+.assistant-history li span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.assistant-history li small, .assistant-retention { color: var(--muted); font-size: .74rem; }
+.assistant-retention { margin: .8rem 0 0; }
+.assistant-chat { display: flex; flex-direction: column; min-height: 62vh; padding: 1rem; }
+.assistant-notice { margin: 0 0 .8rem; padding: .5rem .7rem; border-radius: 8px; background: var(--warning-bg); color: var(--warning-ink); font-size: .8rem; }
+.assistant-chat-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-bottom: .6rem; border-bottom: 1px solid var(--line); }
+.assistant-chat-head form button { margin: 0; }
+.assistant-messages { flex: 1; display: grid; align-content: start; gap: .8rem; max-height: 58vh; padding: .9rem .1rem; overflow-y: auto; }
+.assistant-msg { max-width: 86%; }
+.assistant-msg-user { justify-self: end; }
+.assistant-msg-label { display: block; margin-bottom: .2rem; color: var(--muted); font-size: .72rem; font-weight: 750; }
+.assistant-msg-user .assistant-msg-label { text-align: right; }
+.assistant-msg-body { padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: .9rem; line-height: 1.55; overflow-wrap: anywhere; white-space: normal; }
+.assistant-msg-user .assistant-msg-body { background: var(--green-950); border-color: var(--green-950); color: #fff; white-space: pre-wrap; }
+.assistant-msg-body p, .assistant-msg-body ul, .assistant-msg-body ol { margin: 0 0 .45rem; }
+.assistant-msg-body > :last-child { margin-bottom: 0; }
+.assistant-msg-body ul, .assistant-msg-body ol { padding-left: 1.2rem; }
+.assistant-msg-body h4 { margin: .5rem 0 .3rem; font-size: .92rem; }
+.assistant-msg-body pre { margin: .4rem 0; padding: .6rem; border-radius: 8px; background: #0f2a20; color: #e6f2ec; font-size: .8rem; overflow-x: auto; white-space: pre; }
+.assistant-msg-body code { padding: .05rem .3rem; border-radius: 5px; background: #eef3f0; font-size: .85em; }
+.assistant-msg-body pre code { padding: 0; background: none; }
+.assistant-msg-body .table-responsive { margin: .4rem 0; }
+.assistant-hint { margin: .35rem 0 0; color: var(--muted); font-size: .74rem; }
+.assistant-typing { color: var(--muted); font-style: italic; }
+.assistant-error { color: var(--danger-ink); }
+.assistant-welcome p { margin: 0 0 .6rem; }
+.assistant-suggestions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.assistant-suggestions button { background: #fff; color: var(--green-800); border-color: var(--line-strong); }
+.assistant-suggestions button:hover { background: var(--green-50); color: var(--green-950); box-shadow: none; }
+.assistant-form { display: flex; gap: .5rem; align-items: flex-end; padding-top: .7rem; border-top: 1px solid var(--line); }
+.assistant-form textarea { min-height: 42px; margin: 0; resize: none; }
+.assistant-form button { flex: 0 0 auto; min-height: 42px; }
+@media (max-width: 900px) {
+  .assistant-layout { grid-template-columns: 1fr; }
+  .assistant-history { position: static; order: 2; }
+  .assistant-chat { order: 1; }
+  .assistant-history ul { max-height: 9rem; }
+  .assistant-msg { max-width: 100%; }
+  .assistant-chat { min-height: 70vh; }
+}
