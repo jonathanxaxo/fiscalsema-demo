@@ -426,5 +426,5 @@ td a { font-weight: 700; }
 .account-inline-form button { margin: 0; }
 .login-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem; margin-top: 1rem; }
 .login-actions button { margin: 0; }
-.login-google-hint { margin: .5rem 0 0; color: var(--muted); font-size: .78rem; text-align: right; }
+.login-google-hint { margin: .45rem 0 0; color: var(--muted); font-size: .74rem; line-height: 1.4; text-align: right; }
 @media (max-width: 420px) { .login-actions > * { flex: 1 1 100%; } .login-google-hint { text-align: left; } }

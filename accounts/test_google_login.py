@@ -84,7 +84,7 @@ class GoogleFlowTests(GoogleBase):
     def test_button_always_visible_and_friendly_when_not_configured(self):
         login = self.client.get(reverse("accounts:login"))
         self.assertContains(login, "Entrar com Google")
-        self.assertContains(login, "Opcional")
+        self.assertContains(login, "Acesso opcional para contas institucionais e e-mails autorizados.")
         response = self.client.get(reverse("accounts:google_start"))
         self.assertRedirects(response, reverse("accounts:login"), fetch_redirect_response=False)
         self.assertContains(self.client.get(response["Location"]), "ainda está sendo configurado")
