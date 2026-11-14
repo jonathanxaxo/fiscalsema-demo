@@ -60,3 +60,9 @@ documental das entregas anteriores.
 
 - `sprint-23-arise-flutuante`: nome Assistente Arise, ícone e painel
   flutuante em todas as telas e metodologia da construção da IA.
+
+- `sprint-24-auditoria-mcp-google`: diagnóstico e arquitetura do MCP
+  bidirecional e do login Google institucional (sem código de produção).
+
+- `sprint-25-login-google`: login com Google (OIDC próprio), vínculo
+  seguro a cadastro existente e Minha conta.

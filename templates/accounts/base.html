@@ -47,7 +47,7 @@
         <span class="user-avatar" aria-hidden="true">{{ request.user.get_short_name|first|upper }}</span>
         <span class="user-summary"><strong>{{ request.user.full_name }}</strong><small>{{ request.user.get_profile_display }}</small></span>
         {% if profile_switch_target %}<form class="profile-switch-form" method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button class="button-quiet profile-switch" type="submit">Atuar como {{ profile_switch_target }}</button></form>{% elif acting_as %}<form class="profile-switch-form" method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button class="button-quiet profile-switch" type="submit">Voltar a {{ acting_return }}</button></form>{% endif %}
-        <a href="{% url 'accounts:password_change' %}">Alterar senha</a>
+        <a href="{% url 'accounts:my_account' %}">Minha conta</a>
         <form method="post" action="{% url 'accounts:logout' %}" data-no-submit-lock>
           {% csrf_token %}<button class="button-quiet" type="submit">Sair</button>
         </form>

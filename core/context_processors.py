@@ -8,6 +8,9 @@ def application_environment(request):
         "is_demo": settings.APP_ENVIRONMENT == "demo",
         "file_features_enabled": settings.FILE_FEATURES_ENABLED,
         "public_registration_enabled": settings.PUBLIC_REGISTRATION_ENABLED,
+        "google_login_enabled": bool(
+            settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET
+        ),
     }
 
 

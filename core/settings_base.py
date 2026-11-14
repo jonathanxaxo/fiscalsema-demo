@@ -135,6 +135,12 @@ API_RATE_LIMIT_PER_MINUTE = env_int("API_RATE_LIMIT_PER_MINUTE", 60)
 API_DEFAULT_PAGE_SIZE = env_int("API_DEFAULT_PAGE_SIZE", 25)
 API_MAX_PAGE_SIZE = env_int("API_MAX_PAGE_SIZE", 100)
 
+# Login com Google (Sprint 25): OpenID Connect próprio, sem dependência.
+# O segredo fica só em variável de ambiente; sem as duas variáveis o botão não aparece.
+GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
+GOOGLE_OAUTH_TIMEOUT_SECONDS = env_int("GOOGLE_OAUTH_TIMEOUT_SECONDS", 10)
+
 # Assistente Arise (Sprint 21). A chave fica só no backend, em variável de ambiente.
 ASSISTANT_ENABLED = env_bool("ASSISTANT_ENABLED", False)
 ASSISTANT_API_KEY = os.getenv("ASSISTANT_API_KEY", "")

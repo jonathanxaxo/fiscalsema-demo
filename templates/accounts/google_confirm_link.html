@@ -1,0 +1,20 @@
+{% extends "accounts/base.html" %}
+{% block title %}Confirmar vínculo com Google — FiscalSema{% endblock %}
+{% block content %}
+  <h1>Confirme que esta conta é sua</h1>
+  {% for message in messages %}<p class="{% if message.tags == 'error' %}danger{% else %}notice{% endif %}" role="status">{{ message }}</p>{% endfor %}
+  <p>Encontramos um cadastro no FiscalSema com o e-mail <strong>{{ google_email }}</strong>.</p>
+  {% if has_password %}
+    <p>Para vincular a sua conta Google a este cadastro, digite a <strong>senha atual do FiscalSema</strong>. Nada no seu cadastro será alterado.</p>
+    {% if error %}<p class="errorlist">{{ error }}</p>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <label for="id_password">Senha atual do FiscalSema:</label>
+      <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+      <button type="submit">Confirmar e vincular</button>
+    </form>
+  {% else %}
+    <p>Este cadastro não tem senha para confirmar a posse. Peça ao Administrador para definir uma senha temporária e tente novamente.</p>
+  {% endif %}
+  <p class="actions"><a href="{% url 'accounts:login' %}">Cancelar</a></p>
+{% endblock %}
