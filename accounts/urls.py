@@ -25,6 +25,7 @@ urlpatterns = [
     path("minha-conta/", google_views.my_account, name="my_account"),
     path("google/entrar/", google_views.google_start, name="google_start"),
     path("google/retorno/", google_views.google_callback, name="google_callback"),
+    path("google/cadastro/", google_views.google_signup, name="google_signup"),
     path("google/confirmar-vinculo/", google_views.google_confirm_link, name="google_confirm_link"),
     path("google/vincular/", google_views.google_link_start, name="google_link_start"),
     path("google/<int:pk>/desvincular/", google_views.google_unlink, name="google_unlink"),

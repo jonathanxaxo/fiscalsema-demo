@@ -5,8 +5,8 @@ Regras:
   situação da conta;
 - e-mail igual a um cadastro existente, sem vínculo → só vincula depois de a
   pessoa provar a posse da conta (senha atual do FiscalSema);
-- sem cadastro → não cria conta nesta sprint (cadastro institucional é a
-  Sprint 26);
+- sem cadastro → só e-mails autorizados (Sprint 27) completam um cadastro,
+  que nasce pendente de aprovação do Administrador;
 - nada do cadastro é alterado pelo vínculo (nome, perfil, organização,
   permissões, senha ou identificador).
 """
@@ -26,7 +26,9 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from .backends import AccountStatusBackend
 from .google_oidc import GoogleLoginError, complete_flow, is_configured, start_flow
-from .models import AccountStatus, AuthenticationEvent, ExternalIdentity, User
+from .forms import GoogleSignupForm, requested_profile_for
+from .models import AccountStatus, AuthenticationEvent, ExternalIdentity, RegistrationRequest, User
+from .signup_policy import is_signup_allowed
 from .services import (
     clear_login_failures,
     is_login_blocked,
@@ -37,6 +39,7 @@ from .services import (
 AUTH_BACKEND = "accounts.backends.AccountStatusBackend"
 PENDING_LINK_KEY = "fiscalsema_google_pending_link"
 PENDING_LINK_SECONDS = 600
+PENDING_SIGNUP_KEY = "fiscalsema_google_pending_signup"
 EVENT = AuthenticationEvent.EventType
 
 
@@ -148,10 +151,74 @@ def google_callback(request):
         }
         return redirect("accounts:google_confirm_link")
 
+    if is_signup_allowed(google.email, hosted_domain=google.hosted_domain):
+        request.session[PENDING_SIGNUP_KEY] = {
+            "subject": google.subject, "email": google.email, "name": google.name,
+            "expires": int(time.time()) + PENDING_LINK_SECONDS,
+        }
+        return redirect("accounts:google_signup")
+
     record_authentication_event(EVENT.GOOGLE_LOGIN_DENIED, request=request, email=google.email,
-                                details={"motivo": "sem_cadastro"})
-    messages.error(request, "Não encontramos cadastro com este e-mail. Procure o Administrador do sistema.")
+                                details={"motivo": "email_nao_autorizado"})
+    messages.error(
+        request,
+        "Não encontramos cadastro com este e-mail e ele não está autorizado a se cadastrar. "
+        "Procure o Administrador do sistema.",
+    )
     return redirect("accounts:login")
+
+
+@require_http_methods(["GET", "POST"])
+def google_signup(request):
+    """Cadastro institucional pelo Google (Sprint 27): conta nasce pendente de aprovação."""
+    _require_configured()
+    pending = request.session.get(PENDING_SIGNUP_KEY)
+    if not pending or pending.get("expires", 0) < time.time():
+        request.session.pop(PENDING_SIGNUP_KEY, None)
+        messages.error(request, "O cadastro expirou. Entre com o Google novamente.")
+        return redirect("accounts:login")
+    if request.method == "POST":
+        form = GoogleSignupForm(request.POST)
+    else:
+        form = GoogleSignupForm(initial={"full_name": pending.get("name", "")})
+    if request.method == "POST" and form.is_valid():
+        email = User.objects.normalize_login_email(pending["email"])
+        if not is_signup_allowed(email):
+            request.session.pop(PENDING_SIGNUP_KEY, None)
+            messages.error(request, "Este e-mail não está autorizado a se cadastrar.")
+            return redirect("accounts:login")
+        try:
+            with transaction.atomic():
+                if User.objects.filter(email__iexact=email).exists():
+                    raise IntegrityError("e-mail já cadastrado")
+                user = User(
+                    email=email,
+                    full_name=form.cleaned_data["full_name"],
+                    organization_name=form.cleaned_data["organization_name"],
+                    sector_name=form.cleaned_data["sector_name"],
+                    phone=form.cleaned_data["phone"],
+                    profile=requested_profile_for(email),
+                    status=AccountStatus.PENDING_APPROVAL,
+                )
+                user.set_unusable_password()
+                user.full_clean(exclude={"password"})
+                user.save()
+                registration = RegistrationRequest.objects.create(user=user)
+                ExternalIdentity.objects.create(
+                    user=user, provider=ExternalIdentity.Provider.GOOGLE,
+                    subject=pending["subject"], email=email,
+                )
+        except IntegrityError:
+            request.session.pop(PENDING_SIGNUP_KEY, None)
+            messages.error(request, "Já existe uma conta com este e-mail ou esta conta Google. Entre novamente.")
+            return redirect("accounts:login")
+        request.session.pop(PENDING_SIGNUP_KEY, None)
+        record_authentication_event(
+            EVENT.REGISTRATION_REQUESTED, request=request, user=user, email=user.email,
+            details={"solicitacao_id": registration.pk, "perfil_solicitado": user.profile, "origem": "google"},
+        )
+        return render(request, "accounts/registration_submitted.html")
+    return render(request, "accounts/google_signup.html", {"form": form, "google_email": pending["email"]})
 
 
 @require_http_methods(["GET", "POST"])

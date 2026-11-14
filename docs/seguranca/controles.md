@@ -25,6 +25,7 @@
 | Assistente IA (Sprint 21) | Não existe | Chat somente de ajuda, chave só no backend, limite por minuto/dia, conversas isoladas por usuário (30 dias), auditoria só de metadados | Novo na demo | Blocos do prompt tratados como dados; sem acesso da IA ao banco |
 | Login com Google (Sprint 25) | Não existe | OpenID Connect com PKCE, state e nonce; vínculo a cadastro existente só com prova de posse; segredo do cliente só na Vercel | Novo na demo | Não altera perfil, organização nem permissões |
 | E-mail (Sprint 26) | SMTP institucional | SMTP (Gmail, senha de app) só com variáveis na Vercel; fictício sem elas | Adaptado | Senha do e-mail só como segredo; senha temporária por segredo do GitHub com troca obrigatória |
+| Cadastro institucional (Sprint 27) | Cadastro público com aprovação | Só domínio institucional e exceções exatas (variáveis da Vercel); conta nasce pendente | Mais restritivo | Lista vazia bloqueia todos; aprovação humana obrigatória |
 
 Nenhum dado, credencial, documento, usuário ou histórico do banco real pode ser
 copiado para este projeto.
