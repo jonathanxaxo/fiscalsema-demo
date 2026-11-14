@@ -1,8 +1,9 @@
-"""Telas e endpoint do Assistente IA (Sprint 21).
+"""Telas e endpoint do Assistente Arise (Sprint 21).
 
 - ``GET /assistente/``: chat com a lista de conversas do próprio usuário.
 - ``POST /assistente/perguntar/``: envia a pergunta (sessão + CSRF) e devolve
   a resposta em partes (streaming de texto).
+- ``GET /assistente/conversas/<id>/mensagens/``: mensagens (painel flutuante).
 - ``POST /assistente/conversas/<id>/excluir/``: exclui a conversa do usuário.
 
 Somente leitura em relação aos dados do sistema: só grava a própria conversa
@@ -37,6 +38,20 @@ def purge_expired():
 
 def _own_conversations(user):
     return AssistantConversation.objects.filter(user=user)
+
+
+@require_GET
+@login_required
+def conversation_messages(request, pk):
+    """Mensagens de uma conversa do próprio usuário (usado pelo painel flutuante)."""
+    conversation = get_object_or_404(_own_conversations(request.user), pk=pk)
+    return JsonResponse(
+        {
+            "id": conversation.pk,
+            "titulo": conversation.title,
+            "mensagens": list(conversation.messages.values("role", "content")),
+        }
+    )
 
 
 @require_GET

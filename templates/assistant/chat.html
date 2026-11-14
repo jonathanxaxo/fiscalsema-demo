@@ -1,20 +1,19 @@
 {% extends "accounts/base.html" %}
 {% load static %}
-{% block title %}Assistente IA — FiscalSema{% endblock %}
+{% block title %}Assistente Arise — FiscalSema{% endblock %}
 {% block main_class %}assistant-page{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'assistant/chat.css' %}"><script src="{% static 'assistant/chat.js' %}" defer></script>{% endblock %}
 {% block content %}
   <header class="page-header">
     <div>
       <span class="eyebrow">Ajuda inteligente</span>
-      <h1>Assistente IA</h1>
+      <h1>Assistente Arise</h1>
       <p>Converse com a IA: tire dúvidas sobre o FiscalSema, fiscalização de contratos, textos e muito mais. O assistente não altera nenhum dado do sistema.</p>
     </div>
     <span class="badge badge-success">{{ profile_label }}</span>
   </header>
 
   {% if not enabled %}
-    <section class="surface"><p class="muted">O Assistente IA está desativado neste ambiente.</p></section>
+    <section class="surface"><p class="muted">O Assistente Arise está desativado neste ambiente.</p></section>
   {% else %}
   <div class="assistant-layout" data-assistant data-conversation-base="{% url 'assistant:chat' %}conversas/">
     <aside class="assistant-history surface" aria-label="Conversas anteriores">
@@ -33,7 +32,7 @@
     </aside>
 
     <section class="assistant-chat surface" aria-label="Conversa">
-      <p class="assistant-notice" role="note">O Assistente IA usa um serviço de IA externo (Google Gemini). Ambiente de demonstração: use somente dados fictícios. As respostas podem conter erros — confira antes de usar.</p>
+      <p class="assistant-notice" role="note">O Assistente Arise usa um serviço de IA externo (Google Gemini). Ambiente de demonstração: use somente dados fictícios. As respostas podem conter erros — confira antes de usar.</p>
       {% if current %}
         <div class="assistant-chat-head">
           <strong>{{ current.title }}</strong>
@@ -42,10 +41,10 @@
       {% endif %}
       <div class="assistant-messages" data-assistant-messages aria-live="polite">
         {% for message in chat_messages %}
-          <div class="assistant-msg assistant-msg-{{ message.role }}"><span class="assistant-msg-label">{% if message.role == "user" %}Você{% else %}Assistente IA{% endif %}</span><div class="assistant-msg-body"{% if message.role == "assistant" %} data-md{% endif %}>{{ message.content }}</div></div>
+          <div class="assistant-msg assistant-msg-{{ message.role }}"><span class="assistant-msg-label">{% if message.role == "user" %}Você{% else %}Assistente Arise{% endif %}</span><div class="assistant-msg-body"{% if message.role == "assistant" %} data-md{% endif %}>{{ message.content }}</div></div>
         {% empty %}
           <div class="assistant-welcome" data-assistant-welcome>
-            <p><strong>Olá, {{ request.user.get_short_name }}!</strong> Sou o Assistente IA do FiscalSema. Pergunte o que quiser: explico telas e procedimentos do sistema (perfil {{ profile_label }}), termos de fiscalização, ajudo a redigir textos e organizar ideias.</p>
+            <p><strong>Olá, {{ request.user.get_short_name }}!</strong> Sou o Assistente Arise do FiscalSema. Pergunte o que quiser: explico telas e procedimentos do sistema (perfil {{ profile_label }}), termos de fiscalização, ajudo a redigir textos e organizar ideias.</p>
             <div class="assistant-suggestions">
               {% for suggestion in suggestions %}<button type="button" class="button-link-small" data-suggestion="{{ suggestion }}">{{ suggestion }}</button>{% endfor %}
             </div>

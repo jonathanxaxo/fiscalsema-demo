@@ -11,7 +11,7 @@
   </header>
 
   <nav class="method-index" aria-label="Seções desta página">
-    <a href="#metodo">Método</a><a href="#sprints">Sprints</a><a href="#tecnologias">Tecnologias</a><a href="#ia">IA e ferramentas</a><a href="#seguranca">Segurança e testes</a>
+    <a href="#metodo">Método</a><a href="#sprints">Sprints</a><a href="#tecnologias">Tecnologias</a><a href="#ia">IA e ferramentas</a><a href="#arise">Assistente Arise</a><a href="#seguranca">Segurança e testes</a>
   </nav>
 
   <section class="surface" id="metodo" aria-labelledby="metodo-titulo">
@@ -34,7 +34,7 @@
       <div><h3>Base e governança</h3><ul><li><b>01</b><span>Cópia independente e adaptação para a Vercel</span></li><li><b>02</b><span>Integração com PostgreSQL exclusivo</span></li><li><b>03</b><span>Regras do agente de IA (<code>CLAUDE.md</code>)</span></li><li><b>09</b><span>Publicação com CI, Preview e conferência</span></li></ul></div>
       <div><h3>Visual e usabilidade</h3><ul><li><b>04</b><span>Diagnóstico visual com capturas</span></li><li><b>05</b><span>Correções de leitura e formatos</span></li><li><b>06</b><span>Identidade visual e ícones próprios</span></li><li><b>07</b><span>Padronização das telas</span></li><li><b>08</b><span>Prioridades no painel</span></li><li><b>16</b><span>Padrão único de botões</span></li><li><b>18</b><span>Valores em R$ sem quebra</span></li><li><b>20</b><span>Metodologia e visual compacto</span></li></ul></div>
       <div><h3>Perfis e dados de apresentação</h3><ul><li><b>10</b><span>Troca de perfil auditada</span></li><li><b>11</b><span>Painel do Administrador</span></li><li><b>12</b><span>Dados fictícios de apresentação</span></li><li><b>13</b><span>Painel profissional do Fiscal</span></li></ul></div>
-      <div><h3>Recursos para o fiscal</h3><ul><li><b>14</b><span>Sino de notificações</span></li><li><b>15</b><span>Impressão do relatório em PDF</span></li><li><b>17</b><span>Workflow com IA e MCP</span></li><li><b>19</b><span>Acompanhamento mensal de OS</span></li><li><b>21</b><span>Assistente IA integrado ao sistema</span></li><li><b>22</b><span>Assistente IA como chat completo</span></li></ul></div>
+      <div><h3>Recursos para o fiscal</h3><ul><li><b>14</b><span>Sino de notificações</span></li><li><b>15</b><span>Impressão do relatório em PDF</span></li><li><b>17</b><span>Workflow com IA e MCP</span></li><li><b>19</b><span>Acompanhamento mensal de OS</span></li><li><b>21</b><span>Assistente Arise integrado ao sistema</span></li><li><b>22</b><span>Assistente Arise como chat completo</span></li><li><b>23</b><span>Assistente Arise flutuante em todas as telas</span></li></ul></div>
     </div>
   </section>
 
@@ -46,7 +46,7 @@
       <article><h3>Vercel</h3><p>Publicação como função serverless; arquivos estáticos servidos pelo WhiteNoise; Preview antes da produção.</p></article>
       <article><h3>GitHub e GitHub Actions</h3><p>Versionamento com Git, Pull Requests, CI com PostgreSQL a cada mudança e fluxos manuais com confirmação.</p></article>
       <article><h3>HTML, CSS e SVG próprios</h3><p>Interface sem bibliotecas visuais externas: identidade, ícones e estilos feitos para o sistema.</p></article>
-      <article><h3>Google Gemini</h3><p>Modelo de IA do Assistente IA, chamado pelo backend em formato compatível com OpenAI; a chave fica só em variável de ambiente.</p></article>
+      <article><h3>Google Gemini</h3><p>Modelo de IA do Assistente Arise, chamado pelo backend em formato compatível com OpenAI; a chave fica só em variável de ambiente.</p></article>
       <article><h3>Playwright</h3><p>Navegador automatizado para capturas antes/depois e verificação visual em computador e celular.</p></article>
     </div>
   </section>
@@ -57,7 +57,7 @@
       <article><h3>Claude Code e Codex</h3><p>Agentes de IA usados para planejar, programar, testar e documentar, sempre dentro da pasta do projeto.</p></article>
       <article><h3><code>CLAUDE.md</code> e <code>AGENTS.md</code></h3><p>Arquivos de contexto com as regras do agente: ler a documentação, responder em português, pedir autorização e não acessar segredos.</p></article>
       <article><h3>MCP com menor privilégio</h3><p>Adaptador que consulta somente a API autorizada e cria apenas rascunhos marcados como não executados.</p></article>
-      <article><h3>Assistente IA</h3><p>Chat de IA do FiscalSema para perguntas gerais e de uso do sistema (base de conhecimento versionada); somente leitura, com limite de uso e auditoria de metadados.</p></article>
+      <article><h3>Assistente Arise</h3><p>Chat de IA do FiscalSema para perguntas gerais e de uso do sistema (base de conhecimento versionada); somente leitura, com limite de uso e auditoria de metadados.</p></article>
       <article><h3>Skills do curso</h3><p>História de usuário, requisitos, sprints, revisão de plano, evidências, tratamento de prompt injection e registro de decisões.</p></article>
     </div>
     <h3 class="method-subtitle">Matriz de autonomia</h3>
@@ -73,6 +73,42 @@
     <p class="muted method-note">O agente auxilia; a decisão e a validação continuam humanas.</p>
   </section>
 
+  <section class="surface" id="arise" aria-labelledby="arise-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Sprints 21 a 23</span><h2 id="arise-titulo">Como o Assistente Arise foi construído</h2></div><span class="section-hint">IA integrada com controle humano</span></div>
+    <ol class="method-steps">
+      <li><strong>História de usuário</strong><span>Pedido organizado em COMO / QUERO / PARA, com regras, riscos e dúvidas; requisitos ajustados com o responsável antes de programar.</span></li>
+      <li><strong>Plano aprovado por clique</strong><span>Arquitetura, arquivos, riscos, custo e testes apresentados; cada decisão (conversas, menu, região, merge) autorizada pelo responsável.</span></li>
+      <li><strong>Reaproveitamento seguro</strong><span>Lógica de IA do repositório da equipe estudada e reescrita em Python, sem alterar o repositório original e sem dependência nova.</span></li>
+      <li><strong>Etapas pequenas</strong><span>Cliente de IA → base de conhecimento → prompt → limites e auditoria → tela → painel flutuante, cada uma com testes.</span></li>
+      <li><strong>Testes sem internet</strong><span>Provedor de IA simulado nos testes automatizados e provedor falso local para conferir a tela no navegador.</span></li>
+      <li><strong>Publicação guiada</strong><span>PR, CI verde, merge, migração e cadastro das variáveis na Vercel feito pelo responsável — a chave nunca passa pelo agente.</span></li>
+      <li><strong>Correção com evidência</strong><span>Erro encontrado no site (pergunta limitada a 2 letras) virou nova sprint, com teste de regressão.</span></li>
+    </ol>
+    <div class="method-columns method-arise">
+      <div>
+        <h3>Skills e práticas aplicadas</h3>
+        <ul class="method-checks">
+          <li>Arquivos de contexto do agente (<code>CLAUDE.md</code>/<code>AGENTS.md</code>) e regra "Metodologia sempre atualizada" com teste</li>
+          <li>Prompt montado no servidor com blocos delimitados, tratados como dados (proteção contra prompt injection)</li>
+          <li>Menor privilégio: o assistente só conversa; não acessa o banco nem executa ações</li>
+          <li>Base de conhecimento versionada por módulo, escolhida pela pergunta e pelo perfil</li>
+          <li>Testes de regressão, varredura de segredos e capturas no computador e no celular</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Tecnologia do assistente</h3>
+        <ul class="method-checks">
+          <li>API compatível com OpenAI (Google Gemini hoje; outro provedor só por configuração)</li>
+          <li>Modelos de reserva, raciocínio mínimo e tempo-limite só até o início da resposta</li>
+          <li>Resposta em streaming, com listas, tabelas e código formatados com segurança</li>
+          <li>Conversas por usuário (30 dias), limite por minuto e por dia, auditoria só de metadados</li>
+          <li>Ícone flutuante em todas as telas e página completa com histórico; função na região de São Paulo (<code>gru1</code>)</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted method-note">Lições registradas: números formatados no padrão brasileiro não podem ir para atributos HTML (o limite "2.000" virou 2); a auditoria do sistema é imutável, por isso o registro é gravado uma única vez, ao final da resposta.</p>
+  </section>
+
   <section class="surface" id="seguranca" aria-labelledby="seg-titulo">
     <div class="section-heading"><div><span class="eyebrow">Segurança e testes</span><h2 id="seg-titulo">Como a qualidade é garantida</h2></div></div>
     <div class="method-columns">
@@ -84,7 +120,7 @@
           <li>Limite de tentativas e bloqueio de login</li>
           <li>Permissões no backend e auditoria de acessos e alterações</li>
           <li>Segredos apenas nas variáveis da Vercel; nada no Git</li>
-          <li>Conversas do Assistente IA visíveis só ao próprio usuário, por 30 dias</li>
+          <li>Conversas do Assistente Arise visíveis só ao próprio usuário, por 30 dias</li>
           <li>Banco exclusivo com usuário de privilégio mínimo</li>
         </ul>
       </div>
@@ -96,7 +132,7 @@
           <li>Auditoria do repositório contra segredos e dados reais</li>
           <li>Verificação de migrações pendentes</li>
           <li>Testes do limite de confiança do adaptador MCP</li>
-          <li>Testes do Assistente IA com provedor simulado, sem internet</li>
+          <li>Testes do Assistente Arise com provedor simulado, sem internet</li>
           <li>Capturas antes/depois registradas em cada sprint</li>
         </ul>
       </div>

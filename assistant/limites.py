@@ -1,4 +1,4 @@
-"""Limites de uso e auditoria do Assistente IA (Sprint 21).
+"""Limites de uso e auditoria do Assistente Arise (Sprint 21).
 
 Reaproveita a tabela de eventos da API da Sprint 17 (``ApiAccessEvent``) com
 o endpoint ``/assistente/``. Só metadados: nunca o texto da pergunta ou da

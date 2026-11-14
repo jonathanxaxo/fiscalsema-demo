@@ -1,4 +1,4 @@
-"""Base de conhecimento do Assistente IA (Sprint 21).
+"""Base de conhecimento do Assistente Arise (Sprint 21).
 
 Arquivos ``assistant/conhecimento/*.md`` com cabeçalho:
 
