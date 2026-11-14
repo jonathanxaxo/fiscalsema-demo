@@ -1,13 +1,14 @@
 from django.contrib import admin
 from django.urls import include, path
 
-from .views import health, home
+from .views import health, home, methodology
 
 
 urlpatterns = [
     path("api/v1/", include("api_v1.urls")),
     path("rascunhos-ia/", include("api_v1.web_urls")),
     path("", home, name="home"),
+    path("metodologia/", methodology, name="methodology"),
     path("conta/", include("accounts.urls")),
     path("contratos/", include("contracts.urls")),
     path("documentos/", include("documents.urls")),

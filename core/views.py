@@ -98,3 +98,13 @@ def health(request):
         logger.warning("Health check do banco falhou")
         return JsonResponse({"status": "indisponivel", "database": "erro"}, status=503)
     return JsonResponse({"status": "ok", "database": "ok"})
+
+
+@require_GET
+@login_required
+def methodology(request):
+    """Página informativa sobre como o sistema foi construído (Sprint 20).
+
+    Conteúdo fixo, sem consulta a dados de contratos.
+    """
+    return render(request, "core/metodologia.html")
