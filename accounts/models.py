@@ -217,6 +217,10 @@ class AuthenticationEvent(models.Model):
         ACCOUNT_RESTORED = "CONTA_RESTAURADA", "Conta restaurada"
         PROFILE_SWITCHED_TO_FISCAL = "PERFIL_FISCAL", "Perfil alternado para Fiscal"
         PROFILE_SWITCHED_TO_ADMIN = "PERFIL_ADMIN", "Perfil alternado para Administrador"
+        GOOGLE_LOGIN = "LOGIN_GOOGLE", "Login com Google"
+        GOOGLE_LOGIN_DENIED = "LOGIN_GOOGLE_NEGADO", "Login com Google recusado"
+        GOOGLE_LINKED = "GOOGLE_VINCULADO", "Conta Google vinculada"
+        GOOGLE_UNLINKED = "GOOGLE_DESVINCULADO", "Conta Google desvinculada"
 
     event_type = models.CharField(max_length=30, choices=EventType.choices)
     user = models.ForeignKey(
@@ -358,3 +362,41 @@ class ProfileSwitchLink(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class ExternalIdentity(models.Model):
+    """Identidade de um provedor externo (Sprint 25: Google) vinculada a um usuário.
+
+    O vínculo não altera nada no cadastro do usuário (nome, perfil,
+    organização, permissões ou senha). O identificador do provedor (``sub``)
+    é único: uma identidade Google aponta para um único usuário.
+    """
+
+    class Provider(models.TextChoices):
+        GOOGLE = "google", "Google"
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="external_identities",
+        verbose_name="usuário",
+    )
+    provider = models.CharField("provedor", max_length=20, choices=Provider.choices)
+    subject = models.CharField("identificador no provedor", max_length=255)
+    email = models.EmailField("e-mail no provedor", max_length=254)
+    linked_at = models.DateTimeField("vinculada em", auto_now_add=True)
+    last_login_at = models.DateTimeField("último login", null=True, blank=True)
+
+    class Meta:
+        ordering = ("provider", "linked_at")
+        verbose_name = "identidade externa"
+        verbose_name_plural = "identidades externas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("provider", "subject"), name="accounts_external_identity_unique_subject"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_provider_display()} — {self.email}"
+

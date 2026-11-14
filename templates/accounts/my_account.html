@@ -1,0 +1,52 @@
+{% extends "accounts/base.html" %}
+{% block title %}Minha conta — FiscalSema{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Conta</span>
+      <h1>Minha conta</h1>
+      <p>{{ request.user.full_name }} · {{ request.user.email }}</p>
+    </div>
+    <span class="badge badge-success">{{ request.user.get_profile_display }}</span>
+  </header>
+
+  {% for message in messages %}<p class="{% if message.tags == 'error' %}danger{% else %}notice{% endif %}" role="status">{{ message }}</p>{% endfor %}
+  <section class="surface" aria-labelledby="metodos-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Segurança</span><h2 id="metodos-titulo">Métodos de acesso</h2></div></div>
+    <ul class="account-methods">
+      <li><strong>Senha do FiscalSema</strong><span>{% if has_password %}Ativa{% else %}Não definida{% endif %}</span><a class="button-link button-link-small" href="{% url 'accounts:password_change' %}">Alterar senha</a></li>
+      {% for identity in identities %}
+        <li>
+          <strong>Google</strong><span>{{ identity.email }} · vinculada em {{ identity.linked_at|date:"d/m/Y" }}</span>
+          <form method="post" action="{% url 'accounts:google_unlink' identity.pk %}" class="account-inline-form">
+            {% csrf_token %}
+            <label class="visually-hidden" for="senha-desvincular-{{ identity.pk }}">Senha atual</label>
+            <input type="password" id="senha-desvincular-{{ identity.pk }}" name="password" placeholder="Senha atual" autocomplete="current-password" required>
+            <button type="submit" class="button-link-small">Desvincular</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if google_enabled %}
+      <form method="post" action="{% url 'accounts:google_link_start' %}" class="account-inline-form account-link-form">
+        {% csrf_token %}
+        <label for="senha-vincular">Vincular conta Google (confirme sua senha):</label>
+        <input type="password" id="senha-vincular" name="password" placeholder="Senha atual" autocomplete="current-password" required>
+        <button type="submit" class="button-link-small">Vincular conta Google</button>
+      </form>
+    {% endif %}
+    <p class="muted">Vincular ou desvincular o Google não altera seu perfil, organização ou permissões.</p>
+  </section>
+
+  <section class="surface" aria-labelledby="conexoes-titulo">
+    <div class="section-heading"><div><span class="eyebrow">Integrações</span><h2 id="conexoes-titulo">Conexões externas</h2></div></div>
+    {% if api_credentials %}
+      <ul class="account-methods">
+        {% for credential in api_credentials %}<li><strong>{{ credential.name }}</strong><span>{{ credential.get_access_mode_display }}{% if credential.last_used_at %} · último uso {{ credential.last_used_at|date:"d/m/Y H:i" }}{% endif %}</span></li>{% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Nenhuma conexão externa ativa.</p>
+    {% endif %}
+    <p class="muted">A conexão de clientes de IA (MCP) com a sua própria identidade e a revogação por aqui chegam numa próxima etapa.</p>
+  </section>
+{% endblock %}

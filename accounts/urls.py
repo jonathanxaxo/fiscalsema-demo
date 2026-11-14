@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.views import PasswordChangeDoneView
 from django.urls import path
 
+from . import google_views
 from .profile_switch import SwitchProfileView
 from .views import (
     AccountLoginView,
@@ -21,6 +22,12 @@ urlpatterns = [
     path("entrar/", AccountLoginView.as_view(), name="login"),
     path("sair/", AccountLogoutView.as_view(), name="logout"),
     path("perfil/alternar/", SwitchProfileView.as_view(), name="switch_profile"),
+    path("minha-conta/", google_views.my_account, name="my_account"),
+    path("google/entrar/", google_views.google_start, name="google_start"),
+    path("google/retorno/", google_views.google_callback, name="google_callback"),
+    path("google/confirmar-vinculo/", google_views.google_confirm_link, name="google_confirm_link"),
+    path("google/vincular/", google_views.google_link_start, name="google_link_start"),
+    path("google/<int:pk>/desvincular/", google_views.google_unlink, name="google_unlink"),
     path("alterar-senha/", AccountPasswordChangeView.as_view(), name="password_change"),
     path(
         "alterar-senha/concluida/",
