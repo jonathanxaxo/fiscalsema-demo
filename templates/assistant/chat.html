@@ -8,7 +8,7 @@
     <div>
       <span class="eyebrow">Ajuda inteligente</span>
       <h1>Assistente IA</h1>
-      <p>Tire dúvidas sobre como usar o FiscalSema. O assistente só orienta: não altera nenhum dado.</p>
+      <p>Converse com a IA: tire dúvidas sobre o FiscalSema, fiscalização de contratos, textos e muito mais. O assistente não altera nenhum dado do sistema.</p>
     </div>
     <span class="badge badge-success">{{ profile_label }}</span>
   </header>
@@ -45,7 +45,7 @@
           <div class="assistant-msg assistant-msg-{{ message.role }}"><span class="assistant-msg-label">{% if message.role == "user" %}Você{% else %}Assistente IA{% endif %}</span><div class="assistant-msg-body"{% if message.role == "assistant" %} data-md{% endif %}>{{ message.content }}</div></div>
         {% empty %}
           <div class="assistant-welcome" data-assistant-welcome>
-            <p><strong>Olá, {{ request.user.get_short_name }}!</strong> Sou o Assistente IA do FiscalSema. Posso explicar telas, botões e procedimentos para o perfil {{ profile_label }}.</p>
+            <p><strong>Olá, {{ request.user.get_short_name }}!</strong> Sou o Assistente IA do FiscalSema. Pergunte o que quiser: explico telas e procedimentos do sistema (perfil {{ profile_label }}), termos de fiscalização, ajudo a redigir textos e organizar ideias.</p>
             <div class="assistant-suggestions">
               {% for suggestion in suggestions %}<button type="button" class="button-link-small" data-suggestion="{{ suggestion }}">{{ suggestion }}</button>{% endfor %}
             </div>
@@ -56,7 +56,7 @@
         {% csrf_token %}
         <input type="hidden" name="conversa" value="{{ current.pk|default:'' }}">
         <label class="visually-hidden" for="assistant-question">Sua pergunta</label>
-        <textarea id="assistant-question" name="pergunta" rows="1" maxlength="{{ max_question }}" placeholder="Digite sua pergunta…" aria-describedby="assistant-hint" required></textarea>
+        <textarea id="assistant-question" name="pergunta" rows="1" maxlength="{{ max_question|stringformat:'d' }}" placeholder="Pergunte qualquer coisa…" aria-describedby="assistant-hint" required></textarea>
         <button type="submit">Enviar</button>
       </form>
       <p class="assistant-hint" id="assistant-hint">Enter envia · Shift+Enter quebra a linha</p>

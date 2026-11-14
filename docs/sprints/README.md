@@ -54,3 +54,6 @@ documental das entregas anteriores.
   usuários logados e botões/menu compactos (32/28 px).
 - `sprint-21-assistente-ia`: Assistente IA nativo (ajuda de uso do sistema),
   conversas por usuário, limites e auditoria de metadados.
+
+- `sprint-22-chat-ia-completo`: correção do limite de 2 caracteres na pergunta
+  e Assistente IA como chat de IA completo.

@@ -58,9 +58,15 @@ class TelaTests(Base):
         self.assertContains(home, "Assistente IA</a>")
         page = self.client.get(reverse("assistant:chat"))
         self.assertContains(page, "Sou o Assistente IA do FiscalSema")
+        self.assertContains(page, "Pergunte o que quiser")
         self.assertContains(page, "Google Gemini")
         self.assertContains(page, "Como cadastro uma Ordem de Serviço?")
         self.assertNotContains(page, "Arise")
+
+    def test_question_box_accepts_full_length(self):
+        # Regressão: "2000" formatado como "2.000" virava limite de 2 caracteres.
+        page = self.client.get(reverse("assistant:chat"))
+        self.assertContains(page, 'maxlength="2000"')
 
     def test_anonymous_is_sent_to_login(self):
         self.client.logout()
@@ -225,6 +231,12 @@ class PromptConhecimentoTests(TestCase):
         self.assertNotIn(attack, system)
         self.assertEqual(messages[-1], {"role": "user", "content": attack})
         self.assertIn("Perfil ativo: Fiscal", system)
+
+    def test_general_questions_are_allowed(self):
+        system = build_messages("Me ajude a escrever um e-mail", profile=UserProfile.FISCAL)[0]["content"]
+        self.assertIn("assistente de IA completo", system)
+        self.assertIn("Não invente leis, normas, números ou fatos", system)
+        self.assertIn("não executa ações no sistema", system)
 
     def test_history_is_trimmed(self):
         history = [{"role": "user" if i % 2 == 0 else "assistant", "content": "x" * 1500} for i in range(10)]
