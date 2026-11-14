@@ -158,7 +158,7 @@ def _global_sources():
                 "queryset": ApiAccessEvent.objects.all(),
                 "category": "API",
                 "record": lambda e: (
-                    f"Assistente IA — pergunta ({e.status_code})"
+                    f"Assistente Arise — pergunta ({e.status_code})"
                     if e.endpoint == "/assistente/"
                     else f"{e.method} {e.endpoint} ({e.status_code})"
                 ),

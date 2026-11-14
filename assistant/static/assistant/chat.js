@@ -1,8 +1,16 @@
 "use strict";
-// Assistente IA do FiscalSema (Sprint 21): envio, streaming e formatação segura.
+// Assistente Arise do FiscalSema (Sprints 21–23): página, painel flutuante, streaming e formatação segura.
 (function () {
-  const root = document.querySelector("[data-assistant]");
-  if (!root) return;
+document.querySelectorAll("[data-assistant]").forEach(init);
+setupWidget();
+
+function init(root) {
+  const floating = root.hasAttribute("data-floating");
+  const storageKey = `arise-conversa-${root.dataset.user || ""}`;
+  const store = {
+    get() { try { return sessionStorage.getItem(storageKey) || ""; } catch (e) { return ""; } },
+    set(v) { try { v ? sessionStorage.setItem(storageKey, v) : sessionStorage.removeItem(storageKey); } catch (e) { /* sem armazenamento */ } },
+  };
   const form = root.querySelector("[data-assistant-form]");
   const list = root.querySelector("[data-assistant-messages]");
   const input = form ? form.querySelector("textarea") : null;
@@ -69,7 +77,7 @@
     item.className = `assistant-msg assistant-msg-${role}`;
     const label = document.createElement("span");
     label.className = "assistant-msg-label";
-    label.textContent = role === "user" ? "Você" : "Assistente IA";
+    label.textContent = role === "user" ? "Você" : "Assistente Arise";
     const body = document.createElement("div");
     body.className = "assistant-msg-body";
     if (role === "user") body.textContent = text; else body.innerHTML = md(text);
@@ -104,7 +112,13 @@
       const id = response.headers.get("X-Conversa-Id");
       if (id && conversationInput && conversationInput.value !== id) {
         conversationInput.value = id;
-        try { history.replaceState(null, "", `${root.dataset.conversationBase}${id}/`); } catch (e) { /* sem histórico */ }
+        if (floating) {
+          store.set(id);
+          const full = root.querySelector("[data-assistant-full]");
+          if (full) full.href = `${root.dataset.historyUrl}${id}/`;
+        } else {
+          try { history.replaceState(null, "", `${root.dataset.conversationBase}${id}/`); } catch (e) { /* sem histórico */ }
+        }
       }
       const reader = response.body.getReader(), decoder = new TextDecoder();
       let total = "", scheduled = false;
@@ -118,7 +132,7 @@
       }
       draw();
       if (!total.trim()) body.innerHTML = '<p class="assistant-error">Não recebi resposta. Tente novamente.</p>';
-      console.debug(`[Assistente IA] 1ª palavra ${((first - started) / 1000).toFixed(1)} s · total ${((performance.now() - started) / 1000).toFixed(1)} s`);
+      console.debug(`[Assistente Arise] 1ª palavra ${((first - started) / 1000).toFixed(1)} s · total ${((performance.now() - started) / 1000).toFixed(1)} s`);
     } catch (error) {
       body.innerHTML = `<p class="assistant-error">${esc(error.message)}</p>`;
     } finally {
@@ -143,4 +157,57 @@
       button.addEventListener("click", () => send(button.dataset.suggestion));
     });
   }
+
+  if (floating) {
+    const newButton = root.querySelector("[data-assistant-new]");
+    const reset = () => {
+      store.set("");
+      conversationInput.value = "";
+      list.querySelectorAll(".assistant-msg").forEach(el => el.remove());
+      if (welcome) welcome.hidden = false;
+      const full = root.querySelector("[data-assistant-full]");
+      if (full) full.href = root.dataset.historyUrl.replace(/conversas\/$/, "");
+    };
+    if (newButton) newButton.addEventListener("click", () => { reset(); input.focus(); });
+    // Continua a última conversa desta aba, buscando as mensagens no servidor (só do próprio usuário).
+    root.loadConversation = async () => {
+      const id = store.get();
+      if (!id || conversationInput.value === id) return;
+      try {
+        const response = await fetch(`${root.dataset.historyUrl}${id}/mensagens/`, { credentials: "same-origin" });
+        if (!response.ok) { reset(); return; }
+        const data = await response.json();
+        conversationInput.value = String(data.id);
+        if (welcome && data.mensagens.length) welcome.hidden = true;
+        data.mensagens.forEach(m => addMessage(m.role, m.content));
+        const full = root.querySelector("[data-assistant-full]");
+        if (full) full.href = `${root.dataset.historyUrl}${data.id}/`;
+      } catch (e) { /* sem rede: começa vazia */ }
+    };
+  }
+}
+
+function setupWidget() {
+  const widget = document.querySelector("[data-arise-widget]");
+  if (!widget) return;
+  const toggle = widget.querySelector("[data-arise-toggle]");
+  const panel = widget.querySelector(".arise-panel");
+  const open = () => {
+    panel.hidden = false;
+    toggle.setAttribute("aria-expanded", "true");
+    widget.classList.add("is-open");
+    if (panel.loadConversation) panel.loadConversation();
+    const box = panel.querySelector("textarea");
+    if (box) box.focus({ preventScroll: true });
+  };
+  const close = () => {
+    panel.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+    widget.classList.remove("is-open");
+    toggle.focus({ preventScroll: true });
+  };
+  toggle.addEventListener("click", () => (panel.hidden ? open() : close()));
+  widget.querySelector("[data-arise-close]").addEventListener("click", close);
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && !panel.hidden) close(); });
+}
 })();

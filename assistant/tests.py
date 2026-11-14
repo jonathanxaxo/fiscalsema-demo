@@ -1,4 +1,4 @@
-"""Assistente IA: telas, permissões, conversas, limites, auditoria e prompt (Sprint 21).
+"""Assistente Arise: telas, permissões, conversas, limites, auditoria e prompt (Sprint 21).
 
 O provedor é sempre simulado; nenhum teste acessa a internet.
 """
@@ -55,13 +55,13 @@ class Base(TestCase):
 class TelaTests(Base):
     def test_menu_item_and_page_for_logged_user(self):
         home = self.client.get(reverse("home"))
-        self.assertContains(home, "Assistente IA</a>")
+        self.assertContains(home, "Assistente Arise</a>")
         page = self.client.get(reverse("assistant:chat"))
-        self.assertContains(page, "Sou o Assistente IA do FiscalSema")
+        self.assertContains(page, "Sou o Assistente Arise do FiscalSema")
         self.assertContains(page, "Pergunte o que quiser")
         self.assertContains(page, "Google Gemini")
         self.assertContains(page, "Como cadastro uma Ordem de Serviço?")
-        self.assertNotContains(page, "Arise")
+        self.assertContains(page, "Assistente Arise")
 
     def test_question_box_accepts_full_length(self):
         # Regressão: "2000" formatado como "2.000" virava limite de 2 caracteres.
@@ -75,24 +75,57 @@ class TelaTests(Base):
             self.assertEqual(response.status_code, 302)
             self.assertIn(reverse("accounts:login"), response["Location"])
         login = self.client.get(reverse("accounts:login"))
-        self.assertNotContains(login, "Assistente IA")
+        self.assertNotContains(login, "Assistente Arise")
 
     @override_settings(ASSISTANT_ENABLED=False)
     def test_disabled_hides_menu_and_refuses_questions(self):
-        self.assertNotContains(self.client.get(reverse("home")), "Assistente IA</a>")
+        self.assertNotContains(self.client.get(reverse("home")), "Assistente Arise</a>")
         self.assertContains(self.client.get(reverse("assistant:chat")), "desativado neste ambiente")
         response = self.client.post(reverse("assistant:ask"), {"pergunta": "oi"})
         self.assertEqual(response.status_code, 503)
 
     @override_settings(ASSISTANT_API_KEY="")
     def test_without_key_menu_is_hidden(self):
-        self.assertNotContains(self.client.get(reverse("home")), "Assistente IA</a>")
+        self.assertNotContains(self.client.get(reverse("home")), "Assistente Arise</a>")
 
     def test_csrf_is_required(self):
         strict = Client(enforce_csrf_checks=True)
         strict.force_login(self.fiscal)
         response = strict.post(reverse("assistant:ask"), {"pergunta": "oi"})
         self.assertEqual(response.status_code, 403)
+
+
+@override_settings(**ON)
+class FlutuanteTests(Base):
+    def test_floating_icon_on_system_pages(self):
+        for url in (reverse("home"), reverse("methodology"), reverse("contracts:list")):
+            with self.subTest(url=url):
+                page = self.client.get(url)
+                self.assertContains(page, "data-arise-widget")
+                self.assertContains(page, 'aria-label="Assistente Arise"')
+                self.assertContains(page, "assistant/chat.js")
+                self.assertContains(page, 'maxlength="2000"')
+
+    def test_no_floating_icon_on_full_chat_or_login(self):
+        self.assertNotContains(self.client.get(reverse("assistant:chat")), "data-arise-widget")
+        self.client.logout()
+        login = self.client.get(reverse("accounts:login"))
+        self.assertNotContains(login, "data-arise-widget")
+        self.assertNotContains(login, "assistant/chat.js")
+
+    @override_settings(ASSISTANT_ENABLED=False)
+    def test_no_floating_icon_when_disabled(self):
+        self.assertNotContains(self.client.get(reverse("home")), "data-arise-widget")
+
+    def test_messages_endpoint_only_for_owner(self):
+        mine = AssistantConversation.objects.create(user=self.fiscal, title="Minha")
+        AssistantMessage.objects.create(conversation=mine, role="user", content="pergunta minha")
+        data = self.client.get(reverse("assistant:messages", args=[mine.pk])).json()
+        self.assertEqual(data["mensagens"], [{"role": "user", "content": "pergunta minha"}])
+        theirs = AssistantConversation.objects.create(user=self.other, title="Dele")
+        self.assertEqual(self.client.get(reverse("assistant:messages", args=[theirs.pk])).status_code, 404)
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("assistant:messages", args=[mine.pk])).status_code, 302)
 
 
 @override_settings(**ON)
@@ -199,7 +232,7 @@ class LimiteAuditoriaTests(Base):
         self.ask()
         admin = User.objects.create_superuser(email="admin.ia@example.local", full_name="Admin IA", password=VALID_PASSWORD)
         self.client.force_login(admin)
-        self.assertContains(self.client.get(reverse("audit:global")), "Assistente IA — pergunta (200)")
+        self.assertContains(self.client.get(reverse("audit:global")), "Assistente Arise — pergunta (200)")
 
 
 class PromptConhecimentoTests(TestCase):

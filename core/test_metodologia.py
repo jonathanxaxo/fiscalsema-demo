@@ -40,7 +40,8 @@ class MetodologiaTests(TestCase):
         self.assertTemplateUsed(response, "core/metodologia.html")
         for section in ('id="metodo"', 'id="sprints"', 'id="tecnologias"', 'id="ia"', 'id="seguranca"'):
             self.assertContains(response, section)
-        for text in ("Entender", "Registrar", "Django 5.2", "PostgreSQL", "Claude Code e Codex",
+        for text in ("Como o Assistente Arise foi construído", "Skills e práticas aplicadas",
+                     "Entender", "Registrar", "Django 5.2", "PostgreSQL", "Claude Code e Codex",
                      "Matriz de autonomia", "a decisão e a validação continuam humanas"):
             self.assertContains(response, text)
 

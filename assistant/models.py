@@ -1,4 +1,4 @@
-"""Conversas do Assistente IA (Sprint 21).
+"""Conversas do Assistente Arise (Sprint 21).
 
 Cada conversa pertence a um único usuário e só ele a vê. Conversas ficam
 guardadas por ``ASSISTANT_RETENTION_DAYS`` dias e podem ser excluídas pelo

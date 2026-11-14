@@ -1,4 +1,4 @@
-/* Assistente IA (Sprint 21) — segue os tokens e o padrão compacto do app.css. */
+/* Assistente Arise (Sprint 21) — segue os tokens e o padrão compacto do app.css. */
 .assistant-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1rem; align-items: start; }
 .assistant-history { position: sticky; top: 88px; padding: 1rem; }
 .assistant-new { width: 100%; }
@@ -47,3 +47,29 @@
   .assistant-msg { max-width: 100%; }
   .assistant-chat { min-height: 70vh; }
 }
+
+/* Sprint 23: ícone flutuante e painel do Assistente Arise. */
+.arise-widget { position: fixed; right: 20px; bottom: 20px; z-index: 60; }
+.arise-fab { width: 54px; height: 54px; min-height: 54px; padding: 0; border-radius: 50%; background: var(--green-800); color: #fff; box-shadow: 0 10px 26px rgba(11, 61, 42, .32); }
+.arise-fab:hover { background: var(--green-950); transform: translateY(-1px); }
+.arise-fab:focus-visible { outline: 3px solid #f5b301; outline-offset: 3px; }
+.arise-widget.is-open .arise-fab { background: var(--green-950); }
+.arise-panel { position: absolute; right: 0; bottom: 68px; display: flex; flex-direction: column; width: min(400px, calc(100vw - 32px)); height: min(600px, calc(100vh - 140px)); padding: .8rem; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 24px 60px rgba(9, 26, 19, .28); }
+.arise-panel[hidden] { display: none; }
+.arise-panel-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding-bottom: .55rem; border-bottom: 1px solid var(--line); }
+.arise-panel-head strong, .arise-panel-head small { display: block; }
+.arise-panel-head strong { color: var(--green-950); font-size: .95rem; }
+.arise-panel-head small { color: var(--muted); font-size: .74rem; }
+.arise-panel-actions { display: flex; gap: .3rem; }
+.arise-icon-button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; min-height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--green-800); font-size: 1rem; line-height: 1; text-decoration: none; }
+.arise-icon-button:hover { background: var(--green-50); color: var(--green-950); box-shadow: none; }
+.arise-panel-notice { margin: .55rem 0 0; font-size: .74rem; }
+.arise-panel-messages { max-height: none; min-height: 0; flex: 1; }
+.arise-panel .assistant-msg { max-width: 92%; }
+.arise-panel .assistant-msg-body { font-size: .86rem; }
+.arise-panel .assistant-form { padding-top: .55rem; }
+@media (max-width: 640px) {
+  .arise-widget { right: 14px; bottom: 14px; }
+  .arise-panel { position: fixed; inset: 0; width: auto; height: auto; border-radius: 0; }
+}
+@media print { .arise-widget { display: none !important; } }

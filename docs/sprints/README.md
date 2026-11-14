@@ -57,3 +57,6 @@ documental das entregas anteriores.
 
 - `sprint-22-chat-ia-completo`: correção do limite de 2 caracteres na pergunta
   e Assistente IA como chat de IA completo.
+
+- `sprint-23-arise-flutuante`: nome Assistente Arise, ícone e painel
+  flutuante em todas as telas e metodologia da construção da IA.

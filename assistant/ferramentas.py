@@ -1,4 +1,4 @@
-"""Consultas futuras do Assistente IA (preparadas e DESLIGADAS na Sprint 21).
+"""Consultas futuras do Assistente Arise (preparadas e DESLIGADAS na Sprint 21).
 
 Quando forem autorizadas em sprint própria, as consultas a contratos, OS,
 empenhos, prazos, pagamentos e relatórios deverão:
