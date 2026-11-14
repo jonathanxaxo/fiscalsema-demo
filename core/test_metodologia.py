@@ -55,3 +55,16 @@ class MetodologiaTests(TestCase):
     def test_only_get_is_allowed(self):
         self.client.force_login(self.fiscal)
         self.assertEqual(self.client.post(self.url).status_code, 405)
+
+    def test_latest_sprint_is_listed_in_methodology(self):
+        import re
+        from pathlib import Path
+
+        from django.conf import settings
+
+        sprints = Path(settings.BASE_DIR, "docs", "sprints")
+        numbers = [int(m.group(1)) for d in sprints.iterdir() if (m := re.match(r"sprint-(\d+)-", d.name))]
+        self.client.force_login(self.fiscal)
+        response = self.client.get(self.url)
+        self.assertContains(response, f"<b>{max(numbers):02d}</b>")
+

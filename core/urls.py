@@ -9,6 +9,7 @@ urlpatterns = [
     path("rascunhos-ia/", include("api_v1.web_urls")),
     path("", home, name="home"),
     path("metodologia/", methodology, name="methodology"),
+    path("assistente/", include("assistant.urls")),
     path("conta/", include("accounts.urls")),
     path("contratos/", include("contracts.urls")),
     path("documentos/", include("documents.urls")),

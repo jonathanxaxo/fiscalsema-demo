@@ -67,3 +67,10 @@ quantidade de testes.
 Cada evolução cria `docs/sprints/sprint-NN-nome/` com `escopo.md`,
 `arquivos.md`, `decisoes.md` e `testes.md`, e atualiza
 `docs/sprints/README.md`. Sprints anteriores não são reescritas.
+
+## Metodologia sempre atualizada
+
+Toda sprint ou mudança relevante atualiza, no mesmo PR, a página
+`templates/core/metodologia.html` (sprints, tecnologias, IA, segurança e
+testes). O teste `core.test_metodologia` falha se a sprint mais recente de
+`docs/sprints/` não aparecer na página.

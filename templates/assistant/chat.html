@@ -1,0 +1,66 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+{% block title %}Assistente IA — FiscalSema{% endblock %}
+{% block main_class %}assistant-page{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'assistant/chat.css' %}"><script src="{% static 'assistant/chat.js' %}" defer></script>{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Ajuda inteligente</span>
+      <h1>Assistente IA</h1>
+      <p>Tire dúvidas sobre como usar o FiscalSema. O assistente só orienta: não altera nenhum dado.</p>
+    </div>
+    <span class="badge badge-success">{{ profile_label }}</span>
+  </header>
+
+  {% if not enabled %}
+    <section class="surface"><p class="muted">O Assistente IA está desativado neste ambiente.</p></section>
+  {% else %}
+  <div class="assistant-layout" data-assistant data-conversation-base="{% url 'assistant:chat' %}conversas/">
+    <aside class="assistant-history surface" aria-label="Conversas anteriores">
+      <a class="button-link button-link-small assistant-new" href="{% url 'assistant:chat' %}">+ Nova conversa</a>
+      <h2 class="assistant-history-title">Conversas anteriores</h2>
+      {% if conversations %}
+        <ul>
+          {% for conversation in conversations %}
+            <li><a href="{% url 'assistant:conversation' conversation.pk %}"{% if current and conversation.pk == current.pk %} aria-current="page"{% endif %}><span>{{ conversation.title }}</span><small>{{ conversation.updated_at|date:"d/m/Y H:i" }}</small></a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Nenhuma conversa ainda.</p>
+      {% endif %}
+      <p class="assistant-retention">Guardadas por {{ retention_days }} dias. Só você vê as suas conversas.</p>
+    </aside>
+
+    <section class="assistant-chat surface" aria-label="Conversa">
+      <p class="assistant-notice" role="note">O Assistente IA usa um serviço de IA externo (Google Gemini). Ambiente de demonstração: use somente dados fictícios. As respostas podem conter erros — confira antes de usar.</p>
+      {% if current %}
+        <div class="assistant-chat-head">
+          <strong>{{ current.title }}</strong>
+          <form method="post" action="{% url 'assistant:delete' current.pk %}" class="inline-form" data-no-submit-lock>{% csrf_token %}<button type="submit">Excluir conversa</button></form>
+        </div>
+      {% endif %}
+      <div class="assistant-messages" data-assistant-messages aria-live="polite">
+        {% for message in chat_messages %}
+          <div class="assistant-msg assistant-msg-{{ message.role }}"><span class="assistant-msg-label">{% if message.role == "user" %}Você{% else %}Assistente IA{% endif %}</span><div class="assistant-msg-body"{% if message.role == "assistant" %} data-md{% endif %}>{{ message.content }}</div></div>
+        {% empty %}
+          <div class="assistant-welcome" data-assistant-welcome>
+            <p><strong>Olá, {{ request.user.get_short_name }}!</strong> Sou o Assistente IA do FiscalSema. Posso explicar telas, botões e procedimentos para o perfil {{ profile_label }}.</p>
+            <div class="assistant-suggestions">
+              {% for suggestion in suggestions %}<button type="button" class="button-link-small" data-suggestion="{{ suggestion }}">{{ suggestion }}</button>{% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <form class="assistant-form" method="post" action="{% url 'assistant:ask' %}" data-assistant-form data-no-submit-lock>
+        {% csrf_token %}
+        <input type="hidden" name="conversa" value="{{ current.pk|default:'' }}">
+        <label class="visually-hidden" for="assistant-question">Sua pergunta</label>
+        <textarea id="assistant-question" name="pergunta" rows="1" maxlength="{{ max_question }}" placeholder="Digite sua pergunta…" aria-describedby="assistant-hint" required></textarea>
+        <button type="submit">Enviar</button>
+      </form>
+      <p class="assistant-hint" id="assistant-hint">Enter envia · Shift+Enter quebra a linha</p>
+    </section>
+  </div>
+  {% endif %}
+{% endblock %}

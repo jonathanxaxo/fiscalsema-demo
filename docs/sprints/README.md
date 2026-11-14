@@ -52,3 +52,5 @@ documental das entregas anteriores.
   no sino, na lista e no detalhe; migração aditiva.
 - `sprint-20-metodologia-visual-compacto`: página "Metodologia" para todos os
   usuários logados e botões/menu compactos (32/28 px).
+- `sprint-21-assistente-ia`: Assistente IA nativo (ajuda de uso do sistema),
+  conversas por usuário, limites e auditoria de metadados.
