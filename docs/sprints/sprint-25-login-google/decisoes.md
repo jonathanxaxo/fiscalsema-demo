@@ -12,6 +12,8 @@
 6. **Mensagens na tela de login**: o layout de login não mostrava mensagens do
    sistema; foram incluídas para o usuário entender por que o acesso foi negado.
 
+7. **Botão sempre visível** (pedido do responsável): o Google é uma opção a mais, à direita do Entrar; e-mail e senha continuam sendo a primeira opção.
+
 ## Pendências
 
 - Criar o cliente OAuth no Google Cloud (responsável) e cadastrar as variáveis na Vercel.

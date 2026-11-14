@@ -81,12 +81,18 @@ class GoogleFlowTests(GoogleBase):
         self.assertTrue(query["redirect_uri"][0].endswith(reverse("accounts:google_callback")))
 
     @override_settings(GOOGLE_OAUTH_CLIENT_ID="", GOOGLE_OAUTH_CLIENT_SECRET="")
-    def test_not_configured_hides_button_and_404(self):
-        self.assertNotContains(self.client.get(reverse("accounts:login")), "Continuar com Google")
-        self.assertEqual(self.client.get(reverse("accounts:google_start")).status_code, 404)
+    def test_button_always_visible_and_friendly_when_not_configured(self):
+        login = self.client.get(reverse("accounts:login"))
+        self.assertContains(login, "Entrar com Google")
+        self.assertContains(login, "Opcional")
+        response = self.client.get(reverse("accounts:google_start"))
+        self.assertRedirects(response, reverse("accounts:login"), fetch_redirect_response=False)
+        self.assertContains(self.client.get(response["Location"]), "ainda está sendo configurado")
+        self.assertEqual(self.client.get(reverse("accounts:google_callback")).status_code, 404)
 
-    def test_button_on_login_when_configured(self):
-        self.assertContains(self.client.get(reverse("accounts:login")), "Continuar com Google")
+    def test_password_login_still_first_option(self):
+        login = self.client.get(reverse("accounts:login")).content.decode()
+        self.assertLess(login.index('type="submit">Entrar</button>'), login.index("Entrar com Google"))
 
     def test_already_linked_logs_into_same_user_without_changes(self):
         ExternalIdentity.objects.create(user=self.user, provider="google", subject="google-sub-123",

@@ -4,7 +4,7 @@ Primeira sprint de implementação do plano da Sprint 24.
 
 ## Incluído
 
-- Botão **Continuar com Google** no login (aparece só com o cliente OAuth configurado).
+- Botão **Entrar com Google** no login, à direita do botão Entrar, sempre visível e **opcional** (contas institucionais e e-mails autorizados); sem o cliente OAuth configurado, o clique mostra "ainda está sendo configurado".
 - OpenID Connect próprio, sem dependência: código + PKCE (S256), `state`, `nonce`;
   token trocado diretamente com o Google por TLS; validação de emissor,
   audiência, `azp`, expiração, `iat`, `nonce`, `sub` e `email_verified`.

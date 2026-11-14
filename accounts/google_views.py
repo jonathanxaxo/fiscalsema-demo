@@ -83,7 +83,9 @@ def _sign_in(request, user, identity):
 
 @require_GET
 def google_start(request):
-    _require_configured()
+    if not is_configured():
+        messages.info(request, "O login com Google ainda está sendo configurado. Entre com e-mail e senha.")
+        return redirect("accounts:login")
     if request.user.is_authenticated:
         return redirect("accounts:my_account")
     return redirect(start_flow(request.session, redirect_uri=_redirect_uri(request), intent="login"))

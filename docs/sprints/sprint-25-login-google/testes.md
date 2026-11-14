@@ -9,7 +9,7 @@
 | Migrations | `makemigrations --check --dry-run` | sem pendências (`accounts/0009` criada nesta sprint) |
 
 Cenários cobertos (Google simulado, sem internet): PKCE/state/nonce; botão
-oculto sem configuração; usuário já vinculado entra sem alterações; bloqueado
+sempre visível, com aviso amigável sem configuração; senha continua a 1ª opção; usuário já vinculado entra sem alterações; bloqueado
 e pendente recusados; mesmo e-mail exige senha (errada → não vincula; certa →
 vincula e entra); vínculo pendente expira; e-mail sem cadastro recusado sem
 criar usuário; tokens inválidos (e-mail não verificado, outro aplicativo,
