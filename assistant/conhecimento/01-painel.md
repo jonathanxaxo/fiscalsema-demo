@@ -13,3 +13,4 @@ Caminho: Menu → Painel.
 - **Ordens de Serviço** (OS por situação e próximos prazos) e **Notas Fiscais e pagamentos** (prazo de encaminhamento de 10 dias após a emissão).
 - **Consumo e saldo por item** e de cada empenho, com barras de consumo.
 - **Mais detalhes**: calendário das NF e fechamentos por ano civil e contratual (clique para abrir).
+- No menu também há o **Dashboard** do contrato (visão gerencial com gráficos). Na Central de trabalho aparecem ainda os avisos "Cobrar a fábrica" e os de faturamento dos serviços do catálogo.

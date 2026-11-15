@@ -10,6 +10,7 @@ import hashlib
 import json
 import secrets
 from datetime import timedelta
+from decimal import Decimal
 from urllib.parse import parse_qs, urlparse
 
 from django.test import override_settings
@@ -579,3 +580,35 @@ class ExecucaoAutorizadaTests(McpOAuthBase):
         page = self.client.get(f"/rascunhos-ia/{draft.pk}/")
         self.assertNotContains(page, "Gerar código de confirmação")
         self.assertEqual(self.client.post(f"/rascunhos-ia/{draft.pk}/codigo/").status_code, 302)
+
+
+class DadosNovosSprint40Tests(McpOAuthBase):
+    """A IA externa recebe prazos, memória de cálculo e situação da NF (Sprint 40)."""
+
+    def test_work_order_and_invoice_carry_new_fields(self):
+        from contracts.models import Invoice, WorkOrder, WorkOrderStatus
+        from contracts.services import create_contract_item, create_invoice, create_work_order
+        from contracts.test_invoices import invoice_data
+        from contracts.test_items import item_data
+        from contracts.test_work_orders import work_order_data
+
+        item = create_contract_item(contract_id=self.contract.pk, actor=self.owner, **item_data())
+        wo = create_work_order(contract_id=self.contract.pk, actor=self.owner,
+                               **work_order_data(item, status=WorkOrderStatus.IN_PROGRESS))
+        nf = create_invoice(work_order_id=wo.pk, actor=self.owner,
+                            **invoice_data(self.contract, gross_value=Decimal("100.00"),
+                                           accepted_value=Decimal("100.00")))
+        Invoice.objects.filter(pk=nf.pk).update(returned_at=nf.issue_date, return_reason="Valor errado")
+        token = self.connect()["access_token"]
+        orders = json.loads(self.call(token, "consultar_ordens_servico", {"contract_id": self.contract.pk})["content"][0]["text"])
+        order = orders["results"][0]
+        for key in ("factory_deadline", "spent_hours_informed", "deadline_situation", "service_lines"):
+            self.assertIn(key, order)
+        self.assertIn("label", order["deadline_situation"])
+        invoices = json.loads(self.call(token, "consultar_notas_fiscais", {"contract_id": self.contract.pk})["content"][0]["text"])
+        returned = invoices["results"][0]
+        self.assertTrue(returned["is_returned"])
+        self.assertFalse(returned["counts_in_calculations"])
+        self.assertIsNone(returned["dimensioned_value"])
+        init = self.rpc("initialize", {"protocolVersion": "2025-06-18"}, token=token).json()["result"]
+        self.assertIn("is_returned=true", init["instructions"])

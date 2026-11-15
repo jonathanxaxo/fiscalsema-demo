@@ -11,6 +11,6 @@ Perfis:
 - **Administrador**: controla os acessos (cadastros, usuários, organizações, setores e auditoria). Não cadastra nem altera contratos.
 - **Usuário de consulta**: só visualiza contratos compartilhados com ele, sem alterar.
 
-Menu lateral (Visão geral): Painel, Contratos, Rascunhos da IA, Assistente Arise e Metodologia. O Administrador também vê a seção Administração.
+Menu lateral (Visão geral): Painel, Dashboard, Contratos, Rascunhos da IA, Assistente Arise e Metodologia. O Administrador também vê a seção Administração.
 No topo: sino de notificações, nome e perfil, "Alterar senha" e "Sair".
 Na demonstração não há cadastro público: as contas são criadas pelo Administrador em Menu → Criar Fiscal.
