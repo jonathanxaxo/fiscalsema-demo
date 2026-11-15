@@ -1683,6 +1683,14 @@ class InvoiceCreateView(InvoiceContextMixin, UserPassesTestMixin, FormView):
         kwargs["work_order"] = self.get_work_order()
         return kwargs
 
+    def get_initial(self):
+        # Sprint 43: "Pronto para faturar · cadastrar NF" já marca o serviço escolhido na OS.
+        initial = super().get_initial()
+        servico = self.request.GET.get("servico", "")
+        if servico.isdigit():
+            initial["service_lines"] = [int(servico)]
+        return initial
+
     def form_valid(self, form):
         try:
             invoice = create_invoice(

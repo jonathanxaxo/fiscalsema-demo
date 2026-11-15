@@ -117,3 +117,6 @@ documental das entregas anteriores.
 
 - `sprint-42-chat-limpo-telas-vivas`: chat flutuante e chat do menu mais
   limpos e vivos, avisos do chat por 10 segundos e telas restantes vivas.
+
+- `sprint-43-nf-em-os-com-catalogo`: botão de cadastrar NF visível na OS com
+  serviços do catálogo e atalho a partir do serviço homologado.
