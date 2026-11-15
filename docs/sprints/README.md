@@ -84,3 +84,6 @@ documental das entregas anteriores.
 
 - `sprint-31-mcp-homologacao`: testes de ataque e compatibilidade do MCP/OAuth,
   guia de conexão, roteiro de homologação e ajuda no Assistente Arise.
+
+- `sprint-32-arise-ler-descartar`: Arise lê TR e contrato anexados só em
+  memória (ler e descartar) e documentos fictícios para a apresentação.

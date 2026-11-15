@@ -19,7 +19,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_GET, require_POST
+
+from .anexos import MAX_REQUEST_BYTES, AttachmentError, InMemoryOnlyUploadHandler, read_attachment
 
 from .conhecimento import suggestions_for
 from .ferramentas import authorized_data
@@ -79,12 +82,28 @@ def _error(message, status):
     return JsonResponse({"erro": message}, status=status)
 
 
+@csrf_exempt  # o CSRF é conferido em ``_ask``, depois de trocar o leitor de upload
 @require_POST
 @login_required
 def ask(request):
+    """Sprint 32: o anexo (TR/contrato) fica só na memória — ler e descartar."""
+    try:
+        length = int(request.META.get("CONTENT_LENGTH") or 0)
+    except ValueError:
+        length = 0
+    if length > MAX_REQUEST_BYTES:
+        return _error("O arquivo passa de 4 MB. Envie um arquivo menor.", 413)
+    request.upload_handlers = [InMemoryOnlyUploadHandler(request)]
+    return _ask(request)
+
+
+@csrf_protect
+def _ask(request):
     user, profile = request.user, request.user.profile
     if not is_configured():
         return _error("O assistente está desativado neste ambiente.", 503)
+    if getattr(request, "arise_upload_too_big", False):
+        return _error("O arquivo passa de 4 MB. Envie um arquivo menor.", 413)
     question = (request.POST.get("pergunta") or "").strip()
     if not question:
         return _error("Escreva uma pergunta.", 400)
@@ -105,21 +124,39 @@ def ask(request):
             return _error("Conversa não encontrada.", 404)
     history = list(conversation.messages.values("role", "content")) if conversation else []
 
+    attachment = None
+    uploaded = request.FILES.get("anexo")
+    if uploaded is not None:
+        try:
+            attachment = read_attachment(uploaded)
+        except AttachmentError as error:
+            record(user, status_code=400, profile=profile, route=ROUTE, details={"anexo": "recusado"})
+            return _error(str(error), 400)
+        finally:
+            uploaded.close()  # descarta o arquivo; só o texto segue, e só nesta requisição
+    audit_attachment = attachment.audit() if attachment else None
+
     started = time.monotonic()
     try:
         stream = stream_chat(
             build_messages(
                 question, profile=profile, route=ROUTE, history=history,
                 data=authorized_data(user, route=ROUTE),
+                document=attachment,
             )
         )
     except ProviderError as error:
-        record(user, status_code=502, profile=profile, route=ROUTE, details={"status_provedor": error.status})
+        record(user, status_code=502, profile=profile, route=ROUTE,
+               details={"status_provedor": error.status, "anexo": audit_attachment})
         return _error(error.message, 502)
+    stored_question = question
+    if attachment is not None:
+        stored_question = f"{question}\n\n📎 documento anexado: {attachment.name} (lido e descartado)"
+    attachment = None  # o texto do documento não é guardado em lugar nenhum
 
     if conversation is None:
         conversation = AssistantConversation.objects.create(user=user, title=question[:80])
-    AssistantMessage.objects.create(conversation=conversation, role=AssistantMessage.Role.USER, content=question)
+    AssistantMessage.objects.create(conversation=conversation, role=AssistantMessage.Role.USER, content=stored_question)
 
     def generate():
         parts, completed = [], False
@@ -145,6 +182,7 @@ def ask(request):
                     "ms_ate_resposta": stream.ms_to_response,
                     "ms_total": int((time.monotonic() - started) * 1000),
                     "concluida": completed,
+                    "anexo": audit_attachment,
                 },
             )
 

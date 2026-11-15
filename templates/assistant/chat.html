@@ -54,6 +54,7 @@
       <form class="assistant-form" method="post" action="{% url 'assistant:ask' %}" data-assistant-form data-no-submit-lock>
         {% csrf_token %}
         <input type="hidden" name="conversa" value="{{ current.pk|default:'' }}">
+        {% include "assistant/_anexo.html" with prefix="assistant" %}
         <label class="visually-hidden" for="assistant-question">Sua pergunta</label>
         <textarea id="assistant-question" name="pergunta" rows="1" maxlength="{{ max_question|stringformat:'d' }}" placeholder="Pergunte qualquer coisa…" aria-describedby="assistant-hint" required></textarea>
         <button type="submit">Enviar</button>
