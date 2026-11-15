@@ -138,3 +138,7 @@ documental das entregas anteriores.
 
 - `sprint-49-sessao-inatividade`: qualquer perfil sai após 1 hora sem uso e
   entra de novo com a senha.
+
+- `sprint-50-conhecimento-arise-seguro`: Arise conhece as novidades (chat,
+  listas, OS, movimento, ociosidade de 1 hora) só no nível básico e recusa
+  detalhes de segurança.
