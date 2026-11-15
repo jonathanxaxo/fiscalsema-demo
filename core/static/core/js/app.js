@@ -180,6 +180,14 @@
   const read = () => { try { return localStorage.getItem(KEY) || fallback(); } catch (e) { return fallback(); } };
   const apply = (mode) => {
     root.dataset.motion = mode;
+    // Sprint 46: no modo "Sem", o logotipo usa a versão parada (a animação fica dentro do SVG).
+    document.querySelectorAll('.brand-picture').forEach((picture) => {
+      const img = picture.querySelector('img');
+      const still = picture.querySelector('source')?.getAttribute('srcset');
+      if (!img || !still) return;
+      if (!img.dataset.liveSrc) img.dataset.liveSrc = img.getAttribute('src');
+      img.setAttribute('src', mode === 'sem' ? still : img.dataset.liveSrc);
+    });
     document.querySelectorAll('[data-motion-choice]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.motionChoice === mode)));
   };
   apply(read());

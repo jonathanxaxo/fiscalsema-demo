@@ -809,3 +809,9 @@ html[data-motion="calmo"] .arise-fab::before, html[data-motion="calmo"] .arise-f
 .page-header-actions .button-link:not(.button-link-secondary)::after, .action-bar .button-link:not(.button-link-secondary)::after, .section-heading .button-link::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); transform: skewX(-18deg); animation: fs-shine 4.5s ease-in-out 1.5s infinite; pointer-events: none; }
 .user-avatar { animation: fs-dot 2.6s ease-out infinite; }
 html[data-motion="calmo"] .sidebar nav a .nav-icon, html[data-motion="calmo"] .exec-chart-bars span, html[data-motion="calmo"] .brand-mark { animation-duration: 7s; }
+
+/* Sprint 46 — lupa do logotipo escaneando. A animação fica dentro do próprio logo.svg
+   (varredura, brilho na lente e pulso do anel, no mesmo ritmo de 3 s); aqui só o encaixe
+   do <picture> e o respeito a "reduzir movimento". Nenhuma outra animação muda. */
+.brand-picture { display: contents; }
+@media (prefers-reduced-motion: reduce) { .brand-mark { animation: none; } }
