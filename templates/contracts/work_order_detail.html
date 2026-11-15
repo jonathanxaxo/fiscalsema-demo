@@ -3,6 +3,7 @@
 {% block title %}OS {{ work_order.number }} — FiscalSema{% endblock %}
 {% block content %}
   <h1>OS {{ work_order.number }}</h1>
+  {% if can_add_invoice or can_edit %}<p class="actions work-order-top-actions">{% if can_add_invoice %}<a class="button-link button-link-small" href="{% url 'contracts:invoice_create' contract.pk work_order.pk %}">Cadastrar Nota Fiscal</a>{% endif %}{% if can_edit %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_update' contract.pk work_order.pk %}">Editar OS</a>{% endif %}<a class="button-link button-link-secondary button-link-small" href="#notas-fiscais">Ver notas fiscais</a></p>{% endif %}
   {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
   <dl>

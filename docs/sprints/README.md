@@ -129,3 +129,6 @@ documental das entregas anteriores.
 
 - `sprint-46-lupa-escaneando`: lupa do logotipo com varredura, brilho e pulso
   sincronizados; parada com "reduzir movimento" e no modo "Sem".
+
+- `sprint-47-abrir-os-pela-lista`: clicar na OS da lista abre a OS; Cadastrar
+  Nota Fiscal e Editar OS no topo da OS.
