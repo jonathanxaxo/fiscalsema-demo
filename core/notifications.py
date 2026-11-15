@@ -87,6 +87,24 @@ def _contract_notifications(contract, dashboard, *, can_fix):
                      f"({_date(alert.deadline)})")
         add("danger" if alert.is_overdue else "warning", title, work_order_url(work_order),
             "Abrir OS para cobrar")
+    for invoice in dashboard.dimensioned_divergences:
+        add("danger",
+            f"NF {invoice.number}/{invoice.series} com valor diferente do dimensionado "
+            f"({_money(invoice.gross_value)} × {_money(invoice.dimensioned_value)})",
+            invoice_url(invoice), "Abrir NF para devolver")
+    for invoice in dashboard.returned_awaiting_correction:
+        add("warning",
+            f"NF {invoice.number}/{invoice.series} devolvida em {_date(invoice.returned_at)}: "
+            "aguardando NF corrigida da fábrica",
+            invoice_url(invoice), "Abrir NF devolvida")
+    for work_order, count in dashboard.accepted_without_homologation:
+        add("warning",
+            f"OS {work_order.number}: {_plural(count, 'serviço aceito', 'serviços aceitos')} sem Termo de Homologação",
+            work_order_url(work_order), "Abrir OS para homologar")
+    for work_order, count in dashboard.homologated_without_invoice:
+        add("warning",
+            f"OS {work_order.number}: {_plural(count, 'serviço homologado', 'serviços homologados')} sem NF",
+            work_order_url(work_order), "Abrir OS para conferir o faturamento")
     for attention in dashboard.divergent_invoices:
         invoice = attention.invoice
         add(

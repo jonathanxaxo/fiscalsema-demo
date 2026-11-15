@@ -12,6 +12,7 @@ from django.views import View
 from django.views.generic import ListView
 
 from .forms import (
+    InvoiceReturnForm,
     ServiceCatalogEntryForm,
     ServiceLineActionForm,
     WorkOrderServiceLineForm,
@@ -33,6 +34,8 @@ from .services import (
     contract_is_read_only_for,
     contracts_visible_to,
     contracts_writable_by,
+    invoices_writable_by,
+    return_invoice,
     work_orders_writable_by,
 )
 
@@ -354,6 +357,42 @@ class WorkOrderHomologateAcceptedView(WorkOrderServiceLineMixin):
             request, f"{len(homologated)} serviço(s) homologado(s) e liberado(s) para faturamento."
         )
         return self.detail_redirect()
+
+
+class InvoiceReturnView(WorkOrderServiceLineMixin):
+    """Sprint 39: devolve a NF para correção; a NF corrigida a substitui."""
+
+    template_name = "contracts/invoice_return.html"
+
+    def get_invoice(self):
+        return get_object_or_404(
+            invoices_writable_by(self.request.user).filter(returned_at__isnull=True),
+            pk=self.kwargs["pk"], work_order=self.get_work_order(),
+        )
+
+    def render_return(self, form, invoice):
+        return render(self.request, self.template_name, {
+            "form": form, "contract": self.get_contract(), "work_order": self.get_work_order(), "invoice": invoice,
+        })
+
+    def get(self, request, *args, **kwargs):
+        return self.render_return(InvoiceReturnForm(), self.get_invoice())
+
+    def post(self, request, *args, **kwargs):
+        invoice = self.get_invoice()
+        form = InvoiceReturnForm(request.POST)
+        if not form.is_valid():
+            return self.render_return(form, invoice)
+        try:
+            return_invoice(invoice_id=invoice.pk, actor=request.user,
+                           returned_at=form.cleaned_data["returned_at"], reason=form.cleaned_data["reason"])
+        except ValidationError as error:
+            _add_service_error(form, error)
+            return self.render_return(form, invoice)
+        messages.success(request, "NF devolvida para correção. Ela saiu dos cálculos; cadastre a NF corrigida "
+                                  "indicando que substitui esta.")
+        return redirect("contracts:invoice_detail", contract_pk=self.get_contract().pk,
+                        work_order_pk=self.get_work_order().pk, pk=invoice.pk)
 
 
 def _add_service_error(form, error):

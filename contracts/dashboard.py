@@ -133,7 +133,7 @@ def _monthly_work_order_attentions(work_orders, *, today):
         ):
             continue
         executions = [e for e in work_order.executions.all() if e.competence == competence]
-        invoices = [i for i in work_order.invoices.all() if i.competence == competence]
+        invoices = [i for i in work_order.invoices.all() if i.competence == competence and i.returned_at is None]
         payments = [
             payment
             for invoice in invoices
@@ -214,6 +214,11 @@ class DashboardSnapshot:
     current_contract_year: object | None
     monthly_work_order_attentions: tuple[MonthlyWorkOrderAttention, ...] = ()
     factory_deadline_alerts: tuple[FactoryDeadlineAlert, ...] = ()
+    # Sprint 39: faturamento dos serviços do catálogo
+    accepted_without_homologation: tuple = ()
+    homologated_without_invoice: tuple = ()
+    returned_awaiting_correction: tuple = ()
+    dimensioned_divergences: tuple = ()
 
     @property
     def attention_count(self):
@@ -337,7 +342,7 @@ def build_contract_dashboard(contract, *, today=None):
 
     pending_invoices = []
     divergent_invoices = []
-    invoices = tuple(contract.invoices.select_related(
+    invoices = tuple(contract.invoices.active().select_related(
         "contract", "work_order", "work_order__item", "item", "allocation"
     ).prefetch_related("payments"))
     executions = tuple(
@@ -447,7 +452,7 @@ def build_contract_dashboard(contract, *, today=None):
         work_order
         for work_order in work_orders
         if work_order.status == WorkOrderStatus.COMPLETED
-        and not work_order.invoices.exists()
+        and not work_order.invoices.active().exists()
     )
     invoice_financial_deadlines = tuple(
         InvoiceFinancialDeadline(
@@ -521,7 +526,12 @@ def build_contract_dashboard(contract, *, today=None):
         if item.annual_operational_limit is not None
         for period in contract_periods
     )
+    billing = _service_billing(contract)
     return DashboardSnapshot(
+        accepted_without_homologation=billing["accepted"],
+        homologated_without_invoice=billing["homologated"],
+        returned_awaiting_correction=billing["returned"],
+        dimensioned_divergences=billing["divergent"],
         contract=contract,
         financial_position=financial,
         has_operational_data=has_operational_data,
@@ -574,3 +584,36 @@ def build_contract_dashboard(contract, *, today=None):
         current_contract_year=period_for_date(contract_periods, today),
         monthly_work_order_attentions=_monthly_work_order_attentions(work_orders, today=today),
     )
+
+
+def _service_billing(contract):
+    """Avisos de faturamento dos serviços do catálogo (Sprint 39; referência: FiscalSema Light)."""
+    from .models import ServiceLineStatus, WorkOrderServiceLine
+
+    lines = tuple(
+        WorkOrderServiceLine.objects.filter(work_order__contract=contract)
+        .exclude(work_order__status=WorkOrderStatus.CANCELED)
+        .select_related("work_order").prefetch_related("invoices")
+    )
+
+    def grouped(predicate):
+        counts = {}
+        for line in lines:
+            if predicate(line):
+                counts.setdefault(line.work_order, 0)
+                counts[line.work_order] += 1
+        return tuple(sorted(counts.items(), key=lambda pair: pair[0].pk))
+
+    invoices = tuple(contract.invoices.select_related("work_order").prefetch_related("replaced_by", "service_lines"))
+    return {
+        "accepted": grouped(lambda line: line.delivery_status == ServiceLineStatus.ACCEPTED),
+        "homologated": grouped(lambda line: line.delivery_status == ServiceLineStatus.HOMOLOGATED
+                               and line.active_invoice is None),
+        "returned": tuple(
+            invoice for invoice in invoices
+            if invoice.is_returned and not any(other.returned_at is None for other in invoice.replaced_by.all())
+        ),
+        "divergent": tuple(
+            invoice for invoice in invoices if not invoice.is_returned and invoice.dimensioned_difference
+        ),
+    }

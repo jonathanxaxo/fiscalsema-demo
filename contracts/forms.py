@@ -13,6 +13,8 @@ from .models import (
     Payment,
     ServiceCatalogEntry,
     ServiceComplexity,
+    ServiceLineStatus,
+    WorkOrderServiceLine,
     WorkOrder,
     WorkOrderAllocation,
     WorkOrderAllocationStatus,
@@ -670,7 +672,19 @@ class WorkOrderExecutionForm(forms.ModelForm):
 
 
 class InvoiceForm(forms.ModelForm):
+    field_order = ("replaces", "service_lines")
     supplier_tax_id = tax_id_field(label="CNPJ/CPF")
+    # Sprint 39: serviços cobrados e substituição de NF devolvida.
+    service_lines = forms.ModelMultipleChoiceField(
+        label="Serviços cobrados nesta NF", queryset=WorkOrderServiceLine.objects.none(), required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text=("Somente serviços homologados e ainda não cobrados em outra NF. O sistema compara "
+                   "o valor da NF com o valor dimensionado desses serviços."),
+    )
+    replaces = forms.ModelChoiceField(
+        label="Substitui a NF devolvida", queryset=Invoice.objects.none(), required=False,
+        help_text="Use quando esta NF é a correção de uma NF devolvida.",
+    )
 
     class Meta:
         model = Invoice
@@ -716,6 +730,7 @@ class InvoiceForm(forms.ModelForm):
             pk=work_order.item_id
         )
         self.fields["allocation"].queryset = work_order.allocations.all()
+        self._setup_billing_fields(work_order)
         if not self.is_bound and not self.instance.pk:
             self.initial["supplier_name"] = work_order.contract.supplier_name
             self.initial["supplier_tax_id"] = format_tax_id(work_order.contract.supplier_tax_id)
@@ -727,6 +742,51 @@ class InvoiceForm(forms.ModelForm):
 
     def clean_supplier_tax_id(self):
         return clean_tax_id(self.cleaned_data["supplier_tax_id"])
+
+    def _setup_billing_fields(self, work_order):
+        own_pk = self.instance.pk
+        billed_elsewhere = Invoice.objects.active().filter(work_order=work_order)
+        if own_pk:
+            billed_elsewhere = billed_elsewhere.exclude(pk=own_pk)
+        if work_order.service_lines.exists():
+            lines = work_order.service_lines.filter(
+                delivery_status=ServiceLineStatus.HOMOLOGATED,
+            ).exclude(invoices__in=billed_elsewhere)
+            self.fields["service_lines"].queryset = lines.order_by("pk")
+            self.fields["service_lines"].label_from_instance = _billable_line_label
+            if own_pk and not self.is_bound:
+                self.initial["service_lines"] = list(self.instance.service_lines.values_list("pk", flat=True))
+        else:
+            del self.fields["service_lines"]
+        returned = work_order.invoices.filter(returned_at__isnull=False).exclude(replaced_by__in=billed_elsewhere)
+        if returned.exists():
+            self.fields["replaces"].queryset = returned.order_by("-returned_at", "-pk")
+            self.fields["replaces"].label_from_instance = lambda invoice: (
+                f"NF {invoice.number}/{invoice.series} — devolvida em {invoice.returned_at:%d/%m/%Y}"
+            )
+            if own_pk and not self.is_bound:
+                self.initial["replaces"] = self.instance.replaces_id
+        else:
+            del self.fields["replaces"]
+
+
+def _billable_line_label(line):
+    code = f"{line.service_code} — " if line.service_code else ""
+    units = format(line.units.normalize(), "f").replace(".", ",")
+    return f"{code}{line.service_name} · {units} {line.work_order.unit_name} · {line.homologation_reference}"
+
+
+class InvoiceReturnForm(forms.Form):
+    returned_at = forms.DateField(label="Data da devolução", widget=_html_date_input())
+    reason = forms.CharField(
+        label="Motivo da devolução", widget=forms.Textarea(attrs={"rows": 3}), max_length=1000,
+        help_text="Ex.: valor da NF diferente do valor dimensionado no sistema.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.initial["returned_at"] = timezone.localdate()
 
 
 class PaymentForm(forms.ModelForm):

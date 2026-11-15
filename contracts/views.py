@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import ValidationError
@@ -1649,8 +1651,17 @@ class InvoiceDetailView(InvoiceContextMixin, DetailView):
         )
         context["total_before_invoice"] = (
             context["invoice_position"].invoiced_gross_value.value
-            - self.object.gross_value
+            - (Decimal("0.00") if self.object.is_returned else self.object.gross_value)
         )
+        # Sprint 39: NF devolvida é somente leitura e não recebe pagamento.
+        if self.object.is_returned:
+            context["can_edit"] = False
+            context["can_add_payment"] = False
+        context["can_return"] = (
+            context["can_edit"] and not self.object.is_returned and not self.object.payments.exists()
+        )
+        context["replacement"] = self.object.replaced_by.active().first()
+        context["billed_lines"] = self.object.billed_service_lines
         return context
 
 

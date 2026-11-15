@@ -1372,7 +1372,7 @@ def contract_financial_position(contract):
             description=f"NF {invoice.number}/{invoice.series}",
             value=invoice.gross_value,
         )
-        for invoice in contract.invoices.all()
+        for invoice in contract.invoices.active()
     )
     payments = tuple(
         CalculationEvidence(
@@ -1924,6 +1924,10 @@ def invoice_snapshot(invoice):
         "referencia_documento": invoice.document_reference,
         "hash_documento": invoice.document_hash,
         "observacao": invoice.notes,
+        "servicos_faturados": sorted(invoice.service_lines.values_list("pk", flat=True)) if invoice.pk else [],
+        "substitui_nf_id": invoice.replaces_id,
+        "devolvida_em": invoice.returned_at.isoformat() if invoice.returned_at else None,
+        "motivo_devolucao": invoice.return_reason,
     }
 
 
@@ -1935,7 +1939,7 @@ def work_order_invoice_position(work_order):
             description=f"NF {invoice.number}/{invoice.series}",
             value=invoice.gross_value,
         )
-        for invoice in work_order.invoices.all()
+        for invoice in work_order.invoices.active()
     )
     return calculate_invoice_financial_position(
         work_order_id=work_order.pk,
@@ -1946,7 +1950,7 @@ def work_order_invoice_position(work_order):
 
 def invoice_check_report(invoice):
     other_invoice_total = sum(
-        Invoice.objects.filter(work_order_id=invoice.work_order_id)
+        Invoice.objects.active().filter(work_order_id=invoice.work_order_id)
         .exclude(pk=invoice.pk)
         .values_list("gross_value", flat=True),
         Decimal("0.00"),
@@ -2030,6 +2034,8 @@ def create_payment(*, invoice_id, actor, **data):
     invoice = _lock_payment_scope(visible_invoice)
     if invoice.work_order.status == WorkOrderStatus.CANCELED:
         raise ValidationError("Não é possível registrar pagamento de NF vinculada a OS cancelada.")
+    if invoice.is_returned:
+        raise ValidationError("NF devolvida para correção não pode receber pagamento; registre a NF corrigida.")
     payment = Payment(invoice=invoice, created_by=actor, **data)
     payment.full_clean()
     _validate_invoice_payments(invoice, new_amount=payment.amount)
@@ -2087,14 +2093,14 @@ def possible_duplicate_invoice_ids(invoice):
     duplicate_filter = contextual
     if invoice.document_hash:
         duplicate_filter |= Q(document_hash=invoice.document_hash)
-    queryset = Invoice.objects.filter(duplicate_filter)
+    queryset = Invoice.objects.active().filter(duplicate_filter)
     if invoice.pk:
         queryset = queryset.exclude(pk=invoice.pk)
     return tuple(queryset.order_by("pk").values_list("pk", flat=True))
 
 
 def _validate_invoice_capacity(invoice, *, exclude_id=None):
-    existing = Invoice.objects.filter(work_order_id=invoice.work_order_id)
+    existing = Invoice.objects.active().filter(work_order_id=invoice.work_order_id)
     if exclude_id:
         existing = existing.exclude(pk=exclude_id)
     already_invoiced = sum(
@@ -2104,6 +2110,74 @@ def _validate_invoice_capacity(invoice, *, exclude_id=None):
         raise ValidationError(
             "O total bruto das Notas Fiscais ultrapassa o valor objetivo da OS."
         )
+
+
+def _validate_invoice_billing_links(invoice, *, service_lines, replaces):
+    """Sprint 39: NF só cobra serviços homologados, sem repetir, e só substitui NF devolvida."""
+    from .models import ServiceLineStatus
+
+    errors = []
+    if replaces is not None:
+        replaces = Invoice.objects.select_for_update().get(pk=replaces.pk)
+    for line in service_lines:
+        if line.work_order_id != invoice.work_order_id:
+            errors.append(f"O serviço \"{line.service_name}\" não pertence à OS da NF.")
+            continue
+        if line.delivery_status != ServiceLineStatus.HOMOLOGATED:
+            errors.append(f"O serviço \"{line.service_name}\" ainda não foi homologado e não pode ser faturado.")
+        other = line.invoices.active()
+        if invoice.pk:
+            other = other.exclude(pk=invoice.pk)
+        billed = other.first()
+        if billed is not None:
+            errors.append(f"O serviço \"{line.service_name}\" já está na NF {billed.number}/{billed.series}.")
+    if replaces is not None:
+        if replaces.work_order_id != invoice.work_order_id:
+            errors.append("A NF substituída deve ser da mesma OS.")
+        elif not replaces.is_returned:
+            errors.append("Só é possível substituir uma NF devolvida para correção.")
+        else:
+            other = replaces.replaced_by.active()
+            if invoice.pk:
+                other = other.exclude(pk=invoice.pk)
+            if other.exists():
+                errors.append("Essa NF devolvida já foi substituída por outra NF.")
+    if errors:
+        raise ValidationError(errors)
+
+
+@transaction.atomic
+def return_invoice(*, invoice_id, actor, returned_at, reason):
+    """Sprint 39: devolve a NF para correção; ela sai dos cálculos e fica no histórico."""
+    reason = " ".join((reason or "").split())
+    visible_invoice = invoices_writable_by(actor).get(pk=invoice_id)
+    work_order = _lock_invoice_scope(work_orders_writable_by(actor).get(pk=visible_invoice.work_order_id))
+    invoice = invoices_writable_by(actor).select_for_update(of=("self",)).get(pk=invoice_id)
+    if invoice.is_returned:
+        raise ValidationError("Esta NF já foi devolvida.")
+    if not reason:
+        raise ValidationError({"reason": "Informe o motivo da devolução."})
+    if returned_at is None or returned_at > timezone.localdate():
+        raise ValidationError({"returned_at": "Informe uma data de devolução que não seja futura."})
+    if returned_at < invoice.issue_date:
+        raise ValidationError({"returned_at": "A devolução não pode ser anterior à emissão da NF."})
+    if invoice.payments.exists():
+        raise ValidationError("NF com pagamento registrado não pode ser devolvida.")
+    previous = invoice_snapshot(invoice)
+    invoice.returned_at, invoice.return_reason, invoice.returned_by = returned_at, reason, actor
+    invoice.save(update_fields=("returned_at", "return_reason", "returned_by", "updated_at"))
+    InvoiceEvent.objects.create(
+        event_type=InvoiceEvent.EventType.RETURNED, invoice=invoice, work_order=work_order,
+        contract=work_order.contract, actor=actor,
+        details={
+            "anterior": previous, "atual": invoice_snapshot(invoice),
+            "devolucao": {
+                "data": returned_at.isoformat(), "motivo": reason, "valor_nf": str(invoice.gross_value),
+                "valor_dimensionado": None if invoice.dimensioned_value is None else str(invoice.dimensioned_value),
+            },
+        },
+    )
+    return invoice
 
 
 def _lock_invoice_scope(work_order):
@@ -2124,6 +2198,8 @@ def create_invoice(*, work_order_id, actor, **data):
     work_order = _lock_invoice_scope(visible_work_order)
     if work_order.status == WorkOrderStatus.CANCELED:
         raise ValidationError("Não é possível cadastrar Nota Fiscal em OS cancelada.")
+    service_lines = tuple(data.pop("service_lines", None) or ())
+    replaces = data.pop("replaces", None)
     invoice = Invoice(
         contract=work_order.contract,
         work_order=work_order,
@@ -2132,7 +2208,10 @@ def create_invoice(*, work_order_id, actor, **data):
     )
     invoice.full_clean()
     _validate_invoice_capacity(invoice)
+    _validate_invoice_billing_links(invoice, service_lines=service_lines, replaces=replaces)
+    invoice.replaces = replaces
     invoice.save()
+    invoice.service_lines.set(service_lines)
     duplicate_ids = possible_duplicate_invoice_ids(invoice)
     InvoiceEvent.objects.create(
         event_type=InvoiceEvent.EventType.CREATED,
@@ -2158,7 +2237,11 @@ def update_invoice(*, invoice_id, actor, **data):
     invoice = invoices_writable_by(actor).select_for_update(of=("self",)).get(
         pk=invoice_id
     )
+    if invoice.is_returned:
+        raise ValidationError("NF devolvida para correção é somente leitura.")
     previous = invoice_snapshot(invoice)
+    service_lines = data.pop("service_lines", None)
+    replaces = data.pop("replaces", invoice.replaces)
     for field, value in data.items():
         setattr(invoice, field, value)
     invoice.contract = work_order.contract
@@ -2166,7 +2249,11 @@ def update_invoice(*, invoice_id, actor, **data):
     invoice.full_clean()
     _validate_invoice_capacity(invoice, exclude_id=invoice.pk)
     _validate_invoice_payments(invoice)
+    service_lines = tuple(invoice.service_lines.all() if service_lines is None else service_lines)
+    _validate_invoice_billing_links(invoice, service_lines=service_lines, replaces=replaces)
+    invoice.replaces = replaces
     invoice.save()
+    invoice.service_lines.set(service_lines)
     duplicate_ids = possible_duplicate_invoice_ids(invoice)
     InvoiceEvent.objects.create(
         event_type=InvoiceEvent.EventType.UPDATED,
@@ -2316,7 +2403,7 @@ def _validate_work_order_executions(work_order):
 
 def _validate_work_order_invoices(work_order):
     invoiced = sum(
-        work_order.invoices.values_list("gross_value", flat=True), Decimal("0.00")
+        work_order.invoices.active().values_list("gross_value", flat=True), Decimal("0.00")
     )
     if invoiced > work_order.total_value:
         raise ValidationError("A OS não pode ficar abaixo do total bruto já faturado.")

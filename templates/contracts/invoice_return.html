@@ -1,0 +1,17 @@
+{% extends "accounts/base.html" %}
+{% load l10n formatacao %}
+{% block title %}Devolver NF {{ invoice.number }}/{{ invoice.series }} — FiscalSema{% endblock %}
+{% block content %}
+  <h1>Devolver NF {{ invoice.number }}/{{ invoice.series }} para correção</h1>
+  <p><strong>OS:</strong> {{ work_order.number }} · <strong>Valor da NF:</strong> R$&nbsp;{{ invoice.gross_value|localize }}{% if invoice.dimensioned_value is not None %} · <strong>Valor dimensionado:</strong> R$&nbsp;{{ invoice.dimensioned_value|localize }}{% endif %}</p>
+  <p class="warning">A NF devolvida sai de todos os cálculos (saldo faturável, posição financeira, painel, relatórios e prestação de contas), não recebe pagamento e fica somente leitura no histórico. A NF corrigida deve informar que substitui esta.</p>
+  <form class="form-card form-grid" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-field{% if field.name == 'reason' %} form-field-wide{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</div>
+    {% endfor %}
+    <button type="submit" class="button-link-danger">Confirmar devolução</button>
+  </form>
+  <p class="actions"><a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk invoice.pk %}">Voltar sem devolver</a></p>
+{% endblock %}
