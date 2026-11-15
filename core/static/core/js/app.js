@@ -201,6 +201,11 @@
   stagger('.method-grid');
   stagger('.method-steps');
   stagger('.account-methods');
+  // Sprint 42: telas sem cabeçalho de página, formulários simples, detalhes e login.
+  stagger('.auth-card');
+  document.querySelectorAll('.content form:not(.form-grid):not(.inline-form):not(.assistant-form), .auth-card form, .content dl').forEach((group) => {
+    [...group.children].forEach((child, index) => child.style.setProperty('--fs-i', Math.min(index, 20)));
+  });
   stagger('tbody', '--fs-r');
 
   // Barras de progresso: enchem a partir do zero, com ponto pulsante na ponta.

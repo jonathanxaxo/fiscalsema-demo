@@ -114,3 +114,6 @@ documental das entregas anteriores.
 
 - `sprint-41-visual-vivo`: visual vivo em todas as telas, novo logotipo
   (lupa que confere) e controle de movimento.
+
+- `sprint-42-chat-limpo-telas-vivas`: chat flutuante e chat do menu mais
+  limpos e vivos, avisos do chat por 10 segundos e telas restantes vivas.
