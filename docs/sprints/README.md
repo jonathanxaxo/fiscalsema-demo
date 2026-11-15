@@ -75,3 +75,6 @@ documental das entregas anteriores.
 
 - `sprint-28-mcp-identidade`: MCP remoto por identidade com OAuth 2.1
   (PKCE, escopos, consentimento, auditoria e revogação em Minha conta).
+
+- `sprint-29-mcp-analise`: novas consultas no MCP e análise de divergências
+  entre documento e sistema, sempre sem gravar.
