@@ -29,3 +29,4 @@
 
 Nenhum dado, credencial, documento, usuário ou histórico do banco real pode ser
 copiado para este projeto.
+| MCP por identidade (Sprint 28) | Token técnico por credencial | OAuth 2.1 com PKCE, consentimento da pessoa, escopos ler/propor, tokens em hash, limite por minuto, auditoria e revogação | Mais restritivo | IA só vê o que a pessoa vê; nada é executado sem confirmação humana |

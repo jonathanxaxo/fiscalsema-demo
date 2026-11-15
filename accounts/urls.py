@@ -29,6 +29,7 @@ urlpatterns = [
     path("google/confirmar-vinculo/", google_views.google_confirm_link, name="google_confirm_link"),
     path("google/vincular/", google_views.google_link_start, name="google_link_start"),
     path("google/<int:pk>/desvincular/", google_views.google_unlink, name="google_unlink"),
+    path("conexoes/<int:pk>/revogar/", google_views.mcp_revoke, name="mcp_revoke"),
     path("alterar-senha/", AccountPasswordChangeView.as_view(), name="password_change"),
     path(
         "alterar-senha/concluida/",

@@ -24,6 +24,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from api_v1.oauth import connections_for, revoke_connection
+
 from .backends import AccountStatusBackend
 from .google_oidc import GoogleLoginError, complete_flow, is_configured, start_flow
 from .forms import GoogleSignupForm, requested_profile_for
@@ -274,8 +276,25 @@ def my_account(request):
             "has_password": request.user.has_usable_password(),
             "google_enabled": is_configured(),
             "api_credentials": request.user.api_credentials.filter(revoked_at__isnull=True).order_by("name"),
+            "mcp_connections": connections_for(request.user),
+            "mcp_url": request.build_absolute_uri("/mcp"),
         },
     )
+
+
+@login_required
+@require_POST
+def mcp_revoke(request, pk):
+    """Revoga a conexão de um cliente de IA (MCP) com a conta da pessoa (Sprint 28)."""
+    application = next(
+        (item["application"] for item in connections_for(request.user) if item["application"].pk == pk),
+        None,
+    )
+    if application is None:
+        raise Http404
+    revoke_connection(request.user, application)
+    messages.success(request, f"Conexão “{application.name or 'cliente sem nome'}” revogada. O cliente perdeu o acesso.")
+    return redirect("accounts:my_account")
 
 
 @login_required

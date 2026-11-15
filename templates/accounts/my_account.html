@@ -40,13 +40,29 @@
 
   <section class="surface" aria-labelledby="conexoes-titulo">
     <div class="section-heading"><div><span class="eyebrow">Integrações</span><h2 id="conexoes-titulo">Conexões externas</h2></div></div>
+    <h3 class="account-subtitle">Clientes de IA conectados (MCP)</h3>
+    {% if mcp_connections %}
+      <ul class="account-methods">
+        {% for connection in mcp_connections %}
+          <li>
+            <strong>{{ connection.application.name|default:"Cliente sem nome" }}</strong>
+            <span>{% for scope in connection.scopes %}{% if scope == "fiscalsema.propor" %}consultar e propor rascunhos{% elif scope == "fiscalsema.ler" %}consultar{% else %}{{ scope }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}{% if connection.last_token_at %} · último acesso autorizado {{ connection.last_token_at|date:"d/m/Y H:i" }}{% endif %}</span>
+            <form method="post" action="{% url 'accounts:mcp_revoke' connection.application.pk %}" class="account-inline-form">
+              {% csrf_token %}
+              <button type="submit" class="button-link-small">Revogar</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Nenhum cliente de IA conectado.</p>
+    {% endif %}
+    <p class="muted">Para conectar um cliente de IA (ex.: Claude), use o endereço <code>{{ mcp_url }}</code> como conector MCP. Você entra com a sua conta e escolhe o que autorizar; a IA vê só o que você já pode ver e nunca confirma, homologa ou paga nada.</p>
     {% if api_credentials %}
+      <h3 class="account-subtitle">Credenciais técnicas da API</h3>
       <ul class="account-methods">
         {% for credential in api_credentials %}<li><strong>{{ credential.name }}</strong><span>{{ credential.get_access_mode_display }}{% if credential.last_used_at %} · último uso {{ credential.last_used_at|date:"d/m/Y H:i" }}{% endif %}</span></li>{% endfor %}
       </ul>
-    {% else %}
-      <p class="muted">Nenhuma conexão externa ativa.</p>
     {% endif %}
-    <p class="muted">A conexão de clientes de IA (MCP) com a sua própria identidade e a revogação por aqui chegam numa próxima etapa.</p>
   </section>
 {% endblock %}

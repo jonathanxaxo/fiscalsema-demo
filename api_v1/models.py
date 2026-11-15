@@ -48,6 +48,8 @@ class ApiAccessEvent(models.Model):
     class EventType(models.TextChoices):
         QUERY = "CONSULTA", "Consulta autorizada"
         DENIED = "NEGADA", "Consulta negada"
+        CONNECTION_AUTHORIZED = "CONEXAO_AUTORIZADA", "Conexão MCP autorizada ou renovada"
+        CONNECTION_REVOKED = "CONEXAO_REVOGADA", "Conexão MCP revogada"
 
     event_type = models.CharField("evento", max_length=20, choices=EventType.choices)
     credential = models.ForeignKey(
@@ -146,7 +148,13 @@ class AssistantDraft(models.Model):
     )
     created_by_credential = models.ForeignKey(
         ApiCredential, on_delete=models.PROTECT, related_name="drafts",
-        verbose_name="credencial técnica",
+        null=True, blank=True, verbose_name="credencial técnica",
+    )
+    # Sprint 28: rascunho proposto por cliente MCP conectado com a identidade da pessoa.
+    created_by_application = models.ForeignKey(
+        settings.OAUTH2_PROVIDER_APPLICATION_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="assistant_drafts",
+        verbose_name="cliente MCP (OAuth)",
     )
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,

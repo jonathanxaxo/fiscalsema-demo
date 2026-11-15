@@ -332,10 +332,13 @@ def validate_draft(*, entity_type, operation, context, payload, evidence, actor)
 
 @transaction.atomic
 def create_assistant_draft(*, entity_type, context, payload, evidence, source_summary,
-                           credential, actor, operation=AssistantDraft.Operation.CREATE,
+                           credential=None, actor, operation=AssistantDraft.Operation.CREATE,
+                           application=None,
                            source_authority=AssistantDraft.SourceAuthority.AUTOMATED_EXTRACTION,
                            confidence_level=AssistantDraft.ConfidenceLevel.FOUND_IN_SOURCE,
                            batch_id=None):
+    if (credential is None) == (application is None):
+        raise DraftValidationError("Origem técnica do rascunho inválida.")
     source_summary = " ".join(str(source_summary or "").split())
     if not source_summary:
         raise DraftValidationError("Informe um resumo da origem dos dados.")
@@ -369,7 +372,8 @@ def create_assistant_draft(*, entity_type, context, payload, evidence, source_su
         baseline_hash=_stable_hash(current_values),
         target_model=target._meta.label_lower if target else "",
         target_id=target.pk if target else None,
-        created_by_credential=credential, requested_by=actor,
+        created_by_credential=credential, created_by_application=application,
+        requested_by=actor,
     )
     AssistantDraftEvent.objects.create(
         event_type=AssistantDraftEvent.EventType.CREATED, draft=draft,
@@ -379,6 +383,7 @@ def create_assistant_draft(*, entity_type, context, payload, evidence, source_su
             "dados_propostos": payload, "comparacao": comparison,
             "fontes": normalized_evidence, "autoridade_fonte": source_authority,
             "confianca": confidence_level, "resultado": "pendente_revisao",
+            "origem": "mcp_oauth" if application is not None else "api_v1",
         },
     )
     return draft

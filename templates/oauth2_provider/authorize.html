@@ -1,0 +1,29 @@
+{% extends "accounts/base.html" %}
+{% block title %}Autorizar cliente de IA — FiscalSema{% endblock %}
+{% block content %}
+  <section class="surface oauth-consent" aria-labelledby="autorizar-titulo">
+    {% if not error %}
+      <span class="eyebrow">Conexão MCP</span>
+      <h1 id="autorizar-titulo">Autorizar “{{ application.name|default:"cliente sem nome" }}”?</h1>
+      <p>Você está conectado como <strong>{{ request.user.full_name }}</strong> ({{ request.user.email }}). Se autorizar, este cliente de IA poderá:</p>
+      <ul>
+        {% for scope in scopes_descriptions %}<li>{{ scope }}</li>{% endfor %}
+      </ul>
+      <p class="muted">A IA vê somente o que você já pode ver. Ela nunca confirma rascunhos, homologa, atesta, liquida ou paga nada. Você pode revogar o acesso a qualquer momento em <a href="{% url 'accounts:my_account' %}">Minha conta</a>.</p>
+      <p class="muted">Só autorize se foi você quem iniciou esta conexão agora.</p>
+      <form id="authorizationForm" method="post">
+        {% csrf_token %}
+        {% for field in form %}{% if field.is_hidden %}{{ field }}{% endif %}{% endfor %}
+        {% if form.errors %}<p class="errorlist">{{ form.errors }}</p>{% endif %}
+        <div class="oauth-actions">
+          <button type="submit" name="allow" value="Autorizar">Autorizar</button>
+          <button type="submit" class="button-link-secondary">Cancelar</button>
+        </div>
+      </form>
+    {% else %}
+      <h1 id="autorizar-titulo">Não foi possível autorizar</h1>
+      <p class="danger">{{ error.description|default:error.error }}</p>
+      <p class="actions"><a href="{% url 'home' %}">Voltar ao início</a></p>
+    {% endif %}
+  </section>
+{% endblock %}
