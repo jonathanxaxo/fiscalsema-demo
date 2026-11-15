@@ -34,7 +34,7 @@
       <div><h3>Base e governança</h3><ul><li><b>01</b><span>Cópia independente e adaptação para a Vercel</span></li><li><b>02</b><span>Integração com PostgreSQL exclusivo</span></li><li><b>03</b><span>Regras do agente de IA (<code>CLAUDE.md</code>)</span></li><li><b>09</b><span>Publicação com CI, Preview e conferência</span></li></ul></div>
       <div><h3>Visual e usabilidade</h3><ul><li><b>04</b><span>Diagnóstico visual com capturas</span></li><li><b>05</b><span>Correções de leitura e formatos</span></li><li><b>06</b><span>Identidade visual e ícones próprios</span></li><li><b>07</b><span>Padronização das telas</span></li><li><b>08</b><span>Prioridades no painel</span></li><li><b>16</b><span>Padrão único de botões</span></li><li><b>18</b><span>Valores em R$ sem quebra</span></li><li><b>20</b><span>Metodologia e visual compacto</span></li></ul></div>
       <div><h3>Perfis e dados de apresentação</h3><ul><li><b>10</b><span>Troca de perfil auditada</span></li><li><b>11</b><span>Painel do Administrador</span></li><li><b>12</b><span>Dados fictícios de apresentação</span></li><li><b>13</b><span>Painel profissional do Fiscal</span></li></ul></div>
-      <div><h3>Recursos para o fiscal</h3><ul><li><b>14</b><span>Sino de notificações</span></li><li><b>15</b><span>Impressão do relatório em PDF</span></li><li><b>17</b><span>Workflow com IA e MCP</span></li><li><b>19</b><span>Acompanhamento mensal de OS</span></li><li><b>21</b><span>Assistente Arise integrado ao sistema</span></li><li><b>22</b><span>Assistente Arise como chat completo</span></li><li><b>23</b><span>Assistente Arise flutuante em todas as telas</span></li><li><b>24</b><span>Arquitetura do MCP com alteração autorizada e login Google</span></li><li><b>25</b><span>Login com Google e Minha conta</span></li><li><b>26</b><span>E-mail de redefinição de senha e senha temporária</span></li><li><b>27</b><span>Cadastro institucional pelo Google com aprovação</span></li><li><b>28</b><span>MCP por identidade com OAuth (conectar o Claude)</span></li><li><b>29</b><span>MCP: novas consultas e análise de divergências</span></li><li><b>30</b><span>MCP: execução autorizada com código de confirmação</span></li><li><b>31</b><span>MCP: testes de ataque, homologação e guia de conexão</span></li></ul></div>
+      <div><h3>Recursos para o fiscal</h3><ul><li><b>14</b><span>Sino de notificações</span></li><li><b>15</b><span>Impressão do relatório em PDF</span></li><li><b>17</b><span>Workflow com IA e MCP</span></li><li><b>19</b><span>Acompanhamento mensal de OS</span></li><li><b>21</b><span>Assistente Arise integrado ao sistema</span></li><li><b>22</b><span>Assistente Arise como chat completo</span></li><li><b>23</b><span>Assistente Arise flutuante em todas as telas</span></li><li><b>24</b><span>Arquitetura do MCP com alteração autorizada e login Google</span></li><li><b>25</b><span>Login com Google e Minha conta</span></li><li><b>26</b><span>E-mail de redefinição de senha e senha temporária</span></li><li><b>27</b><span>Cadastro institucional pelo Google com aprovação</span></li><li><b>28</b><span>MCP por identidade com OAuth (conectar o Claude)</span></li><li><b>29</b><span>MCP: novas consultas e análise de divergências</span></li><li><b>30</b><span>MCP: execução autorizada com código de confirmação</span></li><li><b>31</b><span>MCP: testes de ataque, homologação e guia de conexão</span></li><li><b>32</b><span>Arise lê TR e contrato anexados (ler e descartar)</span></li></ul></div>
     </div>
   </section>
 
@@ -47,6 +47,7 @@
       <article><h3>GitHub e GitHub Actions</h3><p>Versionamento com Git, Pull Requests, CI com PostgreSQL a cada mudança e fluxos manuais com confirmação.</p></article>
       <article><h3>HTML, CSS e SVG próprios</h3><p>Interface sem bibliotecas visuais externas: identidade, ícones e estilos feitos para o sistema.</p></article>
       <article><h3>Google Gemini</h3><p>Modelo de IA do Assistente Arise, chamado pelo backend em formato compatível com OpenAI; a chave fica só em variável de ambiente.</p></article>
+      <article><h3>pypdf</h3><p>Biblioteca em Python puro (licença BSD) usada só para extrair o texto do PDF anexado no Arise, em memória. O DOCX é lido com a biblioteca padrão.</p></article>
       <article><h3>Playwright</h3><p>Navegador automatizado para capturas antes/depois e verificação visual em computador e celular.</p></article>
     </div>
   </section>
@@ -75,7 +76,7 @@
   </section>
 
   <section class="surface" id="arise" aria-labelledby="arise-titulo">
-    <div class="section-heading"><div><span class="eyebrow">Sprints 21 a 23</span><h2 id="arise-titulo">Como o Assistente Arise foi construído</h2></div><span class="section-hint">IA integrada com controle humano</span></div>
+    <div class="section-heading"><div><span class="eyebrow">Sprints 21 a 23 e 32</span><h2 id="arise-titulo">Como o Assistente Arise foi construído</h2></div><span class="section-hint">IA integrada com controle humano</span></div>
     <ol class="method-steps">
       <li><strong>História de usuário</strong><span>Pedido organizado em COMO / QUERO / PARA, com regras, riscos e dúvidas; requisitos ajustados com o responsável antes de programar.</span></li>
       <li><strong>Plano aprovado por clique</strong><span>Arquitetura, arquivos, riscos, custo e testes apresentados; cada decisão (conversas, menu, região, merge) autorizada pelo responsável.</span></li>
@@ -84,6 +85,7 @@
       <li><strong>Testes sem internet</strong><span>Provedor de IA simulado nos testes automatizados e provedor falso local para conferir a tela no navegador.</span></li>
       <li><strong>Publicação guiada</strong><span>PR, CI verde, merge, migração e cadastro das variáveis na Vercel feito pelo responsável — a chave nunca passa pelo agente.</span></li>
       <li><strong>Correção com evidência</strong><span>Erro encontrado no site (pergunta limitada a 2 letras) virou nova sprint, com teste de regressão.</span></li>
+      <li><strong>Ler e descartar (Sprint 32)</strong><span>O TR ou contrato anexado pelo clipe é lido só na memória do servidor, usado para responder aquela pergunta citando a cláusula e descartado: nada vai para disco, banco ou Vercel; a conversa guarda só "documento anexado — lido e descartado" e a auditoria só metadados (tipo, tamanho, páginas, tempo).</span></li>
     </ol>
     <div class="method-columns method-arise">
       <div>
@@ -94,6 +96,7 @@
           <li>Menor privilégio: o assistente só conversa; não acessa o banco nem executa ações</li>
           <li>Base de conhecimento versionada por módulo, escolhida pela pergunta e pelo perfil</li>
           <li>Testes de regressão, varredura de segredos e capturas no computador e no celular</li>
+          <li>Anexo conferido pelo tipo real, com limites de tamanho, páginas e texto; DOCX protegido contra XXE e "bomba de ZIP"; texto do documento tratado como dado; aviso de LGPD</li>
         </ul>
       </div>
       <div>
@@ -136,6 +139,7 @@
           <li>Testes do limite de confiança do adaptador MCP</li>
           <li>Testes do fluxo OAuth completo e do MCP remoto, sem internet (Sprint 28)</li>
           <li>Testes de ataque ao OAuth/MCP e roteiro de homologação (Sprint 31)</li>
+          <li>Testes do "ler e descartar": nada salvo, nenhum arquivo temporário, tipos falsos, bomba de ZIP, XXE e prompt injection no documento (Sprint 32)</li>
           <li>Testes do Assistente Arise com provedor simulado, sem internet</li>
           <li>Capturas antes/depois registradas em cada sprint</li>
         </ul>

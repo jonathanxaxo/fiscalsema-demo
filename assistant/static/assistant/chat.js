@@ -17,6 +17,30 @@ function init(root) {
   const sendButton = form ? form.querySelector("button[type=submit]") : null;
   const conversationInput = form ? form.querySelector("input[name=conversa]") : null;
   const welcome = root.querySelector("[data-assistant-welcome]");
+  // Sprint 32: anexo "ler e descartar" (PDF/DOCX até 4 MB, só para a próxima pergunta).
+  const fileInput = form ? form.querySelector("[data-attachment-input]") : null;
+  const attachmentBox = form ? form.querySelector("[data-assistant-attachment]") : null;
+  const MAX_FILE = 4 * 1024 * 1024;
+  function clearAttachment() {
+    if (!fileInput) return;
+    fileInput.value = "";
+    attachmentBox.hidden = true;
+  }
+  function attachedName() {
+    return fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0].name : "";
+  }
+  if (fileInput) {
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (!file) { clearAttachment(); return; }
+      if (!/\.(pdf|docx)$/i.test(file.name)) { alert("Envie somente PDF ou DOCX."); clearAttachment(); return; }
+      if (file.size > MAX_FILE) { alert("O arquivo passa de 4 MB. Envie um arquivo menor."); clearAttachment(); return; }
+      attachmentBox.querySelector("[data-attachment-name]").textContent = file.name;
+      attachmentBox.hidden = false;
+      input.focus({ preventScroll: true });
+    });
+    attachmentBox.querySelector("[data-attachment-remove]").addEventListener("click", () => { clearAttachment(); input.focus(); });
+  }
 
   function esc(text) {
     return String(text ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -95,12 +119,15 @@ function init(root) {
     question = question.trim();
     if (!question || sendButton.disabled) return;
     if (welcome) welcome.hidden = true;
-    addMessage("user", question);
+    const fileName = attachedName();
+    addMessage("user", fileName ? `${question}\n\n📎 documento anexado: ${fileName} (lido e descartado)` : question);
     const body = addMessage("assistant", "");
-    body.innerHTML = '<span class="assistant-typing">Assistente está digitando…</span>';
+    body.innerHTML = `<span class="assistant-typing">${fileName ? "Lendo o documento…" : "Assistente está digitando…"}</span>`;
     sendButton.disabled = true;
     const data = new FormData(form);
     data.set("pergunta", question);
+    if (!fileName) data.delete("anexo");
+    clearAttachment();
     const started = performance.now();
     let first = 0;
     try {
