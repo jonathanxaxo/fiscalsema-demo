@@ -13,5 +13,5 @@ Perfis:
 
 Menu lateral (Visão geral): Painel, Dashboard, Contratos, Rascunhos da IA, Assistente Arise e Metodologia. O Administrador também vê a seção Administração.
 No topo: sino de notificações, nome e perfil, "Alterar senha" e "Sair".
-Tempo de ociosidade: quem fica **1 hora sem usar o sistema** (ocioso) é desconectado automaticamente, em qualquer perfil, e precisa entrar de novo com a senha.
+Tempo de ociosidade: quem fica **1 hora sem usar o sistema** (ocioso) é desconectado automaticamente, em qualquer perfil, e precisa entrar de novo com a senha. Fechar o navegador também encerra o acesso.
 Na demonstração não há cadastro público: as contas são criadas pelo Administrador em Menu → Criar Fiscal.

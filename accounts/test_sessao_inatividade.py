@@ -67,3 +67,29 @@ class SessaoInatividadeTests(TestCase):
     def test_zero_disables(self):
         self._idle(999999)
         self.assertEqual(self.client.get(reverse("home")).status_code, 200)
+
+
+class SessaoFechaNavegadorTests(TestCase):
+    """Sprint 51: fechar o navegador encerra o acesso (cookie de sessão sem validade)."""
+
+    def test_setting_is_on_by_default(self):
+        from django.conf import settings
+        self.assertTrue(settings.SESSION_EXPIRE_AT_BROWSER_CLOSE)
+
+    def test_login_cookie_has_no_expiry_date(self):
+        from django.conf import settings
+        User.objects.create_user(email="fecha@example.local", full_name="Fiscal Fictício",
+                                 password=VALID_PASSWORD, status=AccountStatus.ACTIVE)
+        response = self.client.post(reverse("accounts:login"), {"username": "fecha@example.local", "password": VALID_PASSWORD})
+        self.assertEqual(response.status_code, 302)
+        cookie = response.cookies[settings.SESSION_COOKIE_NAME]
+        self.assertTrue(cookie.value)
+        self.assertEqual(cookie["expires"], "")
+        self.assertEqual(cookie["max-age"], "")
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+
+    def test_arise_knows_basic_rule_only(self):
+        from assistant.conhecimento import help_text
+        text = help_text("Se eu fechar o navegador ele desloga?", profile="FISCAL")
+        self.assertIn("Ao fechar o navegador", text)
+        self.assertIn("Fechar só uma aba não encerra", text)

@@ -142,3 +142,6 @@ documental das entregas anteriores.
 - `sprint-50-conhecimento-arise-seguro`: Arise conhece as novidades (chat,
   listas, OS, movimento, ociosidade de 1 hora) só no nível básico e recusa
   detalhes de segurança.
+
+- `sprint-51-sair-ao-fechar-navegador`: fechar o navegador encerra o acesso;
+  navegador esquecido aberto sai após 1 hora sem uso.
