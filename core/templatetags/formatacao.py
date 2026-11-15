@@ -27,6 +27,24 @@ def quantidade(value):
 
 
 @register.filter
+def barra(value):
+    """Largura visual de uma barra de progresso, de 0 a 100 (Sprint 35).
+
+    Só apresentação: o percentual escrito ao lado continua o valor real
+    (pode passar de 100%), mas a barra nunca estoura a caixa.
+    """
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
+    try:
+        number = Decimal(str(value).replace(",", "."))
+    except (InvalidOperation, TypeError, ValueError):
+        return 0
+    if not number.is_finite():
+        return 0
+    return int(min(max(number, Decimal("0")), Decimal("100")).to_integral_value(ROUND_HALF_UP))
+
+
+@register.filter
 def cnpj_cpf(value):
     """Aplica a máscara de CNPJ (14 dígitos) ou CPF (11 dígitos)."""
     if not value:

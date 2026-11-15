@@ -210,7 +210,38 @@ class FiscalSubstitutionForm(forms.Form):
         return cleaned_data
 
 
+def tax_id_field(label="CNPJ/CPF do fornecedor"):
+    """CPF/CNPJ aceito com ou sem pontuação; a tela aplica a máscara ao digitar (Sprint 35)."""
+    return forms.CharField(
+        label=label,
+        max_length=18,
+        help_text="Digite os 11 dígitos do CPF ou os 14 do CNPJ; a pontuação é aplicada automaticamente.",
+        widget=forms.TextInput(attrs={
+            "inputmode": "numeric", "autocomplete": "off", "data-tax-id": "",
+            "placeholder": "000.000.000-00 ou 00.000.000/0000-00",
+        }),
+    )
+
+
+def clean_tax_id(value):
+    digits = "".join(character for character in (value or "") if character.isdigit())
+    if len(digits) not in (11, 14):
+        raise forms.ValidationError("Informe CPF com 11 dígitos ou CNPJ com 14 dígitos.")
+    return digits
+
+
+def format_tax_id(value):
+    digits = "".join(character for character in (value or "") if character.isdigit())
+    if len(digits) == 14:
+        return f"{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:]}"
+    if len(digits) == 11:
+        return f"{digits[:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:]}"
+    return value or ""
+
+
 class ContractForm(forms.ModelForm):
+    supplier_tax_id = tax_id_field()
+
     class Meta:
         model = Contract
         fields = (
@@ -234,7 +265,6 @@ class ContractForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 4}),
         }
         help_texts = {
-            "supplier_tax_id": "Informe apenas os 11 dígitos do CPF ou os 14 dígitos do CNPJ.",
             "original_value": "O valor atual será igual ao original até a implementação de aditivos.",
         }
 
@@ -246,6 +276,11 @@ class ContractForm(forms.ModelForm):
             if choice[0] not in (ContractStatus.CLOSED, ContractStatus.CANCELED)
         ]
         _localize_decimal_fields(self, "original_value")
+        if not self.is_bound and self.instance.pk:
+            self.initial["supplier_tax_id"] = format_tax_id(self.instance.supplier_tax_id)
+
+    def clean_supplier_tax_id(self):
+        return clean_tax_id(self.cleaned_data["supplier_tax_id"])
 
 
 class ContractCloseForm(forms.Form):
@@ -597,6 +632,8 @@ class WorkOrderExecutionForm(forms.ModelForm):
 
 
 class InvoiceForm(forms.ModelForm):
+    supplier_tax_id = tax_id_field(label="CNPJ/CPF")
+
     class Meta:
         model = Invoice
         fields = (
@@ -643,13 +680,15 @@ class InvoiceForm(forms.ModelForm):
         self.fields["allocation"].queryset = work_order.allocations.all()
         if not self.is_bound and not self.instance.pk:
             self.initial["supplier_name"] = work_order.contract.supplier_name
-            self.initial["supplier_tax_id"] = work_order.contract.supplier_tax_id
+            self.initial["supplier_tax_id"] = format_tax_id(work_order.contract.supplier_tax_id)
+        elif not self.is_bound:
+            self.initial["supplier_tax_id"] = format_tax_id(self.instance.supplier_tax_id)
         _localize_decimal_fields(
             self, "gross_value", "deduction_value", "accepted_value"
         )
 
     def clean_supplier_tax_id(self):
-        return "".join(filter(str.isdigit, self.cleaned_data["supplier_tax_id"]))
+        return clean_tax_id(self.cleaned_data["supplier_tax_id"])
 
 
 class PaymentForm(forms.ModelForm):
