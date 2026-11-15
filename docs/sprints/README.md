@@ -90,3 +90,6 @@ documental das entregas anteriores.
 
 - `sprint-33-aviso-arise-temporario`: aviso amarelo do painel flutuante do
   Arise some 35 segundos depois de cada abertura.
+
+- `sprint-34-arise-flutuante-arrastavel`: chat flutuante arrastável; minimizar
+  mantém a conversa e fechar encerra o chat.

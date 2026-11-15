@@ -257,3 +257,21 @@ class AvisoPainelTests(Base):
         script = open(finders.find("assistant/chat.js"), encoding="utf-8").read()
         self.assertIn("const NOTICE_MS = 35000;", script)
         self.assertIn("showNotice();", script)
+
+
+@override_settings(**ON)
+class PainelArrastavelTests(Base):
+    """Sprint 34: chat flutuante arrastável, minimizar mantém a conversa e fechar encerra."""
+
+    def test_panel_has_minimize_and_close_and_script_supports_drag(self):
+        from django.contrib.staticfiles import finders
+
+        home = self.client.get(reverse("home"))
+        self.assertContains(home, "data-arise-minimize")
+        self.assertContains(home, "Minimizar (a conversa continua)")
+        self.assertContains(home, "Fechar e encerrar o chat")
+        self.assertContains(home, "arraste para mover")
+        script = open(finders.find("assistant/chat.js"), encoding="utf-8").read()
+        for piece in ("function draggable(", "const minimize = ", "panel.resetConversation()",
+                      "root.resetConversation = reset", "arise-pos-"):
+            self.assertIn(piece, script)

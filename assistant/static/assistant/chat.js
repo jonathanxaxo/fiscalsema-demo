@@ -196,6 +196,7 @@ function init(root) {
       if (full) full.href = root.dataset.historyUrl.replace(/conversas\/$/, "");
     };
     if (newButton) newButton.addEventListener("click", () => { reset(); input.focus(); });
+    root.resetConversation = reset;
     // Continua a última conversa desta aba, buscando as mensagens no servidor (só do próprio usuário).
     root.loadConversation = async () => {
       const id = store.get();
@@ -219,13 +220,103 @@ function setupWidget() {
   if (!widget) return;
   const toggle = widget.querySelector("[data-arise-toggle]");
   const panel = widget.querySelector(".arise-panel");
+  const head = panel.querySelector(".arise-panel-head");
+  const MARGIN = 8;
+  const isCompact = () => window.matchMedia("(max-width: 640px)").matches;
+
+  // Posição guardada só nesta aba (conveniência; sem servidor).
+  const posStore = {
+    get(key) { try { return JSON.parse(sessionStorage.getItem(`arise-pos-${key}`) || "null"); } catch (e) { return null; } },
+    set(key, value) { try { sessionStorage.setItem(`arise-pos-${key}`, JSON.stringify(value)); } catch (e) { /* sem armazenamento */ } },
+  };
+  const clamp = (left, top, el) => {
+    const w = el.offsetWidth, h = el.offsetHeight;
+    return {
+      left: Math.min(Math.max(MARGIN, left), Math.max(MARGIN, window.innerWidth - w - MARGIN)),
+      top: Math.min(Math.max(MARGIN, top), Math.max(MARGIN, window.innerHeight - h - MARGIN)),
+    };
+  };
+
+  // Botão redondo: o contêiner fixo passa a usar left/top quando é arrastado.
+  const placeFab = pos => {
+    if (!pos) return;
+    const p = clamp(pos.left, pos.top, toggle);
+    Object.assign(widget.style, { left: `${p.left}px`, top: `${p.top}px`, right: "auto", bottom: "auto" });
+  };
+  // Janela do chat: posição livre no computador; no celular ocupa a tela inteira.
+  const placePanel = () => {
+    if (panel.hidden) return;
+    if (isCompact()) { Object.assign(panel.style, { position: "", left: "", top: "", right: "", bottom: "" }); return; }
+    panel.style.position = "fixed";
+    panel.style.right = panel.style.bottom = "auto";
+    let pos = posStore.get("painel");
+    if (!pos) {
+      // Abre ao lado do botão: acima, abaixo, à esquerda ou à direita — onde couber.
+      const fab = toggle.getBoundingClientRect(), w = panel.offsetWidth, h = panel.offsetHeight, gap = 12;
+      const fits = c => c.left >= MARGIN && c.top >= MARGIN
+        && c.left + w <= window.innerWidth - MARGIN && c.top + h <= window.innerHeight - MARGIN;
+      const sideTop = Math.min(Math.max(MARGIN, fab.top), window.innerHeight - h - MARGIN);
+      const options = [
+        { left: fab.right - w, top: fab.top - h - gap },
+        { left: fab.right - w, top: fab.bottom + gap },
+        { left: fab.left, top: fab.top - h - gap },
+        { left: fab.left, top: fab.bottom + gap },
+        { left: fab.left - w - gap, top: sideTop },
+        { left: fab.right + gap, top: sideTop },
+      ];
+      pos = options.find(fits) || options[0];
+    }
+    const p = clamp(pos.left, pos.top, panel);
+    panel.style.left = `${p.left}px`;
+    panel.style.top = `${p.top}px`;
+  };
+
+  // Arrastar com mouse, caneta ou dedo. Movimento pequeno conta como clique.
+  function draggable(handle, target, key, after) {
+    let start = null;
+    const move = event => {
+      if (!start || event.pointerId !== start.id) return;
+      const dx = event.clientX - start.x, dy = event.clientY - start.y;
+      if (!start.moved && Math.hypot(dx, dy) < 5) return;
+      if (!start.moved) { start.moved = true; widget.classList.add("is-dragging"); }
+      const p = clamp(start.left + dx, start.top + dy, target);
+      if (target === panel) { panel.style.left = `${p.left}px`; panel.style.top = `${p.top}px`; } else placeFab(p);
+      event.preventDefault();
+    };
+    const finish = event => {
+      if (!start || event.pointerId !== start.id) return;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      if (start.moved) {
+        const rect = target.getBoundingClientRect();
+        posStore.set(key, { left: rect.left, top: rect.top });
+        handle.dataset.justDragged = "1";
+        setTimeout(() => { delete handle.dataset.justDragged; }, 0);
+        if (after) after();
+      }
+      widget.classList.remove("is-dragging");
+      start = null;
+    };
+    handle.addEventListener("pointerdown", event => {
+      if (event.button !== 0 || event.target.closest("button:not([data-arise-toggle]), a, input, textarea")) return;
+      if (target === panel && isCompact()) return;
+      const rect = target.getBoundingClientRect();
+      start = { x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false, id: event.pointerId };
+      window.addEventListener("pointermove", move, { passive: false });
+      window.addEventListener("pointerup", finish);
+      window.addEventListener("pointercancel", finish);
+    });
+  }
+
   // Aviso amarelo: aparece a cada abertura do painel e some depois de 35 segundos.
   const notice = panel.querySelector("[data-arise-notice]");
   const NOTICE_MS = 35000;
   let noticeTimer = null, fadeTimer = null;
+  const stopNotice = () => { clearTimeout(noticeTimer); clearTimeout(fadeTimer); };
   const showNotice = () => {
     if (!notice) return;
-    clearTimeout(noticeTimer); clearTimeout(fadeTimer);
+    stopNotice();
     notice.hidden = false;
     notice.classList.remove("is-fading");
     noticeTimer = setTimeout(() => {
@@ -233,8 +324,10 @@ function setupWidget() {
       fadeTimer = setTimeout(() => { notice.hidden = true; }, 400);
     }, NOTICE_MS);
   };
+
   const open = () => {
     panel.hidden = false;
+    placePanel();
     showNotice();
     toggle.setAttribute("aria-expanded", "true");
     widget.classList.add("is-open");
@@ -242,15 +335,31 @@ function setupWidget() {
     const box = panel.querySelector("textarea");
     if (box) box.focus({ preventScroll: true });
   };
-  const close = () => {
-    clearTimeout(noticeTimer); clearTimeout(fadeTimer);
+  // Minimizar: esconde a janela e mantém a conversa para continuar depois.
+  const minimize = () => {
+    stopNotice();
     panel.hidden = true;
     toggle.setAttribute("aria-expanded", "false");
     widget.classList.remove("is-open");
     toggle.focus({ preventScroll: true });
   };
-  toggle.addEventListener("click", () => (panel.hidden ? open() : close()));
-  widget.querySelector("[data-arise-close]").addEventListener("click", close);
-  document.addEventListener("keydown", event => { if (event.key === "Escape" && !panel.hidden) close(); });
+  // Fechar: encerra o chat; a próxima abertura começa uma conversa nova
+  // (a conversa encerrada continua no histórico da tela cheia).
+  const end = () => {
+    if (panel.resetConversation) panel.resetConversation();
+    minimize();
+  };
+
+  placeFab(posStore.get("botao"));
+  draggable(toggle, toggle, "botao", () => { if (!panel.hidden && !posStore.get("painel")) placePanel(); });
+  draggable(head, panel, "painel");
+  toggle.addEventListener("click", () => {
+    if (toggle.dataset.justDragged) return;  // foi arrastado, não clicado
+    panel.hidden ? open() : minimize();
+  });
+  widget.querySelector("[data-arise-minimize]").addEventListener("click", minimize);
+  widget.querySelector("[data-arise-close]").addEventListener("click", end);
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && !panel.hidden) minimize(); });
+  window.addEventListener("resize", () => { placeFab(posStore.get("botao")); placePanel(); });
 }
 })();
