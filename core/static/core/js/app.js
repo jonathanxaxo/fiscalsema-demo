@@ -317,3 +317,38 @@
     if (!rang) setTimeout(() => toggle.classList.add('fs-ring'), 600);
   }
 })();
+
+// Sprint 49: depois de 1 hora sem mexer no sistema, a tela volta para a entrada (o servidor
+// encerra a sessão). Enquanto a pessoa digita ou rola a tela sem salvar, o navegador avisa o
+// servidor a cada 5 minutos de uso, para não perder o que está sendo preenchido.
+(() => {
+  const body = document.body;
+  const limit = Number(body.dataset.idleTimeout || 0) * 1000;
+  const pingUrl = body.dataset.keepaliveUrl;
+  if (!limit || !pingUrl) return;
+  const KEY = 'fiscalsema-ultima-atividade';
+  const PING_EVERY = Math.min(5 * 60 * 1000, limit / 2);
+  const read = () => { try { return Number(localStorage.getItem(KEY)) || 0; } catch (e) { return 0; } };
+  let local = Date.now();
+  let lastPing = Date.now();
+  let lastMark = 0;
+  const mark = () => {
+    const now = Date.now();
+    if (now - lastMark < 1000) return;
+    lastMark = now; local = now;
+    try { localStorage.setItem(KEY, String(now)); } catch (e) { /* sem armazenamento */ }
+    if (now - lastPing >= PING_EVERY) {
+      lastPing = now;
+      fetch(pingUrl, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' }, cache: 'no-store' })
+        .then((response) => { if (response.status === 401) window.location.reload(); })
+        .catch(() => { /* sem rede: o servidor decide na próxima ação */ });
+    }
+  };
+  mark();
+  ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll', 'mousemove'].forEach((type) =>
+    window.addEventListener(type, mark, { passive: true, capture: true }));
+  setInterval(() => {
+    const last = Math.max(local, read()); // outra aba aberta também conta como uso
+    if (Date.now() - last > limit + 5000) window.location.reload();
+  }, 30000);
+})();

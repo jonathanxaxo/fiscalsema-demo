@@ -13,7 +13,7 @@
   {% if assistant_enabled and request.user.is_authenticated %}<link rel="stylesheet" href="{% static 'assistant/chat.css' %}"><script src="{% static 'assistant/chat.js' %}" defer></script>{% endif %}
   {% block extra_head %}{% endblock %}
 </head>
-<body class="{% if request.user.is_authenticated %}app-page{% else %}auth-page{% endif %}">
+<body class="{% if request.user.is_authenticated %}app-page{% else %}auth-page{% endif %}"{% if request.user.is_authenticated and session_idle_timeout %} data-idle-timeout="{{ session_idle_timeout|stringformat:'d' }}" data-keepalive-url="{% url 'accounts:session_keepalive' %}"{% endif %}>
   <a class="skip-link" href="#conteudo-principal">Ir para o conteúdo principal</a>
   {% if is_demo %}<div class="environment-banner demo-banner" role="status"><strong>AMBIENTE DE DEMONSTRAÇÃO</strong> — DADOS EXCLUSIVAMENTE FICTÍCIOS</div>{% elif is_homologation %}<div class="environment-banner" role="status">AMBIENTE DE HOMOLOGAÇÃO — não utilizar para operação real</div>{% endif %}
   {% if request.user.is_authenticated %}
