@@ -15,6 +15,7 @@ from .models import (
     WorkOrderStatus,
 )
 from .periods import calendar_year_periods, contract_year_periods
+from .work_order_deadlines import DEFAULT_DEADLINE_MONTHS, suggested_deadline
 
 
 def _html_date_input():
@@ -490,8 +491,10 @@ class WorkOrderForm(forms.ModelForm):
             "signature_date",
             "start_date",
             "deadline",
+            "factory_deadline",
             "monthly_follow_up",
             "completion_date",
+            "spent_hours",
             "status",
             "process_number",
             "notes",
@@ -501,11 +504,28 @@ class WorkOrderForm(forms.ModelForm):
             "opening_date": _html_date_input(),
             "signature_date": _html_date_input(),
             "start_date": _html_date_input(),
-            "deadline": _html_date_input(),
+            "deadline": forms.DateInput(format="%Y-%m-%d", attrs={
+                "type": "date", "data-suggest-from": "opening_date",
+                "data-suggest-months": str(DEFAULT_DEADLINE_MONTHS),
+            }),
+            "factory_deadline": _html_date_input(),
             "completion_date": _html_date_input(),
             "notes": forms.Textarea(attrs={"rows": 4}),
         }
+        labels = {"deadline": "Prazo contratual (abertura + 6 meses)"}
         help_texts = {
+            "deadline": (
+                "Sugerido automaticamente como abertura + 6 meses; pode ser alterado. "
+                "É este prazo que define o atraso da OS."
+            ),
+            "factory_deadline": (
+                "Data de entrega estipulada pela fábrica. Gera aviso de cobrança "
+                "7 dias antes e depois de vencer."
+            ),
+            "spent_hours": (
+                "Somente OS por hora. Informativo: horas gastas informadas pela fábrica "
+                "na entrega. A cobrança continua pelas horas da OS."
+            ),
             "quantity": "Use para itens que não sejam medidos por hora.",
             "hours": "Use somente quando a unidade do item for Hora.",
             "item": "O valor unitário será copiado do item e não poderá ser digitado.",
@@ -530,7 +550,15 @@ class WorkOrderForm(forms.ModelForm):
             choice for choice in WorkOrderStatus.choices
             if choice[0] != WorkOrderStatus.CANCELED
         ]
-        _localize_decimal_fields(self, "quantity", "hours")
+        _localize_decimal_fields(self, "quantity", "hours", "spent_hours")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        opening_date = cleaned_data.get("opening_date")
+        if not self.instance.pk and opening_date and not cleaned_data.get("deadline"):
+            cleaned_data["deadline"] = suggested_deadline(opening_date)
+            self.instance.deadline = cleaned_data["deadline"]
+        return cleaned_data
 
     def clean_item(self):
         item = self.cleaned_data["item"]

@@ -22,8 +22,13 @@
     <dt>Ano contratual da OS</dt><dd>{% if work_order.annual_period_context.contract %}{{ work_order.annual_period_context.contract.label }} — {{ work_order.annual_period_context.contract.start_date|date:"d/m/Y" }} a {{ work_order.annual_period_context.contract.end_date|date:"d/m/Y" }}{% else %}Fora da vigência{% endif %}</dd>
     <dt>Assinatura</dt><dd>{{ work_order.signature_date|date:"d/m/Y"|default:"—" }}</dd>
     <dt>Início</dt><dd>{{ work_order.start_date|date:"d/m/Y"|default:"—" }}</dd>
-    <dt>Prazo</dt><dd>{{ work_order.deadline|date:"d/m/Y"|default:"—" }}</dd>
+    {% with situacao=work_order.deadline_situation %}
+    <dt>Situação do prazo</dt><dd><span class="status-pill status-{{ situacao.tone }}">{{ situacao.label }}</span></dd>
+    <dt>Prazo contratual</dt><dd>{{ work_order.deadline|date:"d/m/Y"|default:"—" }}{% if situacao.contract_countdown and work_order.deadline %} <span class="countdown countdown-{{ situacao.contract_countdown.tone }}">· {{ situacao.contract_countdown.text }}</span>{% endif %}</dd>
+    <dt>Prazo da fábrica</dt><dd>{{ work_order.factory_deadline|date:"d/m/Y"|default:"Não informado" }}{% if situacao.factory_countdown and work_order.factory_deadline %} <span class="countdown countdown-{{ situacao.factory_countdown.tone }}">· {{ situacao.factory_countdown.text }}</span>{% endif %}</dd>
+    {% endwith %}
     <dt>Conclusão</dt><dd>{{ work_order.completion_date|date:"d/m/Y"|default:"—" }}</dd>
+    {% if work_order.hours is not None %}<dt>Horas gastas informadas pela fábrica</dt><dd>{% if work_order.spent_hours is not None %}{{ work_order.spent_hours|quantidade }} h de {{ work_order.hours|quantidade }} h da OS{% if work_order.spent_hours_difference is not None %} · diferença {{ work_order.spent_hours_difference|quantidade }} h{% endif %} <small class="table-note">Informativo; a cobrança segue as horas da OS.</small>{% else %}Não informado{% endif %}</dd>{% endif %}
     <dt>Status</dt><dd>{{ work_order.get_status_display }}</dd>
     <dt>Processo</dt><dd>{{ work_order.process_number }}</dd>
     <dt>Acompanhamento mensal</dt><dd>{% if work_order.monthly_follow_up %}Sim — acompanhar a competência no painel{% elif work_order.item.unit == "MES" %}Sim — unidade contratual Mês{% else %}Não{% endif %}</dd>
