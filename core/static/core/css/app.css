@@ -705,3 +705,27 @@ h1 { letter-spacing: -.03em; }
 .live-badge i::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #2fc589; animation: fs-live 1.8s ease-out infinite; }
 @keyframes fs-live { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(3); opacity: 0; } }
 .page-header .live-badge { margin-top: .35rem; }
+
+/* Sprint 42 — telas que ainda estavam paradas também ficam vivas */
+/* Qualquer bloco direto do conteúdo entra em sequência (cadastros, detalhes, relatórios, auditoria, importações) */
+.content > p, .content > div:not(.dashboard-columns):not(.assistant-layout), .content > ul, .content > ol, .content > nav, .content > .actions, .content > .toolbar, .content > .table-tabs, .content > .confirmation-panel, .content > .audit-filters, .content > .inline-form, .content > details, .content > h3 { animation: fs-rise .5s var(--ease-out) both; animation-delay: calc(var(--fs-i, 0) * 55ms); }
+/* Formulários simples (as_p) e listas de definição: campos e linhas aparecem um a um */
+.content form:not(.form-grid):not(.inline-form):not(.assistant-form) > p, .content form:not(.form-grid):not(.inline-form):not(.assistant-form) > div, .content dl > div, .content dl > dt, .content dl > dd, .auth-card > *, .auth-card form > p, .auth-card form > div { animation: fs-rise .45s var(--ease-out) both; animation-delay: calc(var(--fs-i, 0) * 35ms); }
+.content form > p:focus-within > label, .auth-card form > p:focus-within > label { color: var(--green-700); }
+.content dl > div, .content dl > dt { transition: background .2s ease; border-radius: 8px; }
+.content dl > div:hover { background: var(--green-50); }
+/* Painéis de confirmação respiram; o de perigo pulsa a borda */
+.confirmation-panel { transition: box-shadow .25s ease, transform .25s var(--ease-out); }
+.confirmation-panel:hover { box-shadow: 0 14px 34px rgba(19, 60, 44, .1); transform: translateY(-1px); }
+.confirmation-panel-danger { animation: fs-rise .5s var(--ease-out) both, fs-danger-edge 2.4s ease-in-out .6s infinite; }
+@keyframes fs-danger-edge { 50% { box-shadow: -2px 0 0 0 var(--danger-ink) inset, 0 0 0 4px rgba(155, 28, 28, .08); } }
+/* Ações, filtros e abas reagem ao toque */
+.actions > a, .actions > button, .toolbar > a, .toolbar > button, .inline-form button, .table-tabs a, .audit-filters button { transition: transform .2s var(--ease-out), box-shadow .2s ease, background .2s ease; }
+.actions > a:hover, .actions > button:hover, .toolbar > a:hover, .toolbar > button:hover, .table-tabs a:hover, .audit-filters button:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(11, 61, 42, .12); }
+.table-tabs a[aria-current="page"], .table-tabs a.is-active { box-shadow: inset 0 -3px 0 var(--green-700); }
+.audit-filters, .toolbar { transition: box-shadow .25s ease; }
+.audit-filters:focus-within, .toolbar:focus-within { box-shadow: 0 0 0 4px rgba(20, 116, 71, .1); border-radius: 12px; }
+/* Tela de entrada, senha e cadastro: cartão com brilho suave */
+.auth-card { animation: fs-rise .6s var(--ease-out) both, fs-auth-glow 6s ease-in-out .6s infinite; }
+@keyframes fs-auth-glow { 50% { box-shadow: 0 20px 50px rgba(19,60,44,.11), 0 0 0 6px rgba(68,220,156,.12); } }
+html[data-motion="calmo"] .confirmation-panel-danger { animation-duration: .5s, 5s; }

@@ -255,7 +255,7 @@ class AvisoPainelTests(Base):
         home = self.client.get(reverse("home"))
         self.assertContains(home, 'data-arise-notice')
         script = open(finders.find("assistant/chat.js"), encoding="utf-8").read()
-        self.assertIn("const NOTICE_MS = 35000;", script)
+        self.assertIn("const NOTICE_MS = 10000;", script)  # Sprint 42: 10 segundos
         self.assertIn("showNotice();", script)
 
 

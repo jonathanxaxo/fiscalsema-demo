@@ -3,6 +3,17 @@
 (function () {
 document.querySelectorAll("[data-assistant]").forEach(init);
 setupWidget();
+fadePageNotices();
+
+// Sprint 42: avisos da tela cheia do chat somem depois de 10 segundos.
+function fadePageNotices() {
+  document.querySelectorAll(".assistant-chat .assistant-notice, .assistant-layout > .assistant-notice, [data-page-notice]").forEach(notice => {
+    setTimeout(() => {
+      notice.classList.add("is-fading");
+      setTimeout(() => { notice.hidden = true; }, 400);
+    }, 10000);
+  });
+}
 
 function init(root) {
   const floating = root.hasAttribute("data-floating");
@@ -309,9 +320,9 @@ function setupWidget() {
     });
   }
 
-  // Aviso amarelo: aparece a cada abertura do painel e some depois de 35 segundos.
+  // Aviso amarelo: aparece a cada abertura do painel e some depois de 10 segundos (Sprint 42).
   const notice = panel.querySelector("[data-arise-notice]");
-  const NOTICE_MS = 35000;
+  const NOTICE_MS = 10000;
   let noticeTimer = null, fadeTimer = null;
   const stopNotice = () => { clearTimeout(noticeTimer); clearTimeout(fadeTimer); };
   const showNotice = () => {
