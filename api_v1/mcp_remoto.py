@@ -20,6 +20,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db import IntegrityError
 from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
@@ -39,6 +40,7 @@ from documents.services import documents_visible_to
 from .analise import AnalysisError, analyze_divergences
 
 from .drafts import DraftValidationError, create_assistant_draft
+from .execucao import ExecutionRefused, execute_with_code
 from .models import ApiAccessEvent, AssistantDraft
 from .oauth import client_details
 from .serializers import (
@@ -52,14 +54,17 @@ SUPPORTED_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26")
 SERVER_INFO = {"name": "fiscalsema-demo", "title": "FiscalSema Demo", "version": "2.0.0"}
 SCOPE_READ = "fiscalsema.ler"
 SCOPE_PROPOSE = "fiscalsema.propor"
+SCOPE_EXECUTE = "fiscalsema.executar"
 MAX_BODY_BYTES = 200_000
 
 INSTRUCTIONS = (
     "Servidor MCP do FiscalSema Demo (somente dados fictícios). Você age com a "
     "identidade e as permissões da pessoa que autorizou a conexão. Consultas são "
     "informativas. propor_rascunho cria apenas uma proposta pendente: a pessoa "
-    "precisa revisar e confirmar na interface web. Homologação, atesto, liquidação "
-    "e pagamento nunca são feitos por IA."
+    "revisa no FiscalSema e confirma lá ou gera um código de confirmação. "
+    "executar_proposta só funciona com esse código, digitado pela pessoa; um 'sim' "
+    "no chat não basta. Nunca invente ou adivinhe códigos. Homologação, atesto, "
+    "liquidação e pagamento nunca são feitos por IA."
 )
 
 PAGE_PROPS = {
@@ -166,6 +171,10 @@ TOOLS = [
                              if value != AssistantDraft.ConfidenceLevel.SYSTEM_CALCULATED],
                 },
                 "evidence": {"type": "array", "items": {"type": "object"}, "minItems": 1},
+                "idempotency_key": {
+                    "type": "string", "minLength": 8, "maxLength": 80,
+                    "description": "Opcional: repetir a mesma chave devolve a mesma proposta.",
+                },
             },
             "required": ["entity_type", "operation", "context", "payload",
                          "source_summary", "source_authority", "confidence_level", "evidence"],
@@ -174,6 +183,26 @@ TOOLS = [
         "annotations": {"readOnlyHint": False, "destructiveHint": False,
                         "idempotentHint": False, "openWorldHint": False},
         "_scope": SCOPE_PROPOSE,
+    },
+    {
+        "name": "executar_proposta", "title": "Executar proposta com código",
+        "description": (
+            "Executa uma proposta pendente desta conexão SOMENTE com o código de confirmação "
+            "que a pessoa gerou no FiscalSema e digitou no chat. Sem código, peça à pessoa "
+            "para abrir a proposta no FiscalSema. Pagamentos nunca são executados."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "draft_id": {"type": "integer", "minimum": 1},
+                "codigo": {"type": "string", "minLength": 8, "maxLength": 12},
+            },
+            "required": ["draft_id", "codigo"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": True,
+                        "idempotentHint": True, "openWorldHint": False},
+        "_scope": SCOPE_EXECUTE,
     },
 ]
 TOOLS_BY_NAME = {tool["name"]: tool for tool in TOOLS}
@@ -210,8 +239,9 @@ def _page(arguments, queryset, serializer):
 
 
 class ToolContext:
-    def __init__(self, user, application):
+    def __init__(self, user, application, base_url=""):
         self.user, self.application = user, application
+        self.base_url = base_url
         self.contract = None
 
     def contract_from(self, arguments):
@@ -230,6 +260,8 @@ def run_tool(name, arguments, ctx):
         return _page(arguments, contracts_visible_to(user), contract_data)
     if name == "propor_rascunho":
         return _propose(arguments, ctx)
+    if name == "executar_proposta":
+        return _execute(arguments, ctx)
     if name == "conferir_nota_fiscal":
         invoice = invoices_visible_to(user).filter(pk=_int(arguments, "invoice_id")).first()
         if invoice is None:
@@ -306,10 +338,46 @@ def _document_summary(document):
     return data
 
 
+def _draft_url(draft):
+    return reverse("assistant_drafts:detail", args=[draft.pk])
+
+
+def _execute(arguments, ctx):
+    draft_id = _int(arguments, "draft_id")
+    code = arguments.get("codigo")
+    if not isinstance(code, str):
+        raise ToolError("Informe o código de confirmação digitado pela pessoa.")
+    try:
+        draft, repeated = execute_with_code(draft_id=draft_id, code=code, actor=ctx.user,
+                                            application=ctx.application)
+    except ExecutionRefused as exc:
+        raise ToolError(str(exc)) from exc
+    ctx.contract = draft.contract
+    return {
+        "data": draft_data(draft),
+        "result": "ja_executada_antes" if repeated else "executada",
+        "message": (
+            "Esta proposta já estava executada; nada foi gravado de novo." if repeated
+            else f"Executada após confirmação humana por código. Registro {draft.target_model} #{draft.target_id}."
+        ),
+    }, 1
+
+
 def _propose(arguments, ctx):
     allowed = set(TOOLS_BY_NAME["propor_rascunho"]["inputSchema"]["properties"])
     if set(arguments) - allowed:
         raise ToolError("Parâmetros não permitidos em propor_rascunho.")
+    key = arguments.get("idempotency_key") or ""
+    if key and (not isinstance(key, str) or not 8 <= len(key) <= 80):
+        raise ToolError("Parâmetro 'idempotency_key' inválido.")
+    if key:
+        existing = AssistantDraft.objects.select_related("requested_by").filter(
+            requested_by=ctx.user, idempotency_key=key,
+        ).first()
+        if existing is not None:
+            ctx.contract = existing.contract
+            return {"data": draft_data(existing), "repeated": True,
+                    "next_action": "Proposta já existente com esta chave; nada foi criado de novo."}, 1
     try:
         draft = create_assistant_draft(
             entity_type=arguments.get("entity_type"),
@@ -321,8 +389,11 @@ def _propose(arguments, ctx):
                 "source_authority", AssistantDraft.SourceAuthority.AUTOMATED_EXTRACTION),
             confidence_level=arguments.get(
                 "confidence_level", AssistantDraft.ConfidenceLevel.FOUND_IN_SOURCE),
-            application=ctx.application, actor=ctx.user,
+            application=ctx.application, actor=ctx.user, idempotency_key=key,
+            expires_at=timezone.now() + timedelta(hours=settings.MCP_PROPOSAL_HOURS),
         )
+    except IntegrityError as exc:
+        raise ToolError("Proposta repetida com a mesma chave; consulte seus rascunhos.") from exc
     except DraftValidationError as exc:
         detail = f" Campos: {json.dumps(exc.errors, ensure_ascii=False)}" if exc.errors else ""
         raise ToolError(f"{exc.messages[0]}{detail}") from exc
@@ -331,9 +402,12 @@ def _propose(arguments, ctx):
     ctx.contract = draft.contract
     return {
         "data": draft_data(draft),
+        "review_url": f"{ctx.base_url}{_draft_url(draft)}",
+        "expires_at": draft.expires_at.isoformat(),
         "next_action": (
-            "Proposta criada como PENDENTE. A pessoa deve revisar e confirmar em "
-            "Rascunhos IA na interface web; nada foi gravado nos registros oficiais."
+            "Proposta criada como PENDENTE; nada foi gravado. Peça à pessoa para abrir "
+            "Rascunhos IA no FiscalSema, conferir o antes/depois e confirmar lá ou gerar "
+            "um código de confirmação para digitar aqui (exige o escopo de executar)."
         ),
     }, 1
 
@@ -428,6 +502,7 @@ class McpEndpointView(View):
             return _json(_rpc_error(None, -32600, "Requisição JSON-RPC inválida."), 400)
         if "id" not in message:
             return HttpResponse(status=202)  # notificação (ex.: notifications/initialized)
+        self.base_url = request.build_absolute_uri("/").rstrip("/")
         return _json(self.handle(message, token))
 
     def handle(self, message, token):
@@ -468,7 +543,7 @@ class McpEndpointView(View):
         if _over_limit(user):
             _audit(user, application, status=429, tool=name, details={"motivo": "limite_por_minuto"})
             return _tool_error("Limite de chamadas por minuto atingido. Aguarde e tente de novo.")
-        ctx = ToolContext(user, application)
+        ctx = ToolContext(user, application, getattr(self, "base_url", ""))
         try:
             data, count = run_tool(name, arguments, ctx)
         except ToolError as exc:

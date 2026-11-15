@@ -4,19 +4,20 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.views.generic import DetailView, ListView, View
 
 from .drafts import (
     confirm_assistant_draft, confirm_assistant_draft_batch, reject_assistant_draft,
 )
+from .execucao import BLOCKED_TYPES, ExecutionRefused, can_issue_code, issue_confirmation_code
 from .models import AssistantDraft
 
 
 class DraftOwnerMixin(LoginRequiredMixin):
     def get_queryset(self):
         return AssistantDraft.objects.select_related(
-            "contract", "requested_by", "created_by_credential", "reviewed_by"
+            "contract", "requested_by", "created_by_credential", "created_by_application", "reviewed_by"
         ).filter(requested_by=self.request.user)
 
 
@@ -38,7 +39,33 @@ class AssistantDraftDetailView(DraftOwnerMixin, DetailView):
         context["consistency_json"] = json.dumps(
             self.object.consistency_result, ensure_ascii=False, indent=2,
         )
+        context["can_issue_code"] = can_issue_code(self.object)
+        context["payment_blocked"] = (
+            self.object.created_by_application_id is not None
+            and self.object.entity_type in BLOCKED_TYPES
+        )
         return context
+
+
+class AssistantDraftCodeView(DraftOwnerMixin, View):
+    """Gera o código de uso único e o mostra uma única vez (Sprint 30)."""
+
+    def post(self, request, pk):
+        if not self.get_queryset().filter(pk=pk).exists():
+            raise Http404
+        try:
+            code, expires = issue_confirmation_code(draft_id=pk, actor=request.user)
+        except (ExecutionRefused, PermissionDenied) as exc:
+            messages.error(request, str(exc))
+            return redirect("assistant_drafts:detail", pk=pk)
+        view = AssistantDraftDetailView()
+        view.setup(request, pk=pk)
+        view.object = view.get_object()
+        context = view.get_context_data(object=view.object)
+        context.update({"confirmation_code": code, "confirmation_code_expires": expires})
+        response = render(request, "api_v1/draft_detail.html", context)
+        response["Cache-Control"] = "private, no-store"
+        return response
 
 
 class AssistantDraftConfirmView(DraftOwnerMixin, View):

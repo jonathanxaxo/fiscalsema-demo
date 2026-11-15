@@ -78,3 +78,6 @@ documental das entregas anteriores.
 
 - `sprint-29-mcp-analise`: novas consultas no MCP e análise de divergências
   entre documento e sistema, sempre sem gravar.
+
+- `sprint-30-execucao-autorizada`: execução de propostas pelo MCP somente com
+  código de uso único gerado pela pessoa logada; pagamento nunca pela IA.

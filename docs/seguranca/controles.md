@@ -31,3 +31,4 @@ Nenhum dado, credencial, documento, usuário ou histórico do banco real pode se
 copiado para este projeto.
 | MCP por identidade (Sprint 28) | Token técnico por credencial | OAuth 2.1 com PKCE, consentimento da pessoa, escopos ler/propor, tokens em hash, limite por minuto, auditoria e revogação | Mais restritivo | IA só vê o que a pessoa vê; nada é executado sem confirmação humana |
 | Análise pelo MCP (Sprint 29) | — | Ferramentas só de leitura; análise de divergências sem gravar; documentos sem download; valores do documento fora da auditoria | Mais restritivo | IA aponta diferenças; decisão e correção continuam humanas |
+| Execução pelo MCP (Sprint 30) | Só confirmação na tela | Código de uso único gerado na tela (10 min, 5 tentativas, HMAC), mesmo cliente, escopo executar, proposta válida 24 h, revalidação completa | Controlado | "Sim" no chat não executa; pagamento nunca pela IA |

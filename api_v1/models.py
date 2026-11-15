@@ -169,11 +169,26 @@ class AssistantDraft(models.Model):
     rejection_reason = models.TextField("motivo da rejeição", blank=True)
     target_model = models.CharField("modelo gravado", max_length=100, blank=True)
     target_id = models.PositiveBigIntegerField("registro gravado", null=True, blank=True)
+    # Sprint 30: execução autorizada pelo MCP com código de uso único.
+    expires_at = models.DateTimeField("válido até", null=True, blank=True)
+    idempotency_key = models.CharField("chave de repetição", max_length=80, blank=True, default="")
+    confirmation_code_hash = models.CharField(
+        "hash do código de confirmação", max_length=64, blank=True, default="", editable=False,
+    )
+    confirmation_code_expires_at = models.DateTimeField("código válido até", null=True, blank=True)
+    confirmation_code_attempts = models.PositiveSmallIntegerField("tentativas do código", default=0)
 
     class Meta:
         ordering = ("-created_at", "-pk")
         verbose_name = "rascunho assistido"
         verbose_name_plural = "rascunhos assistidos"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("requested_by", "idempotency_key"),
+                condition=~models.Q(idempotency_key=""),
+                name="rascunho_chave_repeticao_unica",
+            ),
+        ]
 
 
 class AssistantDraftEvent(models.Model):
@@ -182,6 +197,8 @@ class AssistantDraftEvent(models.Model):
         CONFIRMED = "RASCUNHO_CONFIRMADO", "Rascunho confirmado"
         REJECTED = "RASCUNHO_REJEITADO", "Rascunho rejeitado"
         VALIDATION_FAILED = "VALIDACAO_FALHOU", "Confirmação recusada pela validação"
+        CODE_ISSUED = "CODIGO_EMITIDO", "Código de confirmação emitido"
+        CODE_REFUSED = "CODIGO_RECUSADO", "Código de confirmação recusado"
 
     event_type = models.CharField("evento", max_length=30, choices=EventType.choices)
     draft = models.ForeignKey(

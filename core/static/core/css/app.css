@@ -431,3 +431,4 @@ td a { font-weight: 700; }
 .login-actions button { margin: 0; }
 .login-google-hint { margin: .45rem 0 0; color: var(--muted); font-size: .74rem; line-height: 1.4; text-align: right; }
 @media (max-width: 420px) { .login-actions > * { flex: 1 1 100%; } .login-google-hint { text-align: left; } }
+.confirmation-code { font-size: 1.6rem; letter-spacing: .18em; font-family: ui-monospace, monospace; margin: .3rem 0; }

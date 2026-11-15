@@ -333,7 +333,7 @@ def validate_draft(*, entity_type, operation, context, payload, evidence, actor)
 @transaction.atomic
 def create_assistant_draft(*, entity_type, context, payload, evidence, source_summary,
                            credential=None, actor, operation=AssistantDraft.Operation.CREATE,
-                           application=None,
+                           application=None, expires_at=None, idempotency_key="",
                            source_authority=AssistantDraft.SourceAuthority.AUTOMATED_EXTRACTION,
                            confidence_level=AssistantDraft.ConfidenceLevel.FOUND_IN_SOURCE,
                            batch_id=None):
@@ -373,7 +373,7 @@ def create_assistant_draft(*, entity_type, context, payload, evidence, source_su
         target_model=target._meta.label_lower if target else "",
         target_id=target.pk if target else None,
         created_by_credential=credential, created_by_application=application,
-        requested_by=actor,
+        requested_by=actor, expires_at=expires_at, idempotency_key=idempotency_key or "",
     )
     AssistantDraftEvent.objects.create(
         event_type=AssistantDraftEvent.EventType.CREATED, draft=draft,
@@ -466,7 +466,7 @@ def _consistency_result(target):
     }
 
 
-def confirm_assistant_draft(*, draft_id, actor):
+def confirm_assistant_draft(*, draft_id, actor, channel="web"):
     try:
         with transaction.atomic():
             draft = AssistantDraft.objects.select_for_update().get(pk=draft_id)
@@ -474,6 +474,8 @@ def confirm_assistant_draft(*, draft_id, actor):
                 raise PermissionDenied("Somente o usuário autorizador pode confirmar este rascunho.")
             if draft.status != AssistantDraft.Status.PENDING:
                 raise DraftValidationError("Este rascunho já foi revisado.")
+            if draft.expires_at and draft.expires_at <= timezone.now():
+                raise DraftValidationError("Esta proposta venceu. Peça à IA uma nova proposta.")
             form, contract, parent, target, _evidence = validate_draft(
                 entity_type=draft.entity_type, operation=draft.operation,
                 context=draft.context, payload=draft.payload,
@@ -508,6 +510,7 @@ def confirm_assistant_draft(*, draft_id, actor):
                     "tipo": draft.entity_type, "operacao": draft.operation,
                     "dados_propostos": draft.payload, "comparacao": draft.comparison,
                     "fontes": draft.evidence, "confirmacao_humana": True,
+                    "canal": channel,
                     "valor_efetivamente_gravado": effective_values,
                     "resultado": "gravado", "consistencia": consistency,
                     "registro": {"modelo": draft.target_model, "id": draft.target_id},
