@@ -64,7 +64,9 @@ INSTRUCTIONS = (
     "revisa no FiscalSema e confirma lá ou gera um código de confirmação. "
     "executar_proposta só funciona com esse código, digitado pela pessoa; um 'sim' "
     "no chat não basta. Nunca invente ou adivinhe códigos. Homologação, atesto, "
-    "liquidação e pagamento nunca são feitos por IA."
+    "liquidação e pagamento nunca são feitos por IA. NF com is_returned=true foi "
+    "devolvida para correção e não entra em nenhum cálculo; dimensioned_value é o "
+    "valor dimensionado dos serviços homologados que a NF cobra."
 )
 
 PAGE_PROPS = {

@@ -86,6 +86,30 @@ def work_order_data(item):
         "deadline": item.deadline.isoformat() if item.deadline else None,
         "status": item.status, "process_number": item.process_number,
         "annual_periods": {key: period_data(value) for key, value in periods.items()},
+        # Sprint 40: prazos (Sprint 36) e memória de cálculo (Sprint 38).
+        "factory_deadline": item.factory_deadline.isoformat() if item.factory_deadline else None,
+        "spent_hours_informed": str(item.spent_hours) if item.spent_hours is not None else None,
+        "deadline_situation": _deadline_situation_data(item),
+        "service_lines": [service_line_data(line) for line in item.service_lines.all()],
+    }
+
+
+def _deadline_situation_data(work_order):
+    situation = work_order.deadline_situation
+    return {
+        "code": situation.code, "label": situation.label,
+        "contract_countdown": situation.contract_countdown.text if situation.contract_countdown else None,
+        "factory_countdown": situation.factory_countdown.text if situation.factory_countdown else None,
+    }
+
+
+def service_line_data(line):
+    return {
+        "id": line.pk, "service_code": line.service_code, "service_name": line.service_name,
+        "measure_label": line.measure_label, "complexity": line.complexity,
+        "quantity": str(line.quantity), "weight": str(line.weight), "units": str(line.units),
+        "status": line.delivery_status,
+        "homologation_reference": line.homologation_reference or None,
     }
 
 
@@ -98,6 +122,14 @@ def invoice_data(item):
         "competence": item.competence, "gross_value": str(item.gross_value),
         "deduction_value": str(item.deduction_value), "accepted_value": str(item.accepted_value),
         "process_number": item.process_number, "status": item.status,
+        # Sprint 40: NF pelo valor dimensionado e devolução (Sprint 39).
+        "is_returned": item.is_returned,
+        "returned_at": item.returned_at.isoformat() if item.returned_at else None,
+        "return_reason": item.return_reason or None,
+        "replaces_invoice_id": item.replaces_id,
+        "billed_service_line_ids": sorted(line.pk for line in item.service_lines.all()),
+        "dimensioned_value": None if item.dimensioned_value is None else str(item.dimensioned_value),
+        "counts_in_calculations": not item.is_returned,
     }
 
 

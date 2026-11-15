@@ -108,3 +108,6 @@ documental das entregas anteriores.
 
 - `sprint-39-nf-dimensionada`: NF ligada aos serviços homologados, valor
   dimensionado e devolução da NF (referência: FiscalSema Light).
+
+- `sprint-40-conhecimento-arise-mcp`: Arise e IA externa (MCP) passam a
+  conhecer as funções das Sprints 35 a 39.
