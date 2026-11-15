@@ -531,6 +531,8 @@ class ContractEvent(models.Model):
         RESPONSIBLE_TRANSFERRED = "FISCAL_TRANSFERIDO", "Fiscal responsável transferido"
         ARCHIVED = "CONTRATO_ARQUIVADO", "Contrato arquivado logicamente"
         RESTORED = "CONTRATO_RESTAURADO", "Contrato restaurado"
+        CATALOG_SERVICE_CREATED = "CATALOGO_SERVICO_CRIADO", "Serviço do catálogo cadastrado"
+        CATALOG_SERVICE_UPDATED = "CATALOGO_SERVICO_ALTERADO", "Serviço do catálogo alterado"
 
     event_type = models.CharField("evento", max_length=30, choices=EventType.choices)
     contract = models.ForeignKey(
@@ -597,6 +599,9 @@ class ContractItemUnit(models.TextChoices):
     PACKAGE = "PACOTE", "Pacote"
     OTHER = "OUTRO", "Outro"
     CUSTOM = "PERSONALIZADA", "Personalizada"
+    UST = "UST", "UST"
+    HST = "HST", "HST"
+    USN = "USN", "USN"
 
 
 class ContractItem(models.Model):
@@ -1258,6 +1263,13 @@ class WorkOrderEvent(models.Model):
         UPDATED = "OS_ATUALIZADA", "OS atualizada"
         STATUS_CHANGED = "STATUS_ALTERADO", "Status alterado"
         CANCELED = "OS_CANCELADA", "OS cancelada"
+        SERVICE_LINE_ADDED = "SERVICO_INCLUIDO", "Serviço do catálogo incluído"
+        SERVICE_LINE_UPDATED = "SERVICO_ALTERADO", "Serviço do catálogo alterado"
+        SERVICE_LINE_REMOVED = "SERVICO_REMOVIDO", "Serviço do catálogo removido"
+        SERVICE_LINE_DELIVERED = "SERVICO_ENTREGUE", "Serviço entregue"
+        SERVICE_LINE_ACCEPTED = "SERVICO_ACEITO", "Serviço aceito"
+        SERVICE_LINE_REJECTED = "SERVICO_RECUSADO", "Serviço recusado"
+        SERVICE_LINE_HOMOLOGATED = "SERVICO_HOMOLOGADO", "Serviço homologado"
 
     event_type = models.CharField("evento", max_length=30, choices=EventType.choices)
     work_order = models.ForeignKey(
@@ -1859,3 +1871,212 @@ class BudgetCommitmentEvent(models.Model):
 
     def __str__(self):
         return f"{self.get_event_type_display()} — {self.commitment.number}"
+
+
+# --- Sprint 38: catálogo de serviços e memória de cálculo da OS ---------------
+# Referência: FiscalSema Light (ADR 0021/0022), reescrito no Demo.
+
+
+class ServiceComplexity(models.TextChoices):
+    LOW = "BAIXA", "Baixa"
+    MEDIUM = "MEDIA", "Média"
+    HIGH = "ALTA", "Alta"
+
+
+class ServiceCatalogEntry(models.Model):
+    """Serviço do catálogo do contrato: peso em UST/HST/USN por unidade, por complexidade."""
+
+    contract = models.ForeignKey(
+        Contract, on_delete=models.PROTECT, related_name="service_catalog", verbose_name="contrato",
+    )
+    code = models.CharField("código", max_length=30, blank=True)
+    name = models.CharField("serviço", max_length=200)
+    measure_label = models.CharField(
+        "unidade de medida do serviço", max_length=100,
+        help_text="Ex.: por funcionalidade, por semana, por painel, por ocorrência.",
+    )
+    weight_low = models.DecimalField("peso — complexidade baixa", max_digits=12, decimal_places=4, null=True, blank=True)
+    weight_medium = models.DecimalField("peso — complexidade média", max_digits=12, decimal_places=4, null=True, blank=True)
+    weight_high = models.DecimalField("peso — complexidade alta", max_digits=12, decimal_places=4, null=True, blank=True)
+    source_reference = models.CharField(
+        "fonte", max_length=200, blank=True,
+        help_text="Ex.: Catálogo de serviços v1.2, item 2.4; Proposta comercial, fase 4.",
+    )
+    is_active = models.BooleanField("ativo", default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="service_catalog_entries_created", verbose_name="cadastrado por",
+    )
+    created_at = models.DateTimeField("cadastrado em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        ordering = ("contract", "code", "name", "pk")
+        verbose_name = "serviço do catálogo"
+        verbose_name_plural = "serviços do catálogo"
+
+    def weight_for(self, complexity):
+        return {
+            ServiceComplexity.LOW: self.weight_low,
+            ServiceComplexity.MEDIUM: self.weight_medium,
+            ServiceComplexity.HIGH: self.weight_high,
+        }.get(complexity)
+
+    @property
+    def available_complexities(self):
+        return tuple((value, label) for value, label in ServiceComplexity.choices
+                     if self.weight_for(value) is not None)
+
+    def clean(self):
+        super().clean()
+        self.code = normalized_text(self.code)
+        self.name = normalized_text(self.name)
+        self.measure_label = normalized_text(self.measure_label)
+        self.source_reference = normalized_text(self.source_reference)
+        errors = {}
+        if not self.name:
+            errors["name"] = "Informe o nome do serviço."
+        if not self.measure_label:
+            errors["measure_label"] = "Informe a unidade de medida do serviço."
+        weights = (("weight_low", self.weight_low), ("weight_medium", self.weight_medium),
+                   ("weight_high", self.weight_high))
+        for field, value in weights:
+            if value is not None and value <= Decimal("0"):
+                errors[field] = "O peso deve ser maior que zero."
+        if all(value is None for _field, value in weights):
+            errors["weight_medium"] = "Informe o peso de pelo menos uma complexidade."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.code} — {self.name}" if self.code else self.name
+
+
+class ServiceLineStatus(models.TextChoices):
+    IN_PROGRESS = "EM_ANDAMENTO", "Em andamento"
+    DELIVERED = "ENTREGUE", "Entregue"
+    ACCEPTED = "ACEITO", "Aceito"
+    HOMOLOGATED = "HOMOLOGADO", "Homologado"
+
+
+class WorkOrderServiceLine(models.Model):
+    """Linha da memória de cálculo da OS: serviço × complexidade × quantidade.
+
+    Peso, código e nome são copiados do catálogo na inclusão e ficam congelados.
+    """
+
+    work_order = models.ForeignKey(
+        WorkOrder, on_delete=models.PROTECT, related_name="service_lines", verbose_name="ordem de serviço",
+    )
+    catalog_entry = models.ForeignKey(
+        ServiceCatalogEntry, on_delete=models.PROTECT, related_name="work_order_lines",
+        verbose_name="serviço do catálogo",
+    )
+    service_code = models.CharField("código do serviço", max_length=30, blank=True)
+    service_name = models.CharField("serviço", max_length=200)
+    measure_label = models.CharField("unidade de medida do serviço", max_length=100)
+    complexity = models.CharField("complexidade", max_length=10, choices=ServiceComplexity.choices)
+    quantity = models.DecimalField("quantidade", max_digits=20, decimal_places=4)
+    weight = models.DecimalField("peso por unidade", max_digits=12, decimal_places=4)
+    delivery_status = models.CharField(
+        "situação", max_length=20, choices=ServiceLineStatus.choices,
+        default=ServiceLineStatus.IN_PROGRESS, db_index=True,
+    )
+    delivered_at = models.DateField("entregue em", null=True, blank=True)
+    accepted_at = models.DateField("aceito em", null=True, blank=True)
+    homologated_at = models.DateField("homologado em", null=True, blank=True)
+    homologation_reference = models.CharField(
+        "termo de homologação", max_length=150, blank=True,
+        help_text="Número do Termo de Homologação/Aceite.",
+    )
+    rejection_count = models.PositiveIntegerField("recusas", default=0)
+    last_rejection_reason = models.TextField("motivo da última recusa", blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="work_order_service_lines_created", verbose_name="incluído por",
+    )
+    created_at = models.DateTimeField("incluído em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        ordering = ("work_order", "pk")
+        verbose_name = "serviço do catálogo na OS"
+        verbose_name_plural = "serviços do catálogo nas OS"
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantity__gt=Decimal("0")),
+                                   name="contracts_service_line_quantity_positive"),
+            models.CheckConstraint(condition=models.Q(weight__gt=Decimal("0")),
+                                   name="contracts_service_line_weight_positive"),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(delivery_status=ServiceLineStatus.IN_PROGRESS, delivered_at__isnull=True,
+                             accepted_at__isnull=True, homologated_at__isnull=True, homologation_reference="")
+                    | models.Q(delivery_status=ServiceLineStatus.DELIVERED, delivered_at__isnull=False,
+                               accepted_at__isnull=True, homologated_at__isnull=True, homologation_reference="")
+                    | models.Q(delivery_status=ServiceLineStatus.ACCEPTED, delivered_at__isnull=False,
+                               accepted_at__isnull=False, homologated_at__isnull=True, homologation_reference="")
+                    | (models.Q(delivery_status=ServiceLineStatus.HOMOLOGATED, delivered_at__isnull=False,
+                                accepted_at__isnull=False, homologated_at__isnull=False)
+                       & ~models.Q(homologation_reference=""))
+                ),
+                name="contracts_service_line_status_consistent",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(accepted_at__isnull=True) | models.Q(accepted_at__gte=models.F("delivered_at")),
+                name="contracts_service_line_accept_after_delivery",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(homologated_at__isnull=True) | models.Q(homologated_at__gte=models.F("accepted_at")),
+                name="contracts_service_line_homologation_after_accept",
+            ),
+        ]
+
+    @property
+    def units(self):
+        from .calculations import calculate_service_units
+
+        return calculate_service_units(self.quantity, self.weight)
+
+    @property
+    def total_value(self):
+        from .calculations import calculate_item_total
+
+        return calculate_item_total(self.units, self.work_order.unit_value)
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        if self.quantity is not None and self.quantity <= Decimal("0"):
+            errors["quantity"] = "Informe quantidade maior que zero."
+        if self.weight is not None and self.weight <= Decimal("0"):
+            errors["weight"] = "O peso deve ser maior que zero."
+        if (self.catalog_entry_id and self.work_order_id
+                and self.catalog_entry.contract_id != self.work_order.contract_id):
+            errors["catalog_entry"] = "O serviço deve pertencer ao catálogo do contrato da OS."
+        expected = {
+            ServiceLineStatus.IN_PROGRESS: (False, False, False, False),
+            ServiceLineStatus.DELIVERED: (True, False, False, False),
+            ServiceLineStatus.ACCEPTED: (True, True, False, False),
+            ServiceLineStatus.HOMOLOGATED: (True, True, True, True),
+        }.get(self.delivery_status)
+        actual = (self.delivered_at is not None, self.accepted_at is not None,
+                  self.homologated_at is not None, bool((self.homologation_reference or "").strip()))
+        if expected is not None and actual != expected:
+            errors["delivery_status"] = "A situação deve corresponder às datas e ao Termo de Homologação."
+        if self.accepted_at and self.delivered_at and self.accepted_at < self.delivered_at:
+            errors["accepted_at"] = "A data de aceite não pode ser anterior à entrega."
+        if self.homologated_at and self.accepted_at and self.homologated_at < self.accepted_at:
+            errors["homologated_at"] = "A homologação não pode ser anterior ao aceite."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.service_name} — OS {self.work_order.number}"

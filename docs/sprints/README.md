@@ -102,3 +102,6 @@ documental das entregas anteriores.
 
 - `sprint-37-dashboard-executivo`: dashboard executivo do contrato com
   vigência x execução e evolução mensal (referência: FiscalSema Light).
+
+- `sprint-38-catalogo-servicos`: catálogo de serviços (UST/HST/USN), memória
+  de cálculo da OS e ciclo entregue/aceito/homologado (referência: FiscalSema Light).

@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from django import forms
+from django.utils import timezone
 
 from .models import (
     BudgetCommitment,
@@ -8,6 +11,8 @@ from .models import (
     ContractStatus,
     Invoice,
     Payment,
+    ServiceCatalogEntry,
+    ServiceComplexity,
     WorkOrder,
     WorkOrderAllocation,
     WorkOrderAllocationStatus,
@@ -551,6 +556,11 @@ class WorkOrderForm(forms.ModelForm):
             if choice[0] != WorkOrderStatus.CANCELED
         ]
         _localize_decimal_fields(self, "quantity", "hours", "spent_hours")
+        if self.instance.pk and self.instance.service_lines.exists():
+            self.fields["quantity"].disabled = True
+            self.fields["quantity"].help_text = (
+                "Calculada pela soma dos serviços do catálogo da OS. Altere os serviços na tela da OS."
+            )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -756,3 +766,98 @@ class PaymentForm(forms.ModelForm):
         self.invoice = invoice
         self.instance.invoice = invoice
         _localize_decimal_fields(self, "amount")
+
+
+# --- Sprint 38: catálogo de serviços e memória de cálculo da OS ---------------
+
+
+class ServiceCatalogEntryForm(forms.ModelForm):
+    class Meta:
+        model = ServiceCatalogEntry
+        fields = ("code", "name", "measure_label", "weight_low", "weight_medium", "weight_high",
+                  "source_reference", "is_active")
+        help_texts = {
+            "weight_low": "UST/HST/USN por unidade. Deixe em branco quando o catálogo indicar N/A.",
+            "weight_medium": "UST/HST/USN por unidade na complexidade média.",
+            "weight_high": "UST/HST/USN por unidade. Deixe em branco quando o catálogo indicar N/A.",
+            "is_active": "Serviço inativo não pode ser incluído em novas OS; as OS antigas não mudam.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _localize_decimal_fields(self, "weight_low", "weight_medium", "weight_high")
+        if not self.instance.pk:
+            self.fields.pop("is_active")
+
+
+def _catalog_entry_label(entry):
+    from django.utils.formats import number_format
+
+    weights = " · ".join(
+        f"{label}: {number_format(entry.weight_for(value), decimal_pos=2)}"
+        for value, label in entry.available_complexities
+    )
+    prefix = f"{entry.code} — " if entry.code else ""
+    return f"{prefix}{entry.name} ({entry.measure_label}; {weights})"
+
+
+class WorkOrderServiceLineForm(forms.Form):
+    catalog_entry = forms.ModelChoiceField(label="Serviço do catálogo", queryset=ServiceCatalogEntry.objects.none())
+    complexity = forms.ChoiceField(label="Complexidade", choices=ServiceComplexity.choices)
+    quantity = forms.DecimalField(
+        label="Quantidade", max_digits=20, decimal_places=4, min_value=Decimal("0.0001"), localize=True,
+        widget=forms.TextInput(attrs={"inputmode": "decimal"}),
+        help_text="Quantidade na unidade de medida do serviço (ex.: 95 funcionalidades, 2 semanas).",
+    )
+
+    def __init__(self, *args, contract, line=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.initial.setdefault("complexity", ServiceComplexity.MEDIUM)
+        queryset = contract.service_catalog.filter(is_active=True)
+        if line is not None:
+            queryset = contract.service_catalog.filter(pk=line.catalog_entry_id) | queryset
+            self.fields["catalog_entry"].disabled = True
+            self.initial.setdefault("catalog_entry", line.catalog_entry_id)
+            self.initial["complexity"] = line.complexity
+            self.initial.setdefault("quantity", line.quantity)
+        self.fields["catalog_entry"].queryset = queryset.distinct()
+        self.fields["catalog_entry"].label_from_instance = _catalog_entry_label
+
+    def clean(self):
+        cleaned_data = super().clean()
+        entry, complexity = cleaned_data.get("catalog_entry"), cleaned_data.get("complexity")
+        if entry is not None and complexity and entry.weight_for(complexity) is None:
+            self.add_error("complexity", "O serviço não tem peso para essa complexidade (o catálogo indica N/A).")
+        return cleaned_data
+
+
+class ServiceLineActionForm(forms.Form):
+    """Data do evento (e motivo/termo quando exigidos) de uma ação no serviço da OS."""
+
+    ACTIONS = {
+        "entregar": ("Registrar entrega", "Data da entrega"),
+        "aceitar": ("Aceitar serviço", "Data do aceite"),
+        "recusar": ("Recusar — volta para ajuste", "Data da recusa"),
+        "homologar": ("Homologar serviço", "Data do Termo de Homologação"),
+    }
+
+    event_date = forms.DateField(widget=_html_date_input())
+    reason = forms.CharField(
+        label="Motivo da recusa", widget=forms.Textarea(attrs={"rows": 3}), max_length=1000,
+        help_text="Descreva o que a fábrica precisa ajustar. Fica registrado na auditoria.",
+    )
+    reference = forms.CharField(
+        label="Número do Termo de Homologação", max_length=120,
+        help_text="Ex.: Termo 12/2026. Só serviços homologados podem ser faturados.",
+    )
+
+    def __init__(self, *args, action, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.action = action
+        self.fields["event_date"].label = self.ACTIONS[action][1]
+        if not self.is_bound:
+            self.initial["event_date"] = timezone.localdate()
+        if action != "recusar":
+            del self.fields["reason"]
+        if action != "homologar":
+            del self.fields["reference"]

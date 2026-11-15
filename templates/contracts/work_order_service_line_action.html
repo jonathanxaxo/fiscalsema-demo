@@ -1,0 +1,34 @@
+{% extends "accounts/base.html" %}
+{% load l10n formatacao %}
+{% block title %}{{ title }} — OS {{ work_order.number }} — FiscalSema{% endblock %}
+{% block content %}
+  <h1>{{ title }}</h1>
+  <p><strong>OS:</strong> {{ work_order.number }} · <strong>Item:</strong> {{ work_order.item.number }}</p>
+  <div class="table-responsive" role="region" aria-label="Serviços desta ação" tabindex="0"><table>
+    <thead><tr><th>Serviço</th><th>Complexidade</th><th>{{ work_order.unit_name }}</th><th>Valor</th><th>Situação atual</th></tr></thead>
+    <tbody>
+      {% for item in lines %}
+        <tr>
+          <td>{% if item.service_code %}<strong>{{ item.service_code }}</strong> — {% endif %}{{ item.service_name }}</td>
+          <td>{{ item.get_complexity_display }}</td>
+          <td class="cell-nowrap">{{ item.units|floatformat:"2g" }}</td>
+          <td class="cell-nowrap">R$&nbsp;{{ item.total_value|localize }}</td>
+          <td><span class="line-status line-status-{{ item.delivery_status }}">{{ item.get_delivery_status_display }}</span></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  {% if form.action == "recusar" %}<p class="helptext">O serviço volta para <strong>Em andamento</strong> para a fábrica ajustar. As datas de entrega e aceite são limpas e a recusa fica registrada na auditoria.</p>
+  {% elif form.action == "homologar" %}<p class="helptext">Homologar = Termo de Homologação assinado. A partir daí o serviço pode ser cobrado em NF, pelo valor dimensionado.</p>
+  {% elif form.action == "aceitar" %}<p class="helptext">Aceite = o fiscal conferiu e aprovou a entrega. Depois falta assinar o Termo de Homologação.</p>
+  {% else %}<p class="helptext">Registre a data em que a fábrica entregou o serviço. Depois o fiscal aceita ou recusa.</p>{% endif %}
+  <form class="form-card form-grid" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-field{% if field.name == 'reason' %} form-field-wide{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</div>
+    {% endfor %}
+    <button type="submit"{% if form.action == "recusar" %} class="button-link-danger"{% endif %}>Confirmar</button>
+  </form>
+  <p class="actions"><a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Voltar à OS sem alterar</a></p>
+{% endblock %}

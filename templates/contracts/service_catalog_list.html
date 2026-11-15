@@ -1,0 +1,42 @@
+{% extends "accounts/base.html" %}
+{% load l10n formatacao %}
+{% block title %}Catálogo de serviços — Contrato {{ contract.number }} — FiscalSema{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Composição contratual</p>
+      <h1>Catálogo de serviços do contrato {{ contract.number }}</h1>
+      <p>Serviços e pesos (UST, HST ou USN por unidade) usados para calcular as Ordens de Serviço, conforme o catálogo ou a proposta anexos ao contrato.</p>
+    </div>
+    <div class="page-header-actions">
+      {% if can_edit %}<a class="button-link button-link-small" href="{% url 'contracts:service_catalog_create' contract.pk %}">Cadastrar serviço</a>{% endif %}
+      <a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a>
+    </div>
+  </div>
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  {% if entries %}
+    <div class="table-responsive" role="region" aria-label="Catálogo de serviços" tabindex="0">
+      <table>
+        <thead><tr><th>Código</th><th>Serviço</th><th>Unidade de medida</th><th>Baixa</th><th>Média</th><th>Alta</th><th>Fonte</th><th>Situação</th>{% if can_edit %}<th>Ações</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for entry in entries %}
+            <tr>
+              <td class="cell-nowrap">{{ entry.code|default:"—" }}</td>
+              <td>{{ entry.name }}</td>
+              <td>{{ entry.measure_label }}</td>
+              <td class="cell-nowrap">{% if entry.weight_low is not None %}{{ entry.weight_low|floatformat:"2g" }}{% else %}N/A{% endif %}</td>
+              <td class="cell-nowrap">{% if entry.weight_medium is not None %}{{ entry.weight_medium|floatformat:"2g" }}{% else %}N/A{% endif %}</td>
+              <td class="cell-nowrap">{% if entry.weight_high is not None %}{{ entry.weight_high|floatformat:"2g" }}{% else %}N/A{% endif %}</td>
+              <td>{{ entry.source_reference|default:"—" }}</td>
+              <td>{% if entry.is_active %}<span class="status-pill status-success">Ativo</span>{% else %}<span class="status-pill status-neutral">Inativo</span>{% endif %}</td>
+              {% if can_edit %}<td class="cell-nowrap"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:service_catalog_update' contract.pk entry.pk %}">Editar</a></td>{% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state"><span aria-hidden="true">▤</span><div><strong>Nenhum serviço cadastrado no catálogo deste contrato.</strong><p>Cadastre os serviços do catálogo oficial ou da proposta comercial para calcular as OS por UST, HST ou USN.</p></div></div>
+  {% endif %}
+{% endblock %}

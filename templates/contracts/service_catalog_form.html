@@ -1,0 +1,17 @@
+{% extends "accounts/base.html" %}
+{% load l10n formatacao %}
+{% block title %}Serviço do catálogo — FiscalSema{% endblock %}
+{% block content %}
+  <h1>{% if entry %}Editar serviço do catálogo{% else %}Cadastrar serviço do catálogo{% endif %}</h1>
+  <p><strong>Contrato:</strong> {{ contract.number }}</p>
+  <p class="helptext">Informe o peso (UST, HST ou USN por unidade) de cada complexidade exatamente como no catálogo ou na proposta. Deixe em branco a complexidade marcada como N/A. Alterar o peso não muda as OS já cadastradas.</p>
+  <form class="form-card form-grid" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-field">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</div>
+    {% endfor %}
+    <button type="submit">Salvar</button>
+  </form>
+  <p class="actions"><a href="{% url 'contracts:service_catalog' contract.pk %}">Voltar ao catálogo</a></p>
+{% endblock %}

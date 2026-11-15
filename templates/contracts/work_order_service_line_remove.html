@@ -1,0 +1,12 @@
+{% extends "accounts/base.html" %}
+{% load l10n formatacao %}
+{% block title %}Remover serviço da OS {{ work_order.number }} — FiscalSema{% endblock %}
+{% block content %}
+  <h1>Remover serviço da OS {{ work_order.number }}</h1>
+  <p class="warning">Será removido da memória de cálculo: <strong>{{ line.service_name }}</strong> — {{ line.quantity|floatformat:"-2g" }} × {{ line.weight|floatformat:"2g" }} = {{ line.units|floatformat:"2g" }} {{ work_order.unit_name }}. A quantidade da OS será recalculada e a remoção fica registrada na auditoria.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirmar remoção</button>
+  </form>
+  <p class="actions"><a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Voltar sem remover</a></p>
+{% endblock %}
