@@ -126,3 +126,6 @@ documental das entregas anteriores.
 
 - `sprint-45-movimento-sempre-vivo`: sistema continua vivo quando o
   computador pede menos movimento (vira "Calmo") e mais efeitos vivos.
+
+- `sprint-46-lupa-escaneando`: lupa do logotipo com varredura, brilho e pulso
+  sincronizados; parada com "reduzir movimento" e no modo "Sem".
