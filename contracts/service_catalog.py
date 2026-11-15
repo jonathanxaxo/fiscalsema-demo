@@ -429,6 +429,7 @@ def work_order_service_summary(work_order):
         "lines": lines,
         "status_counts": counts,
         "accepted_count": counts[ServiceLineStatus.ACCEPTED],
+        "homologated_count": counts[ServiceLineStatus.HOMOLOGATED],
         "total_units": total_units,
         "total_value": work_order.total_value if lines else None,
         "has_lines": bool(lines),

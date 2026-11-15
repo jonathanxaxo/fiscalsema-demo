@@ -754,6 +754,11 @@ class InvoiceForm(forms.ModelForm):
             ).exclude(invoices__in=billed_elsewhere)
             self.fields["service_lines"].queryset = lines.order_by("pk")
             self.fields["service_lines"].label_from_instance = _billable_line_label
+            if not lines.exists():  # Sprint 43: explica a lista vazia em vez de mostrar nada
+                self.fields["service_lines"].help_text = (
+                    "Nenhum serviço homologado e ainda não cobrado nesta OS. A NF pode ser salva sem marcar "
+                    "serviços; para cobrar serviços do catálogo, homologue-os antes na tela da OS."
+                )
             if own_pk and not self.is_bound:
                 self.initial["service_lines"] = list(self.instance.service_lines.values_list("pk", flat=True))
         else:
