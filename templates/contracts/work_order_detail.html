@@ -151,7 +151,7 @@
     <thead><tr><th>Emissão</th><th>Número/série</th><th>Competência</th><th>Valor bruto</th><th>Glosa</th><th>Valor aceito</th><th>Status informado</th></tr></thead>
     <tbody>
       {% for invoice in work_order.invoices.all %}
-        <tr>
+        <tr data-row-link="{% url 'contracts:invoice_detail' contract.pk work_order.pk invoice.pk %}">
           <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
           <td><a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk invoice.pk %}">{{ invoice.number }}/{{ invoice.series }}</a></td>
           <td>{{ invoice.competence }}</td>

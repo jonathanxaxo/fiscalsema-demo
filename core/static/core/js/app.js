@@ -140,7 +140,15 @@
 // Sprint 47: linhas marcadas com data-row-link abrem o registro ao clicar em qualquer parte da linha
 // (links, botões e formulários da linha continuam funcionando normalmente).
 (() => {
+  // Sprint 48: no sistema inteiro, a linha cujo primeiro campo já é um link (número da OS, do empenho,
+  // da NF, do pagamento...) abre esse mesmo link. Tabelas marcadas com data-no-row-link ficam de fora.
+  document.querySelectorAll('tbody tr:not([data-row-link])').forEach((row) => {
+    if (row.closest('[data-no-row-link], .assistant-messages, .arise-panel') || !row.cells.length) return;
+    const link = row.cells[0].querySelector('a[href]:not([download]):not([target]):not([href^="#"]):not([href^="javascript"])');
+    if (link) row.dataset.rowLink = link.getAttribute('href');
+  });
   document.querySelectorAll('tr[data-row-link]').forEach((row) => {
+    row.classList.add('row-link');
     row.addEventListener('click', (event) => {
       if (event.target.closest('a, button, input, select, textarea, label, form, summary')) return;
       if (window.getSelection && String(window.getSelection()).trim()) return;

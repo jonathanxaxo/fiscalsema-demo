@@ -13,7 +13,7 @@
     <tbody>
       {% for commitment in commitments %}
         {% with totals=commitment.movement_totals breakdown=commitment.movement_breakdown %}
-          <tr>
+          <tr data-row-link="{% url 'contracts:commitment_detail' contract.pk commitment.pk %}">
             <td>{{ commitment.number }}</td>
             <td>{{ commitment.fiscal_year|unlocalize }}</td>
             <td>{{ commitment.ped }}</td>

@@ -132,3 +132,6 @@ documental das entregas anteriores.
 
 - `sprint-47-abrir-os-pela-lista`: clicar na OS da lista abre a OS; Cadastrar
   Nota Fiscal e Editar OS no topo da OS.
+
+- `sprint-48-linhas-clicaveis`: clicar na linha abre o registro em todas as
+  listas do sistema, sem remover botões.

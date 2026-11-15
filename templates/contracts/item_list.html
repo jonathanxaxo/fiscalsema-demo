@@ -12,7 +12,7 @@
     <thead><tr><th>Número</th><th>Código</th><th>Descrição</th><th>Unidade</th><th>Quantidade operacional total</th><th>Referência anual</th><th>Limite por ano contratual</th><th>Valor unitário</th><th>Total derivado</th><th>Status</th><th>Ação</th></tr></thead>
     <tbody>
       {% for item in items %}
-        <tr>
+        <tr data-row-link="{% url 'contracts:item_detail' contract.pk item.pk %}">
           <td>{{ item.number }}</td>
           <td>{{ item.external_code|default:"—" }}</td>
           <td>{{ item.description }}</td>

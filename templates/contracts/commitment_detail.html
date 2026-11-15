@@ -38,7 +38,7 @@
     <thead><tr><th>Data</th><th>OS</th><th>Valor</th><th>Status</th></tr></thead>
     <tbody>
       {% for allocation in commitment.allocations.all %}
-        <tr><td>{{ allocation.allocation_date|date:"d/m/Y" }}</td><td><a href="{% url 'contracts:work_order_detail' contract.pk allocation.work_order_id %}">{{ allocation.work_order.number }}</a></td><td>R$&nbsp;{{ allocation.amount|localize }}</td><td>{{ allocation.get_status_display }}</td></tr>
+        <tr data-row-link="{% url 'contracts:work_order_detail' contract.pk allocation.work_order_id %}"><td>{{ allocation.allocation_date|date:"d/m/Y" }}</td><td><a href="{% url 'contracts:work_order_detail' contract.pk allocation.work_order_id %}">{{ allocation.work_order.number }}</a></td><td>R$&nbsp;{{ allocation.amount|localize }}</td><td>{{ allocation.get_status_display }}</td></tr>
       {% empty %}<tr><td colspan="4">Nenhum rateio registrado.</td></tr>{% endfor %}
     </tbody>
   </table>

@@ -15,7 +15,7 @@
     <thead><tr><th>Data</th><th>Lote</th><th>Operação</th><th>Tipo</th><th>Contrato</th><th>Status</th><th>Execução</th><th>Ação</th></tr></thead>
     <tbody>
       {% for draft in drafts %}
-        <tr>
+        <tr data-row-link="{% url 'assistant_drafts:detail' draft.pk %}">
           <td>{{ draft.created_at }}</td>
           <td>{{ draft.batch_id }}</td>
           <td>{{ draft.get_operation_display }}</td>

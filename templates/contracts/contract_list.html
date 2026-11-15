@@ -14,7 +14,7 @@
     <thead><tr><th>Número</th><th>Fornecedor</th><th>Vigência</th><th>Valor atual</th><th>Status</th><th>Ação</th></tr></thead>
     <tbody>
       {% for contract in contracts %}
-        <tr>
+        <tr data-row-link="{% url 'contracts:detail' contract.pk %}">
           <td>{{ contract.number }}</td>
           <td>{{ contract.supplier_name }}</td>
           <td>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</td>
