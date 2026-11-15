@@ -219,8 +219,23 @@ function setupWidget() {
   if (!widget) return;
   const toggle = widget.querySelector("[data-arise-toggle]");
   const panel = widget.querySelector(".arise-panel");
+  // Aviso amarelo: aparece a cada abertura do painel e some depois de 35 segundos.
+  const notice = panel.querySelector("[data-arise-notice]");
+  const NOTICE_MS = 35000;
+  let noticeTimer = null, fadeTimer = null;
+  const showNotice = () => {
+    if (!notice) return;
+    clearTimeout(noticeTimer); clearTimeout(fadeTimer);
+    notice.hidden = false;
+    notice.classList.remove("is-fading");
+    noticeTimer = setTimeout(() => {
+      notice.classList.add("is-fading");
+      fadeTimer = setTimeout(() => { notice.hidden = true; }, 400);
+    }, NOTICE_MS);
+  };
   const open = () => {
     panel.hidden = false;
+    showNotice();
     toggle.setAttribute("aria-expanded", "true");
     widget.classList.add("is-open");
     if (panel.loadConversation) panel.loadConversation();
@@ -228,6 +243,7 @@ function setupWidget() {
     if (box) box.focus({ preventScroll: true });
   };
   const close = () => {
+    clearTimeout(noticeTimer); clearTimeout(fadeTimer);
     panel.hidden = true;
     toggle.setAttribute("aria-expanded", "false");
     widget.classList.remove("is-open");
