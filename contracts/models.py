@@ -1542,7 +1542,15 @@ class WorkOrderExecutionEvent(models.Model):
         return f"{self.get_event_type_display()} — {self.execution}"
 
 
+class InvoiceQuerySet(models.QuerySet):
+    def active(self):
+        """NF que contam como faturamento: exclui as devolvidas para correção (Sprint 39)."""
+        return self.filter(returned_at__isnull=True)
+
+
 class Invoice(models.Model):
+    objects = InvoiceQuerySet.as_manager()
+
     contract = models.ForeignKey(
         Contract, on_delete=models.PROTECT, related_name="invoices",
         verbose_name="contrato",
@@ -1591,6 +1599,45 @@ class Invoice(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
         related_name="created_invoices", verbose_name="criada por",
     )
+    # Sprint 39 (referência: FiscalSema Light): serviços cobrados, substituição e devolução.
+    service_lines = models.ManyToManyField(
+        "WorkOrderServiceLine", related_name="invoices", blank=True,
+        verbose_name="serviços do catálogo faturados",
+    )
+    replaces = models.ForeignKey(
+        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="replaced_by",
+        verbose_name="substitui a NF devolvida",
+    )
+    returned_at = models.DateField("devolvida em", null=True, blank=True)
+    return_reason = models.TextField("motivo da devolução", blank=True)
+    returned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="returned_invoices", verbose_name="devolvida por",
+    )
+
+    @property
+    def is_returned(self):
+        return self.returned_at is not None
+
+    @property
+    def billed_service_lines(self):
+        return tuple(self.service_lines.all()) if self.pk else ()
+
+    @property
+    def dimensioned_value(self):
+        """Σ unidades dos serviços cobrados × valor unitário da OS; ``None`` sem serviços ligados."""
+        from .calculations import calculate_item_total
+
+        lines = self.billed_service_lines
+        if not lines:
+            return None
+        units = sum((line.units for line in lines), Decimal("0"))
+        return calculate_item_total(units, self.work_order.unit_value)
+
+    @property
+    def dimensioned_difference(self):
+        dimensioned = self.dimensioned_value
+        return None if dimensioned is None else self.gross_value - dimensioned
 
     class Meta:
         ordering = ("issue_date", "number", "series", "pk")
@@ -1692,6 +1739,7 @@ class InvoiceEvent(models.Model):
     class EventType(models.TextChoices):
         CREATED = "NF_CRIADA", "Nota Fiscal criada"
         UPDATED = "NF_ATUALIZADA", "Nota Fiscal atualizada"
+        RETURNED = "NF_DEVOLVIDA", "Nota Fiscal devolvida para correção"
 
     event_type = models.CharField("evento", max_length=30, choices=EventType.choices)
     invoice = models.ForeignKey(
@@ -2046,6 +2094,24 @@ class WorkOrderServiceLine(models.Model):
         from .calculations import calculate_item_total
 
         return calculate_item_total(self.units, self.work_order.unit_value)
+
+    @property
+    def active_invoice(self):
+        """NF não devolvida que cobra este serviço (no máximo uma)."""
+        return next((invoice for invoice in self.invoices.all() if invoice.returned_at is None), None)
+
+    @property
+    def billing_label(self):
+        invoice = self.active_invoice
+        if invoice is None:
+            return ""
+        paid = sum((payment.amount for payment in invoice.payments.all()), Decimal("0"))
+        limit = min(invoice.gross_value, invoice.accepted_value)
+        if paid > 0 and paid >= limit:
+            return f"NF {invoice.number}/{invoice.series} · Paga"
+        if paid > 0:
+            return f"NF {invoice.number}/{invoice.series} · Paga parcialmente"
+        return f"NF {invoice.number}/{invoice.series} · Faturada"
 
     def clean(self):
         super().clean()

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views_catalog import (
+    InvoiceReturnView,
     ServiceCatalogFormView, ServiceCatalogListView, WorkOrderHomologateAcceptedView,
     WorkOrderServiceLineActionView, WorkOrderServiceLineFormView, WorkOrderServiceLineRemoveView,
 )
@@ -68,6 +69,7 @@ urlpatterns = [
     path("<int:contract_pk>/os/<int:work_order_pk>/servicos/<int:pk>/editar/", WorkOrderServiceLineFormView.as_view(), name="work_order_service_update"),
     path("<int:contract_pk>/os/<int:work_order_pk>/servicos/<int:pk>/remover/", WorkOrderServiceLineRemoveView.as_view(), name="work_order_service_remove"),
     path("<int:contract_pk>/os/<int:work_order_pk>/servicos/homologar-aceitos/", WorkOrderHomologateAcceptedView.as_view(), name="work_order_service_homologate_accepted"),
+    path("<int:contract_pk>/os/<int:work_order_pk>/notas-fiscais/<int:pk>/devolver/", InvoiceReturnView.as_view(), name="invoice_return"),
     path("<int:contract_pk>/os/<int:work_order_pk>/servicos/<int:pk>/<slug:action>/", WorkOrderServiceLineActionView.as_view(), name="work_order_service_action"),
     path("arquivados/", ArchivedContractListView.as_view(), name="archived_list"),
     path("novo/", ContractCreateView.as_view(), name="create"),

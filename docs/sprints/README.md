@@ -105,3 +105,6 @@ documental das entregas anteriores.
 
 - `sprint-38-catalogo-servicos`: catálogo de serviços (UST/HST/USN), memória
   de cálculo da OS e ciclo entregue/aceito/homologado (referência: FiscalSema Light).
+
+- `sprint-39-nf-dimensionada`: NF ligada aos serviços homologados, valor
+  dimensionado e devolução da NF (referência: FiscalSema Light).

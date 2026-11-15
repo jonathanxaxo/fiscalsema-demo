@@ -5,6 +5,19 @@
   <h1>NF {{ invoice.number }}/{{ invoice.series }}</h1>
   {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  {% if invoice.is_returned %}<p class="warning"><strong>NF devolvida para correção</strong> em {{ invoice.returned_at|date:"d/m/Y" }}{% if invoice.returned_by %} por {{ invoice.returned_by.full_name }}{% endif %}: {{ invoice.return_reason }}. Ela saiu de todos os cálculos e não recebe pagamento.{% if replacement %} Substituída pela <a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk replacement.pk %}">NF {{ replacement.number }}/{{ replacement.series }}</a>.{% else %} Aguardando a NF corrigida da fábrica.{% endif %}</p>{% endif %}
+  {% if invoice.replaces %}<p class="notice">Esta NF substitui a <a href="{% url 'contracts:invoice_detail' contract.pk work_order.pk invoice.replaces.pk %}">NF {{ invoice.replaces.number }}/{{ invoice.replaces.series }}</a>, devolvida em {{ invoice.replaces.returned_at|date:"d/m/Y" }}.</p>{% endif %}
+  {% if billed_lines %}
+    <h2>Valor da NF × valor dimensionado</h2>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Serviço cobrado</th><th>Unidades</th><th>Termo</th><th>Valor</th></tr></thead><tbody>
+      {% for line in billed_lines %}<tr><td>{% if line.service_code %}{{ line.service_code }} — {% endif %}{{ line.service_name }}</td><td>{{ line.units|quantidade }} {{ invoice.work_order.unit_name }}</td><td>{{ line.homologation_reference }}</td><td>R$&nbsp;{{ line.total_value|localize }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <dl>
+      <dt>Valor bruto da NF</dt><dd>R$&nbsp;{{ invoice.gross_value|localize }}</dd>
+      <dt>Valor dimensionado pela fiscalização</dt><dd>R$&nbsp;{{ invoice.dimensioned_value|localize }}</dd>
+      <dt>Diferença</dt><dd>{% if invoice.dimensioned_difference %}<span class="status-pill status-danger">R$&nbsp;{{ invoice.dimensioned_difference|localize }}</span> A NF deve ter exatamente o valor dimensionado; se estiver diferente, devolva para correção.{% else %}<span class="status-pill status-success">Igual ao dimensionado</span>{% endif %}</dd>
+    </dl>
+  {% endif %}
   <dl>
     <dt>Contrato</dt><dd>{{ invoice.contract.number }}</dd>
     <dt>OS</dt><dd>{{ invoice.work_order.number }}</dd>
@@ -78,6 +91,7 @@
   <p class="warning">O limite de pagamento é provisório e não representa autorização ou recomendação.</p>
   <p class="actions">
     {% if can_edit %}<a href="{% url 'contracts:invoice_update' contract.pk work_order.pk invoice.pk %}">Editar Nota Fiscal</a>{% endif %}
+    {% if can_return %}<a class="button-link-danger" href="{% url 'contracts:invoice_return' contract.pk work_order.pk invoice.pk %}">Devolver para correção</a>{% endif %}
     <a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Voltar para a OS</a>
   </p>
 {% endblock %}

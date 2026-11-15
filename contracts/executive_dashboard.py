@@ -140,7 +140,7 @@ def build_monthly_evolution(contract, *, today=None, months=MONTHLY_EVOLUTION_MO
 
     executed = totals(WorkOrderExecution.objects.filter(work_order__contract=contract),
                       "execution_date", "executed_value")
-    invoiced = totals(contract.invoices.all(), "issue_date", "gross_value")
+    invoiced = totals(contract.invoices.active(), "issue_date", "gross_value")
     paid = totals(Payment.objects.filter(invoice__contract=contract), "payment_date", "amount")
 
     entries, current = [], first

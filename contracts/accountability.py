@@ -43,7 +43,7 @@ def build_accountability_snapshot(contract, filters):
     executions = WorkOrderExecution.objects.filter(
         work_order__contract=contract
     ).select_related("work_order")
-    invoices = contract.invoices.select_related("work_order", "allocation")
+    invoices = contract.invoices.active().select_related("work_order", "allocation")
     payments = Payment.objects.filter(invoice__contract=contract).select_related(
         "invoice", "invoice__work_order"
     )

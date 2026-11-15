@@ -62,7 +62,7 @@
               <td class="cell-nowrap">R$&nbsp;{{ line.total_value|localize }}</td>
               <td>
                 <span class="line-status line-status-{{ line.delivery_status }}">{{ line.get_delivery_status_display }}</span>
-                {% if line.delivery_status == "ENTREGUE" %}<small class="table-note">Entregue em {{ line.delivered_at|date:"d/m/Y" }}</small>{% elif line.delivery_status == "ACEITO" %}<small class="table-note">Aceito em {{ line.accepted_at|date:"d/m/Y" }} · falta o Termo</small>{% elif line.delivery_status == "HOMOLOGADO" %}<small class="table-note">{{ line.homologation_reference }} · {{ line.homologated_at|date:"d/m/Y" }}</small><small class="table-note">Pronto para faturar</small>{% endif %}
+                {% if line.delivery_status == "ENTREGUE" %}<small class="table-note">Entregue em {{ line.delivered_at|date:"d/m/Y" }}</small>{% elif line.delivery_status == "ACEITO" %}<small class="table-note">Aceito em {{ line.accepted_at|date:"d/m/Y" }} · falta o Termo</small>{% elif line.delivery_status == "HOMOLOGADO" %}<small class="table-note">{{ line.homologation_reference }} · {{ line.homologated_at|date:"d/m/Y" }}</small>{% with label=line.billing_label %}<small class="table-note">{% if label %}{{ label }}{% else %}Pronto para faturar{% endif %}</small>{% endwith %}{% endif %}
                 {% if line.rejection_count %}<small class="table-note">Recusado {{ line.rejection_count }}×: {{ line.last_rejection_reason }}</small>{% endif %}
               </td>
               {% if can_edit %}<td><div class="line-actions">
