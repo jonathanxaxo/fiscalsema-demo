@@ -374,7 +374,7 @@ td a { font-weight: 700; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+  html:not([data-motion]) *, html:not([data-motion]) *::before, html:not([data-motion]) *::after { scroll-behavior: auto !important; transition: none !important; }
 }
 
 /* Sprint 18: valores em R$ sem quebra. O valor fica em uma linha e a letra se
@@ -586,7 +586,9 @@ html[data-motion="calmo"] .progress > span::before, html[data-motion="calmo"] .e
 html[data-motion="calmo"] .status-pill::before, html[data-motion="calmo"] .progress .fs-tip, html[data-motion="calmo"] .arise-fab, html[data-motion="calmo"] .notifications-count { animation-duration: 4s; }
 html[data-motion="calmo"] .attention-list li.attention-danger, html[data-motion="calmo"] .countdown-danger { animation: none; }
 html[data-motion="sem"] *, html[data-motion="sem"] *::before, html[data-motion="sem"] *::after { animation: none !important; transition: none !important; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+/* Sprint 45: sem escolha da pessoa, o pedido do sistema operacional vira "Calmo" (o JS marca data-motion);
+   este bloqueio total só vale se o JS não rodar. */
+@media (prefers-reduced-motion: reduce) { html:not([data-motion]) *, html:not([data-motion]) *::before, html:not([data-motion]) *::after { animation: none !important; transition: none !important; } }
 
 /* Sprint 41 — visual vivo em todas as telas (seções, formulários, listas, menus, chat) */
 /* Seções e cartões entram em sequência (o JS define --fs-i) */
@@ -792,3 +794,18 @@ body { background-image: radial-gradient(900px 500px at 0% 0%, rgba(68,220,156,.
 /* Modos de movimento continuam valendo */
 html[data-motion="calmo"] body, html[data-motion="calmo"] .content > .surface, html[data-motion="calmo"] .kpi-card strong, html[data-motion="calmo"] .method-timeline li b, html[data-motion="calmo"] .progress > span, html[data-motion="calmo"] .exec-track > span { animation-duration: 30s, 10s; }
 html[data-motion="calmo"] .arise-fab::before, html[data-motion="calmo"] .arise-fab svg { animation-duration: 5s; }
+
+/* Sprint 45 — mais vida: ícones, sino, logotipo, gráficos e botões principais */
+@keyframes fs-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes fs-swing { 0%, 86%, 100% { transform: rotate(0); } 89% { transform: rotate(14deg); } 92% { transform: rotate(-12deg); } 95% { transform: rotate(7deg); } 98% { transform: rotate(-4deg); } }
+@keyframes fs-logo-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(68,220,156,0)); } 50% { filter: drop-shadow(0 0 9px rgba(68,220,156,.75)); } }
+@keyframes fs-eq { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.08); } }
+@keyframes fs-shine { 0%, 70% { left: -60%; } 100% { left: 130%; } }
+.sidebar nav a:not([aria-current="page"]) .nav-icon { animation: fs-bob 3.2s ease-in-out infinite; animation-delay: calc(var(--fs-i, 0) * 260ms); }
+.notifications-toggle:has(.notifications-count) svg { transform-origin: 50% 10%; animation: fs-swing 7s ease-in-out 2s infinite; }
+.brand-mark { animation: fs-logo-glow 3.6s ease-in-out infinite; }
+.exec-chart-bars span { transform-origin: bottom center; animation: fs-eq 2.4s ease-in-out infinite; animation-delay: calc(var(--fs-b, 0) * 90ms); }
+.page-header-actions .button-link:not(.button-link-secondary), .action-bar .button-link:not(.button-link-secondary), .section-heading .button-link { position: relative; overflow: hidden; }
+.page-header-actions .button-link:not(.button-link-secondary)::after, .action-bar .button-link:not(.button-link-secondary)::after, .section-heading .button-link::after { content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); transform: skewX(-18deg); animation: fs-shine 4.5s ease-in-out 1.5s infinite; pointer-events: none; }
+.user-avatar { animation: fs-dot 2.6s ease-out infinite; }
+html[data-motion="calmo"] .sidebar nav a .nav-icon, html[data-motion="calmo"] .exec-chart-bars span, html[data-motion="calmo"] .brand-mark { animation-duration: 7s; }

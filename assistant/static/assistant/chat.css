@@ -136,4 +136,4 @@
 @keyframes fs-avatar { 0% { box-shadow: 0 0 0 0 rgba(68,220,156,.55); } 70%, 100% { box-shadow: 0 0 0 7px rgba(68,220,156,0); } }
 @media (max-width: 640px) { .arise-panel { border-radius: 0; } }
 html[data-motion="sem"] .assistant-msg-assistant .assistant-msg-label::before, html[data-motion="sem"] .arise-panel-head, html[data-motion="sem"] .arise-panel-head strong::before { animation: none; }
-@media (prefers-reduced-motion: reduce) { .assistant-msg-assistant .assistant-msg-label::before, .arise-panel-head, .arise-panel-head strong::before { animation: none; } }
+@media (prefers-reduced-motion: reduce) { html:not([data-motion]) .assistant-msg-assistant .assistant-msg-label::before, html:not([data-motion]) .arise-panel-head, html:not([data-motion]) .arise-panel-head strong::before { animation: none; } }
