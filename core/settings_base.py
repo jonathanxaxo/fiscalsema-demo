@@ -234,6 +234,8 @@ SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 # Sprint 49: sessão de qualquer perfil encerra após 1 hora sem uso (0 desliga).
 SESSION_IDLE_TIMEOUT_SECONDS = env_int("SESSION_IDLE_TIMEOUT_SECONDS", 3600)
+# Sprint 51: o login vale só enquanto o navegador estiver aberto (cookie de sessão sem data de validade).
+SESSION_EXPIRE_AT_BROWSER_CLOSE = env_bool("SESSION_EXPIRE_AT_BROWSER_CLOSE", True)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_NAME = "fiscalsema_sessionid"
