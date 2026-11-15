@@ -30,14 +30,21 @@ from django.views.decorators.csrf import csrf_exempt
 from accounts.models import AccountStatus
 from contracts.accountability import build_accountability_snapshot
 from contracts.services import (
-    commitments_visible_to, contract_financial_position, contracts_visible_to,
+    allocations_visible_to, commitments_visible_to, contract_financial_position,
+    contracts_visible_to, executions_visible_to, invoice_check_report,
     invoices_visible_to, items_visible_to, payments_visible_to, work_orders_visible_to,
 )
+from documents.services import documents_visible_to
+
+from .analise import AnalysisError, analyze_divergences
 
 from .drafts import DraftValidationError, create_assistant_draft
 from .models import ApiAccessEvent, AssistantDraft
 from .oauth import client_details
-from .serializers import commitment_data, contract_data, invoice_data, item_data, primitive, work_order_data
+from .serializers import (
+    allocation_data, commitment_data, contract_data, document_data, execution_data,
+    invoice_data, item_data, payment_data, primitive, work_order_data,
+)
 from .views import PAYMENT_NOTICE, accountability_data, draft_data
 
 ENDPOINT = "/mcp"
@@ -89,6 +96,51 @@ TOOLS = [
                    "Notas fiscais de um contrato autorizado."),
     _contract_tool("consultar_pendencias", "Prestação de contas e pendências",
                    "Prestação de contas, conferências de NF e pendências do contrato."),
+    # Sprint 29: consultas e análise (somente leitura).
+    _contract_tool("consultar_rateios", "Rateios", "Rateios das ordens de serviço do contrato."),
+    _contract_tool("consultar_execucoes", "Execuções", "Execuções registradas nas ordens de serviço."),
+    _contract_tool("consultar_pagamentos", "Pagamentos",
+                   "Pagamentos registrados (consulta informativa, não autoriza pagamento)."),
+    _contract_tool("consultar_posicao_financeira", "Posição financeira",
+                   "Valor contratado, empenhado, executado, faturado e pago do contrato."),
+    _contract_tool("listar_documentos", "Documentos do contrato",
+                   "Lista nome, tipo, versão e data dos documentos (sem baixar o arquivo)."),
+    {
+        "name": "conferir_nota_fiscal", "title": "Conferir nota fiscal",
+        "description": "Conferência automática de uma nota fiscal autorizada (informativa).",
+        "inputSchema": {"type": "object", "properties": {"invoice_id": {"type": "integer", "minimum": 1}},
+                        "required": ["invoice_id"], "additionalProperties": False},
+        "annotations": READ_ONLY, "_scope": SCOPE_READ,
+    },
+    {
+        "name": "analisar_divergencias", "title": "Analisar divergências com documento",
+        "description": (
+            "Compara valores lidos num documento com um registro gravado e aponta, campo a "
+            "campo, IGUAL, DIFERENTE, AUSENTE_NO_DOCUMENTO ou VAZIO_NO_SISTEMA. Não grava nada."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "entity_type": {"type": "string", "enum": list(AssistantDraft.EntityType.values)},
+                "target_id": {"type": "integer", "minimum": 1},
+                "document_values": {"type": "object", "description": "campo: valor lido no documento"},
+            },
+            "required": ["entity_type", "target_id", "document_values"],
+            "additionalProperties": False,
+        },
+        "annotations": READ_ONLY, "_scope": SCOPE_READ,
+    },
+    {
+        "name": "consultar_meus_rascunhos", "title": "Meus rascunhos propostos",
+        "description": "Situação (pendente, confirmado, rejeitado) dos rascunhos da pessoa conectada.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"status": {"type": "string", "enum": list(AssistantDraft.Status.values)},
+                           **PAGE_PROPS},
+            "additionalProperties": False,
+        },
+        "annotations": READ_ONLY, "_scope": SCOPE_READ,
+    },
     {
         "name": "propor_rascunho", "title": "Propor rascunho (pendente)",
         "description": (
@@ -178,6 +230,31 @@ def run_tool(name, arguments, ctx):
         return _page(arguments, contracts_visible_to(user), contract_data)
     if name == "propor_rascunho":
         return _propose(arguments, ctx)
+    if name == "conferir_nota_fiscal":
+        invoice = invoices_visible_to(user).filter(pk=_int(arguments, "invoice_id")).first()
+        if invoice is None:
+            raise ToolError("Nota fiscal não encontrada ou sem permissão.")
+        ctx.contract = invoice.contract
+        return {"invoice": invoice_data(invoice), "check": primitive(invoice_check_report(invoice)),
+                "decision_notice": PAYMENT_NOTICE}, 1
+    if name == "analisar_divergencias":
+        try:
+            data, ctx.contract = analyze_divergences(
+                user=user, entity_type=arguments.get("entity_type"),
+                target_id=_int(arguments, "target_id"),
+                document_values=arguments.get("document_values"),
+            )
+        except AnalysisError as exc:
+            raise ToolError(str(exc)) from exc
+        return data, len(data["fields"])
+    if name == "consultar_meus_rascunhos":
+        queryset = AssistantDraft.objects.select_related("requested_by").filter(requested_by=user)
+        status = arguments.get("status")
+        if status is not None:
+            if status not in AssistantDraft.Status.values:
+                raise ToolError("Parâmetro 'status' inválido.")
+            queryset = queryset.filter(status=status)
+        return _page(arguments, queryset, draft_data)
     contract = ctx.contract_from(arguments)
     if name == "consultar_resumo_contrato":
         return {
@@ -202,9 +279,31 @@ def run_tool(name, arguments, ctx):
         data, count = _page(arguments, invoices_visible_to(user).filter(contract=contract), invoice_data)
         data["decision_notice"] = PAYMENT_NOTICE
         return data, count
+    if name == "consultar_rateios":
+        return _page(arguments, allocations_visible_to(user).filter(work_order__contract=contract),
+                     allocation_data)
+    if name == "consultar_execucoes":
+        return _page(arguments, executions_visible_to(user).filter(work_order__contract=contract),
+                     execution_data)
+    if name == "consultar_pagamentos":
+        data, count = _page(arguments, payments_visible_to(user).filter(invoice__contract=contract),
+                            payment_data)
+        data["decision_notice"] = PAYMENT_NOTICE
+        return data, count
+    if name == "consultar_posicao_financeira":
+        return {"contract_id": contract.pk, "position": primitive(contract_financial_position(contract)),
+                "decision_notice": PAYMENT_NOTICE}, 1
+    if name == "listar_documentos":
+        return _page(arguments, documents_visible_to(user).filter(contract=contract), _document_summary)
     if name == "consultar_pendencias":
         return accountability_data(build_accountability_snapshot(contract, {})), 1
     raise ToolError("Ferramenta desconhecida.")
+
+
+def _document_summary(document):
+    data = document_data(document)
+    data.pop("content_url", None)  # o MCP não baixa arquivos
+    return data
 
 
 def _propose(arguments, ctx):

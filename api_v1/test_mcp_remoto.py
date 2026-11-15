@@ -311,3 +311,106 @@ class RevogacaoTests(McpOAuthBase):
         })
         self.assertEqual(refresh.status_code, 400)
         self.assertNotContains(self.client.get("/conta/minha-conta/"), "Cliente IA Fictício", status_code=302)
+
+
+class AnaliseSprint29Tests(McpOAuthBase):
+    """Consultas novas e análise de divergências (Sprint 29), sempre sem gravar."""
+
+    def text(self, result):
+        self.assertNotIn("isError", result, result)
+        return json.loads(result["content"][0]["text"])
+
+    def test_new_read_tools_are_listed_for_read_scope(self):
+        token = self.connect()["access_token"]
+        names = {tool["name"] for tool in self.rpc("tools/list", token=token).json()["result"]["tools"]}
+        expected = {"consultar_rateios", "consultar_execucoes", "consultar_pagamentos",
+                    "consultar_posicao_financeira", "listar_documentos", "conferir_nota_fiscal",
+                    "analisar_divergencias", "consultar_meus_rascunhos"}
+        self.assertTrue(expected <= names)
+        tools = {tool["name"]: tool for tool in self.rpc("tools/list", token=token).json()["result"]["tools"]}
+        self.assertTrue(all(tools[name]["annotations"]["readOnlyHint"] for name in expected))
+
+    def test_new_contract_tools_answer_and_payments_carry_notice(self):
+        token = self.connect()["access_token"]
+        for name in ("consultar_rateios", "consultar_execucoes", "listar_documentos"):
+            self.text(self.call(token, name, {"contract_id": self.contract.pk}))
+        payments = self.text(self.call(token, "consultar_pagamentos", {"contract_id": self.contract.pk}))
+        self.assertIn("Não constitui atesto", payments["decision_notice"])
+        position = self.text(self.call(token, "consultar_posicao_financeira", {"contract_id": self.contract.pk}))
+        self.assertEqual(position["contract_id"], self.contract.pk)
+        missing = self.call(token, "conferir_nota_fiscal", {"invoice_id": 999999})
+        self.assertTrue(missing["isError"])
+
+    def test_divergence_analysis_compares_without_writing(self):
+        token = self.connect()["access_token"]
+        before = Contract.objects.get(pk=self.contract.pk)
+        events_before = ApiAccessEvent.objects.filter(endpoint="/mcp").count()
+        data = self.text(self.call(token, "analisar_divergencias", {
+            "entity_type": "CONTRATO", "target_id": self.contract.pk,
+            "document_values": {
+                "number": "001/2099", "original_value": "R$ 100.000,00",
+                "validity_end": "09/01/2028", "supplier_name": "",
+            },
+        }))
+        rows = {row["field"]: row["classification"] for row in data["fields"]}
+        self.assertEqual(rows["number"], "IGUAL")
+        self.assertEqual(rows["original_value"], "IGUAL")
+        self.assertEqual(rows["validity_end"], "DIFERENTE")
+        self.assertEqual(rows["supplier_name"], "AUSENTE_NO_DOCUMENTO")
+        self.assertEqual(data["critical_differences"], ["validity_end"])
+        self.assertFalse(data["written"])
+        after = Contract.objects.get(pk=self.contract.pk)
+        self.assertEqual(after.validity_end, before.validity_end)
+        self.assertFalse(AssistantDraft.objects.exists())
+        event = ApiAccessEvent.objects.filter(endpoint="/mcp").first()
+        self.assertEqual(ApiAccessEvent.objects.filter(endpoint="/mcp").count(), events_before + 1)
+        self.assertEqual(event.details["ferramenta"], "analisar_divergencias")
+        self.assertEqual(event.contract, self.contract)
+        self.assertNotIn("document_values", json.dumps(event.details))
+
+    def test_divergence_analysis_rejects_unknown_fields_and_other_people(self):
+        token = self.connect()["access_token"]
+        unknown = self.call(token, "analisar_divergencias", {
+            "entity_type": "CONTRATO", "target_id": self.contract.pk,
+            "document_values": {"senha": "x"},
+        })
+        self.assertTrue(unknown["isError"])
+        self.assertIn("Campos desconhecidos", unknown["content"][0]["text"])
+        empty = self.call(token, "analisar_divergencias", {
+            "entity_type": "CONTRATO", "target_id": self.contract.pk, "document_values": {},
+        })
+        self.assertTrue(empty["isError"])
+        other_token = self.connect(self.other)["access_token"]
+        denied = self.call(other_token, "analisar_divergencias", {
+            "entity_type": "CONTRATO", "target_id": self.contract.pk,
+            "document_values": {"number": "001/2099"},
+        })
+        self.assertTrue(denied["isError"])
+        self.assertIn("sem permissão", denied["content"][0]["text"])
+
+    def test_my_drafts_shows_only_own_drafts(self):
+        AssistantDraft.objects.create(
+            entity_type="CONTRATO", payload={"number": "X"}, source_summary="Fictício",
+            created_by_credential=self.credential, requested_by=self.other,
+        )
+        token = self.connect()["access_token"]
+        data = self.text(self.call(token, "consultar_meus_rascunhos"))
+        self.assertEqual(data["results"], [])
+        mine = AssistantDraft.objects.create(
+            entity_type="CONTRATO", payload={"number": "Y"}, source_summary="Fictício",
+            created_by_credential=self.credential, requested_by=self.owner,
+        )
+        data = self.text(self.call(token, "consultar_meus_rascunhos", {"status": "PENDENTE"}))
+        self.assertEqual([item["id"] for item in data["results"]], [mine.pk])
+        bad = self.call(token, "consultar_meus_rascunhos", {"status": "APAGAR"})
+        self.assertTrue(bad["isError"])
+
+
+class NormalizacaoTests(McpOAuthBase):
+    def test_normalize_brazilian_formats(self):
+        from .analise import normalize
+
+        self.assertEqual(normalize("R$ 1.234,50"), normalize("1234.5"))
+        self.assertEqual(normalize("31/12/2026"), "2026-12-31")
+        self.assertEqual(normalize("  Fornecedor   Fictício "), "fornecedor fictício")
+        self.assertEqual(normalize(None), "")
