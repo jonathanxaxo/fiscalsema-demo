@@ -18,6 +18,8 @@
     <dt>Origem</dt><dd>{{ draft.source_summary }}</dd>
     <dt>Autoridade</dt><dd>{{ draft.get_source_authority_display }}</dd>
     <dt>Confiança</dt><dd>{{ draft.get_confidence_level_display }}</dd>
+    {% if draft.created_by_application %}<dt>Cliente de IA (MCP)</dt><dd>{{ draft.created_by_application.name|default:"Cliente sem nome" }}</dd>{% endif %}
+    {% if draft.expires_at %}<dt>Válido até</dt><dd>{{ draft.expires_at|date:"d/m/Y H:i" }}</dd>{% endif %}
     <dt>Revisão humana</dt><dd>{% if draft.reviewed_by %}{{ draft.reviewed_by }} — {{ draft.reviewed_at }}{% else %}Pendente{% endif %}</dd>
   </dl>
   <h2>Dados propostos</h2><pre class="code-block">{{ payload_json }}</pre>
@@ -26,6 +28,22 @@
   {% if draft.status == 'PENDENTE' %}
     <p class="warning"><strong>Atenção:</strong> confirmar reavaliará permissões, regras financeiras, saldos, constraints e concorrência no backend.</p>
     <form method="post" action="{% url 'assistant_drafts:confirm' draft.pk %}">{% csrf_token %}<button type="submit">Aprovar e executar</button></form>
+    {% if confirmation_code %}
+      <section class="confirmation-panel subsection" aria-live="polite">
+        <h2>Código de confirmação</h2>
+        <p class="confirmation-code"><strong>{{ confirmation_code }}</strong></p>
+        <p>Digite este código no chat da IA para executar <strong>esta</strong> proposta. Vale até {{ confirmation_code_expires|date:"H:i" }}, serve uma única vez e não será mostrado de novo.</p>
+        <p class="muted">Só passe o código se você conferiu o antes e depois acima. Ninguém do FiscalSema vai pedir este código.</p>
+      </section>
+    {% elif can_issue_code %}
+      <section class="confirmation-panel subsection">
+        <h2>Confirmar pelo chat da IA</h2>
+        <p>Se preferir, gere um código de uso único e digite no chat. A IA só consegue executar esta proposta com ele.</p>
+        <form method="post" action="{% url 'assistant_drafts:code' draft.pk %}">{% csrf_token %}<button type="submit" class="button-link-secondary">Gerar código de confirmação</button></form>
+      </section>
+    {% elif payment_blocked %}
+      <p class="notice"><strong>Pagamento:</strong> nunca é executado pela IA. Se estiver correto, confirme aqui mesmo.</p>
+    {% endif %}
     <section class="confirmation-panel confirmation-panel-danger subsection">
       <h2>Rejeitar sem executar</h2>
       <form method="post" action="{% url 'assistant_drafts:reject' draft.pk %}">{% csrf_token %}<label for="reason">Motivo</label><textarea id="reason" name="reason" required></textarea><button class="button-link-danger" type="submit">Rejeitar rascunho</button></form>

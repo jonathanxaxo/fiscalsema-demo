@@ -152,10 +152,17 @@ GOOGLE_REQUIRE_HOSTED_DOMAIN = env_bool("GOOGLE_REQUIRE_HOSTED_DOMAIN", False)
 OAUTH2_PROVIDER_APPLICATION_MODEL = "oauth2_provider.Application"
 MCP_PER_MINUTE = env_int("MCP_PER_MINUTE", 30)
 MCP_DCR_PER_HOUR = env_int("MCP_DCR_PER_HOUR", 20)
+MCP_PROPOSAL_HOURS = env_int("MCP_PROPOSAL_HOURS", 24)
+MCP_CODE_MINUTES = env_int("MCP_CODE_MINUTES", 10)
+MCP_CODE_MAX_ATTEMPTS = env_int("MCP_CODE_MAX_ATTEMPTS", 5)
 OAUTH2_PROVIDER = {
     "SCOPES": {
         "fiscalsema.ler": "Consultar os contratos que você já pode ver no FiscalSema",
         "fiscalsema.propor": "Propor rascunhos que ficam pendentes da sua confirmação",
+        "fiscalsema.executar": (
+            "Executar uma proposta sua somente com o código de confirmação que você "
+            "gera no FiscalSema (pagamentos nunca)"
+        ),
     },
     "DEFAULT_SCOPES": ["fiscalsema.ler"],
     "PKCE_REQUIRED": True,

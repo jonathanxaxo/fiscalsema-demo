@@ -89,7 +89,7 @@ class DescobertaTests(McpOAuthBase):
         resource = self.client.get("/.well-known/oauth-protected-resource/mcp").json()
         self.assertEqual(resource["resource"], "http://testserver/mcp")
         self.assertEqual(resource["authorization_servers"], ["http://testserver"])
-        self.assertEqual(resource["scopes_supported"], ["fiscalsema.ler", "fiscalsema.propor"])
+        self.assertEqual(resource["scopes_supported"], ["fiscalsema.executar", "fiscalsema.ler", "fiscalsema.propor"])
         server = self.client.get("/.well-known/oauth-authorization-server").json()
         self.assertEqual(server["authorization_endpoint"], "http://testserver/oauth/authorize/")
         self.assertEqual(server["token_endpoint"], "http://testserver/oauth/token/")
@@ -414,3 +414,168 @@ class NormalizacaoTests(McpOAuthBase):
         self.assertEqual(normalize("31/12/2026"), "2026-12-31")
         self.assertEqual(normalize("  Fornecedor   Fictício "), "fornecedor fictício")
         self.assertEqual(normalize(None), "")
+
+
+ALL_SCOPES = "fiscalsema.ler fiscalsema.propor fiscalsema.executar"
+
+
+class ExecucaoAutorizadaTests(McpOAuthBase):
+    """Execução por código de uso único (Sprint 30)."""
+
+    def contract_update(self, **extra):
+        return {
+            "entity_type": "CONTRATO", "operation": "ATUALIZAR",
+            "context": {"target_id": self.contract.pk},
+            "payload": {"notes": "Observação corrigida pela proposta fictícia"},
+            "source_summary": "Documento fictício REF-EXEC.", "source_authority": "EXTRACAO_AUTOMATICA",
+            "confidence_level": "ENCONTRADO_EM_FONTE", "evidence": [{"source": "Documento fictício"}],
+            **extra,
+        }
+
+    def propose(self, token, **extra):
+        result = self.call(token, "propor_rascunho", self.contract_update(**extra))
+        self.assertNotIn("isError", result, result)
+        return json.loads(result["content"][0]["text"])
+
+    def issue_code(self, draft_id, user=None):
+        self.client.force_login(user or self.owner)
+        page = self.client.post(f"/rascunhos-ia/{draft_id}/codigo/")
+        self.client.logout()
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page["Cache-Control"], "private, no-store")
+        return page.context["confirmation_code"]
+
+    def execute(self, token, draft_id, code):
+        return self.call(token, "executar_proposta", {"draft_id": draft_id, "codigo": code})
+
+    def test_full_flow_with_code_executes_once(self):
+        token = self.connect(scope=ALL_SCOPES)["access_token"]
+        proposal = self.propose(token)
+        draft_id = proposal["data"]["id"]
+        self.assertIn(f"/rascunhos-ia/{draft_id}/", proposal["review_url"])
+        self.assertIn("nada foi gravado", proposal["next_action"])
+        # "sim" sem código não executa
+        refused = self.execute(token, draft_id, "SIMSIMSIM")
+        self.assertTrue(refused["isError"])
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.notes, "")
+        code = self.issue_code(draft_id)
+        draft = AssistantDraft.objects.get(pk=draft_id)
+        self.assertNotIn(code.replace("-", ""), draft.confirmation_code_hash)
+        result = self.execute(token, draft_id, code.lower())
+        self.assertNotIn("isError", result, result)
+        data = json.loads(result["content"][0]["text"])
+        self.assertEqual(data["result"], "executada", result)
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.notes, "Observação corrigida pela proposta fictícia")
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, AssistantDraft.Status.CONFIRMED)
+        self.assertEqual(draft.reviewed_by, self.owner)
+        event = draft.events.get(event_type="RASCUNHO_CONFIRMADO")
+        self.assertEqual(event.details["canal"], "mcp_codigo")
+        self.assertTrue(draft.events.filter(event_type="CODIGO_EMITIDO").exists())
+        self.assertNotIn(code, json.dumps([e.details for e in draft.events.all()]))
+        audit = ApiAccessEvent.objects.filter(endpoint="/mcp", details__ferramenta="executar_proposta",
+                                              status_code=200).first()
+        self.assertNotIn(code, json.dumps(audit.details))
+        again = json.loads(self.execute(token, draft_id, code)["content"][0]["text"])
+        self.assertEqual(again["result"], "ja_executada_antes")
+
+    def test_wrong_code_attempts_are_limited(self):
+        token = self.connect(scope=ALL_SCOPES)["access_token"]
+        draft_id = self.propose(token)["data"]["id"]
+        code = self.issue_code(draft_id)
+        for _ in range(5):
+            self.assertTrue(self.execute(token, draft_id, "AAAA-AAAA")["isError"])
+        blocked = self.execute(token, draft_id, code)
+        self.assertTrue(blocked["isError"])
+        self.assertIn("gerar um código", blocked["content"][0]["text"])
+        self.assertEqual(AssistantDraft.objects.get(pk=draft_id).status, AssistantDraft.Status.PENDING)
+        self.assertEqual(AssistantDraft.objects.get(pk=draft_id).events.filter(
+            event_type="CODIGO_RECUSADO").count(), 6)
+
+    def test_expired_code_and_expired_proposal(self):
+        token = self.connect(scope=ALL_SCOPES)["access_token"]
+        draft_id = self.propose(token)["data"]["id"]
+        code = self.issue_code(draft_id)
+        AssistantDraft.objects.filter(pk=draft_id).update(
+            confirmation_code_expires_at=timezone.now() - timedelta(seconds=1))
+        self.assertTrue(self.execute(token, draft_id, code)["isError"])
+        code = self.issue_code(draft_id)
+        AssistantDraft.objects.filter(pk=draft_id).update(expires_at=timezone.now() - timedelta(seconds=1))
+        expired = self.execute(token, draft_id, code)
+        self.assertIn("venceu", expired["content"][0]["text"])
+        # a tela também respeita a validade
+        self.client.force_login(self.owner)
+        self.client.post(f"/rascunhos-ia/{draft_id}/confirmar/")
+        self.assertEqual(AssistantDraft.objects.get(pk=draft_id).status, AssistantDraft.Status.PENDING)
+        page = self.client.post(f"/rascunhos-ia/{draft_id}/codigo/")
+        self.assertEqual(page.status_code, 302)
+
+    def test_requires_execute_scope_and_same_client(self):
+        propose_only = self.connect(scope="fiscalsema.ler fiscalsema.propor")["access_token"]
+        names = {tool["name"] for tool in self.rpc("tools/list", token=propose_only).json()["result"]["tools"]}
+        self.assertNotIn("executar_proposta", names)
+        draft_id = self.propose(propose_only)["data"]["id"]
+        code = self.issue_code(draft_id)
+        no_scope = self.execute(propose_only, draft_id, code)
+        self.assertIn("fiscalsema.executar", no_scope["content"][0]["text"])
+        other_client = self.connect(scope=ALL_SCOPES)["access_token"]
+        refused = self.execute(other_client, draft_id, code)
+        self.assertIn("outro cliente", refused["content"][0]["text"])
+        self.assertEqual(AssistantDraft.objects.get(pk=draft_id).status, AssistantDraft.Status.PENDING)
+
+    def test_other_person_cannot_issue_code_or_execute(self):
+        token = self.connect(scope=ALL_SCOPES)["access_token"]
+        draft_id = self.propose(token)["data"]["id"]
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.post(f"/rascunhos-ia/{draft_id}/codigo/").status_code, 404)
+        self.client.logout()
+        other_token = self.connect(self.other, scope=ALL_SCOPES)["access_token"]
+        result = self.execute(other_token, draft_id, "ABCD-EFGH")
+        self.assertIn("não encontrada", result["content"][0]["text"])
+
+    def test_changed_record_blocks_execution(self):
+        token = self.connect(scope=ALL_SCOPES)["access_token"]
+        draft_id = self.propose(token)["data"]["id"]
+        code = self.issue_code(draft_id)
+        Contract.objects.filter(pk=self.contract.pk).update(notes="Alterado por outra pessoa")
+        result = self.execute(token, draft_id, code)
+        self.assertIn("mudou", result["content"][0]["text"])
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.notes, "Alterado por outra pessoa")
+
+    def test_payment_drafts_never_get_code(self):
+        token = self.connect(scope=ALL_SCOPES)["access_token"]
+        draft = AssistantDraft.objects.create(
+            entity_type="PAGAMENTO", payload={"amount": "1"}, source_summary="Fictício",
+            requested_by=self.owner,
+            created_by_application=Application.objects.get(client_id=AccessToken.objects.filter(
+                user=self.owner).latest("created").application.client_id),
+        )
+        self.client.force_login(self.owner)
+        detail = self.client.get(f"/rascunhos-ia/{draft.pk}/")
+        self.assertContains(detail, "nunca é executado pela IA")
+        self.assertNotContains(detail, "Gerar código de confirmação")
+        self.assertEqual(self.client.post(f"/rascunhos-ia/{draft.pk}/codigo/").status_code, 302)
+        self.client.logout()
+        result = self.execute(token, draft.pk, "ABCD-EFGH")
+        self.assertIn("Pagamentos nunca", result["content"][0]["text"])
+
+    def test_idempotency_key_returns_same_proposal(self):
+        token = self.connect(scope=ALL_SCOPES)["access_token"]
+        first = self.propose(token, idempotency_key="chave-ficticia-001")
+        second = self.propose(token, idempotency_key="chave-ficticia-001")
+        self.assertEqual(first["data"]["id"], second["data"]["id"])
+        self.assertTrue(second["repeated"])
+        self.assertEqual(AssistantDraft.objects.count(), 1)
+
+    def test_api_v1_drafts_still_work_without_expiry(self):
+        draft = AssistantDraft.objects.create(
+            entity_type="CONTRATO", payload={"number": "Z"}, source_summary="Fictício",
+            created_by_credential=self.credential, requested_by=self.owner,
+        )
+        self.client.force_login(self.owner)
+        page = self.client.get(f"/rascunhos-ia/{draft.pk}/")
+        self.assertNotContains(page, "Gerar código de confirmação")
+        self.assertEqual(self.client.post(f"/rascunhos-ia/{draft.pk}/codigo/").status_code, 302)
