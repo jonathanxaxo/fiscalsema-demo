@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "audit.apps.AuditConfig",
     "data_imports.apps.DataImportsConfig",
     "assistant.apps.AssistantConfig",
+    "oauth2_provider",
     "core.apps.CoreConfig",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -144,6 +145,44 @@ GOOGLE_OAUTH_TIMEOUT_SECONDS = env_int("GOOGLE_OAUTH_TIMEOUT_SECONDS", 10)
 ALLOWED_SIGNUP_DOMAINS = env_list("ALLOWED_SIGNUP_DOMAINS")
 ALLOWED_SIGNUP_EMAILS = env_list("ALLOWED_SIGNUP_EMAILS")
 GOOGLE_REQUIRE_HOSTED_DOMAIN = env_bool("GOOGLE_REQUIRE_HOSTED_DOMAIN", False)
+
+# MCP por identidade (Sprint 28): servidor OAuth 2.1 próprio (django-oauth-toolkit).
+# Cada pessoa autoriza o cliente de IA com o próprio login; o token herda só as
+# permissões dela. Sem senha, chave ou segredo no repositório.
+OAUTH2_PROVIDER_APPLICATION_MODEL = "oauth2_provider.Application"
+MCP_PER_MINUTE = env_int("MCP_PER_MINUTE", 30)
+MCP_DCR_PER_HOUR = env_int("MCP_DCR_PER_HOUR", 20)
+OAUTH2_PROVIDER = {
+    "SCOPES": {
+        "fiscalsema.ler": "Consultar os contratos que você já pode ver no FiscalSema",
+        "fiscalsema.propor": "Propor rascunhos que ficam pendentes da sua confirmação",
+    },
+    "DEFAULT_SCOPES": ["fiscalsema.ler"],
+    "PKCE_REQUIRED": True,
+    "ALLOWED_REDIRECT_URI_SCHEMES": ["https"],
+    "AUTHORIZATION_CODE_EXPIRE_SECONDS": 120,
+    "ACCESS_TOKEN_EXPIRE_SECONDS": env_int("MCP_ACCESS_TOKEN_SECONDS", 3600),
+    "REFRESH_TOKEN_EXPIRE_SECONDS": env_int("MCP_REFRESH_TOKEN_SECONDS", 30 * 24 * 3600),
+    "ROTATE_REFRESH_TOKEN": True,
+    "REQUEST_APPROVAL_PROMPT": "force",
+    "DCR_ENABLED": True,
+    "DCR_REGISTRATION_PERMISSION_CLASSES": ("api_v1.oauth.LimitedOpenRegistration",),
+    "DCR_REGISTRATION_TOKEN_EXPIRE_SECONDS": 3600,
+    "OAUTH2_PROTECTED_RESOURCE_NAME": "FiscalSema Demo (MCP)",
+    # Boas práticas RFC 9700: tokens guardados só como hash, PKCE S256, sem
+    # fluxos implícito/senha, redirecionamento exato e https.
+    "COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT": True,
+    "COMPLIANT_BCP_RFC9700_PASSWORD_GRANT": True,
+    "COMPLIANT_BCP_RFC9700_PKCE_METHOD": True,
+    "COMPLIANT_BCP_RFC9700_ACCESS_TOKEN_TRANSPORT": True,
+    "COMPLIANT_BCP_RFC9700_AUTHZ_RESPONSE_ISS": True,
+    "COMPLIANT_BCP_RFC9700_TOKEN_STORAGE": True,
+    "COMPLIANT_BCP_RFC9700_REFRESH_TOKEN": True,
+    "COMPLIANT_BCP_RFC9700_REDIRECT_URI_SCHEME": True,
+    "COMPLIANT_BCP_RFC9700_REDIRECT_URI_MATCHING": True,
+    "COMPLIANT_BCP_RFC9700_PKCE_REQUIRED": True,
+    "REFRESH_TOKEN_REUSE_PROTECTION": True,
+}
 
 # Assistente Arise (Sprint 21). A chave fica só no backend, em variável de ambiente.
 ASSISTANT_ENABLED = env_bool("ASSISTANT_ENABLED", False)

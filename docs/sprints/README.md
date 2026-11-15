@@ -72,3 +72,6 @@ documental das entregas anteriores.
 
 - `sprint-27-cadastro-institucional`: cadastro pelo Google para domínio
   institucional e exceção individual, sempre pendente de aprovação.
+
+- `sprint-28-mcp-identidade`: MCP remoto por identidade com OAuth 2.1
+  (PKCE, escopos, consentimento, auditoria e revogação em Minha conta).
