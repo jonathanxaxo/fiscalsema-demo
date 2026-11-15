@@ -2,7 +2,7 @@
 titulo: Visão geral e perfis
 rotas: *
 perfis: todos
-palavras: sistema perfil perfis fiscal administrador consulta menu navegar acesso login senha entrar sair demonstração
+palavras: ociosidade ocioso inatividade desconectado deslogado sistema perfil perfis fiscal administrador consulta menu navegar acesso login senha entrar sair demonstração
 ---
 O FiscalSema é um sistema de gestão e fiscalização de contratos. Esta é uma versão de demonstração com dados exclusivamente fictícios (faixa amarela no topo).
 
@@ -13,4 +13,5 @@ Perfis:
 
 Menu lateral (Visão geral): Painel, Dashboard, Contratos, Rascunhos da IA, Assistente Arise e Metodologia. O Administrador também vê a seção Administração.
 No topo: sino de notificações, nome e perfil, "Alterar senha" e "Sair".
+Tempo de ociosidade: quem fica **1 hora sem usar o sistema** (ocioso) é desconectado automaticamente, em qualquer perfil, e precisa entrar de novo com a senha.
 Na demonstração não há cadastro público: as contas são criadas pelo Administrador em Menu → Criar Fiscal.
