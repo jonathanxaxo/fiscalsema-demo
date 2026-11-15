@@ -60,7 +60,8 @@
           {% if profile_switch_target %}<form class="sidebar-switch" method="post" action="{% url 'accounts:switch_profile' %}" data-no-submit-lock>{% csrf_token %}<button type="submit">Atuar como {{ profile_switch_target }}</button></form>{% endif %}
           <p class="nav-label">Visão geral</p>
           <a href="{% url 'home' %}"{% if request.resolver_match.view_name == 'home' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="painel" %}Painel</a>
-          <a href="{% url 'contracts:list' %}"{% if request.resolver_match.app_name == 'contracts' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="contratos" %}Contratos</a>
+          {% if request.user.profile != 'ADMINISTRADOR' %}<a href="{% url 'contracts:executive_dashboard' %}"{% if request.resolver_match.url_name == 'executive_dashboard' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="dashboard" %}Dashboard</a>{% endif %}
+          <a href="{% url 'contracts:list' %}"{% if request.resolver_match.app_name == 'contracts' and request.resolver_match.url_name != 'executive_dashboard' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="contratos" %}Contratos</a>
           <a href="{% url 'assistant_drafts:list' %}"{% if request.resolver_match.app_name == 'assistant_drafts' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="ia" %}Rascunhos da IA</a>
           {% if assistant_enabled %}<a href="{% url 'assistant:chat' %}"{% if request.resolver_match.app_name == 'assistant' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="assistente" %}Assistente Arise</a>{% endif %}
           <a href="{% url 'methodology' %}"{% if request.resolver_match.url_name == 'methodology' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="metodologia" %}Metodologia</a>

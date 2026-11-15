@@ -1,0 +1,25 @@
+{% load l10n formatacao %}
+    <section class="surface" aria-labelledby="itens-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Composição contratual</span><h2 id="itens-titulo">Consumo e saldo por item</h2></div><a href="{% url 'contracts:item_list' selected_contract.pk %}">Abrir todos os itens</a></div>
+      <p class="summary-line">{{ dashboard.active_item_count }} ite{{ dashboard.active_item_count|pluralize:"m ativo,ns ativos" }} · {{ dashboard.inactive_item_count }} inativo{{ dashboard.inactive_item_count|pluralize }} · Total dos itens: <strong>R$&nbsp;{{ dashboard.item_total|localize }}</strong> · Valor do contrato: <strong>R$&nbsp;{{ selected_contract.current_value|localize }}</strong></p>
+      {% if dashboard.item_positions %}
+        <div class="table-responsive"><table><thead><tr><th>Item</th><th>Descrição</th><th>Contratado</th><th>Saldo</th><th>Saldo financeiro</th><th class="col-progress">Consumo</th></tr></thead><tbody>
+          {% for entry in dashboard.item_positions %}<tr>
+            <td><a href="{% url 'contracts:item_detail' selected_contract.pk entry.item.pk %}">{{ entry.item.number }}</a>{% if not entry.item.is_active %}<small class="table-note">Inativo</small>{% endif %}</td>
+            <td>{{ entry.item.description|truncatechars:60 }}<small class="table-note">{{ entry.item.unit_display }}</small></td>
+            <td>{{ entry.item.contracted_quantity|floatformat:"-4" }}</td>
+            <td>{{ entry.position.quantity_balance.value|floatformat:"-4" }}<small class="table-note">utilizado: {{ entry.position.used_quantity.value|floatformat:"-4" }}</small></td>
+            <td>R$&nbsp;{{ entry.position.financial_balance.value|localize }}<small class="table-note">de R$&nbsp;{{ entry.position.total_value.value|localize }}</small></td>
+            <td class="col-progress">{% if entry.used_percentage is not None %}<span class="progress" aria-hidden="true"><span style="width: {{ entry.used_percentage|barra }}%"></span></span><small class="table-note">{{ entry.used_percentage|localize }}% consumido</small>{% else %}—{% endif %}</td>
+          </tr>{% endfor %}
+        </tbody></table></div>
+      {% else %}<div class="empty-compact">Nenhum item contratual cadastrado. Não foram criados valores estimados.</div>{% endif %}
+      {% if dashboard.item_total != selected_contract.current_value %}<p class="note-inline">A soma dos itens (R$&nbsp;{{ dashboard.item_total|localize }}) diverge do valor atual do contrato (R$&nbsp;{{ selected_contract.current_value|localize }}). Confira o cadastro e a fonte oficial.</p>{% endif %}
+    </section>
+
+    <section class="surface" aria-labelledby="empenhos-titulo">
+      <div class="section-heading"><div><span class="eyebrow">Disponibilidade orçamentária</span><h2 id="empenhos-titulo">Posição dos empenhos</h2></div><a href="{% url 'contracts:commitment_list' selected_contract.pk %}">Abrir empenhos</a></div>
+      {% if dashboard.commitment_positions %}<div class="table-responsive"><table><thead><tr><th>Empenho</th><th>Exercício</th><th>Valor atual</th><th>Rateado em OS</th><th>Disponível</th><th class="col-progress">Uso</th></tr></thead><tbody>
+        {% for entry in dashboard.commitment_positions %}<tr><td><a href="{% url 'contracts:commitment_detail' selected_contract.pk entry.commitment.pk %}">{{ entry.commitment.number }}</a><small class="table-note">PED {{ entry.commitment.ped }} · {{ entry.commitment.source|truncatechars:40 }}</small>{% if entry.commitment.closed_for_new_allocations_at %}<small class="table-note">Encerrados por estorno</small>{% endif %}</td><td>{{ entry.commitment.fiscal_year|unlocalize }}</td><td>R$&nbsp;{{ entry.position.current_value.value|localize }}</td><td>R$&nbsp;{{ entry.position.committed_value.value|localize }}</td><td>R$&nbsp;{{ entry.position.available_balance.value|localize }}</td><td class="col-progress">{% if entry.used_percentage is not None %}<span class="progress" aria-hidden="true"><span style="width: {{ entry.used_percentage|barra }}%"></span></span><small class="table-note">{{ entry.used_percentage|localize }}%</small>{% else %}—{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty-compact">Nenhum empenho ativo cadastrado. A disponibilidade orçamentária não foi presumida.</div>{% endif %}
+    </section>

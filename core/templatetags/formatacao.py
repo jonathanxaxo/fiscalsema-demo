@@ -45,6 +45,20 @@ def barra(value):
 
 
 @register.filter
+def proporcao(value, total):
+    """Altura/largura (0 a 100) de um valor em relação ao maior valor do gráfico (Sprint 37)."""
+    from decimal import Decimal, InvalidOperation
+
+    try:
+        value, total = Decimal(str(value)), Decimal(str(total))
+    except (InvalidOperation, TypeError, ValueError):
+        return 0
+    if total <= 0 or value <= 0:
+        return 0
+    return barra(value * Decimal("100") / total)
+
+
+@register.filter
 def cnpj_cpf(value):
     """Aplica a máscara de CNPJ (14 dígitos) ou CPF (11 dígitos)."""
     if not value:

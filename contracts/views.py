@@ -32,6 +32,7 @@ from .forms import (
 )
 from .accountability import build_accountability_snapshot
 from .dashboard import build_contract_dashboard
+from .executive_dashboard import build_executive_summary, build_monthly_evolution, build_validity_progress
 from .exports import build_contract_csv, filters_for_audit
 from .reports import build_contract_report
 from .models import (
@@ -1841,3 +1842,47 @@ class PaymentUpdateView(PaymentContextMixin, UpdateView):
             invoice_pk=payment.invoice_id,
             pk=payment.pk,
         )
+
+
+class ExecutiveDashboardView(LoginRequiredMixin, TemplateView):
+    """Dashboard executivo do contrato (Sprint 37; referência: FiscalSema Light).
+
+    Somente leitura: cada pessoa vê apenas os contratos que já pode ver. O
+    Administrador acompanha o sistema, não contratos.
+    """
+
+    template_name = "contracts/executive_dashboard.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        from accounts.models import UserProfile
+        from django.core.exceptions import PermissionDenied
+
+        if request.user.is_authenticated and request.user.profile == UserProfile.ADMINISTRATOR:
+            raise PermissionDenied("O Administrador acompanha o sistema, não contratos.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        from django.http import Http404
+
+        context = super().get_context_data(**kwargs)
+        contracts = contracts_visible_to(self.request.user).order_by("number", "pk")
+        selected = self.request.GET.get("contract")
+        if selected:
+            if not selected.isdecimal():
+                raise Http404("Contrato não encontrado.")
+            contract = get_object_or_404(contracts, pk=selected)
+        else:
+            contract = contracts.first()
+        context.update({"contracts": contracts, "contract": contract, "selected_contract": contract})
+        if contract is None:
+            return context
+        today = timezone.localdate()
+        dashboard = build_contract_dashboard(contract)
+        context.update({
+            "dashboard": dashboard,
+            "summary": build_executive_summary(contract, dashboard, today=today),
+            "evolution": build_monthly_evolution(contract, today=today),
+            "validity": build_validity_progress(contract, today=today),
+            "can_export": contracts_exportable_by(self.request.user).filter(pk=contract.pk).exists(),
+        })
+        return context

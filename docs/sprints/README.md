@@ -99,3 +99,6 @@ documental das entregas anteriores.
 
 - `sprint-36-prazos-os`: prazo contratual sugerido, prazo da fábrica, horas
   gastas e contagem de dias (referência: FiscalSema Light).
+
+- `sprint-37-dashboard-executivo`: dashboard executivo do contrato com
+  vigência x execução e evolução mensal (referência: FiscalSema Light).
