@@ -87,3 +87,6 @@ documental das entregas anteriores.
 
 - `sprint-32-arise-ler-descartar`: Arise lê TR e contrato anexados só em
   memória (ler e descartar) e documentos fictícios para a apresentação.
+
+- `sprint-33-aviso-arise-temporario`: aviso amarelo do painel flutuante do
+  Arise some 35 segundos depois de cada abertura.

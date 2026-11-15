@@ -243,3 +243,17 @@ class TelaAnexoTests(Base):
         self.assertContains(page, "Anexar TR ou contrato (PDF ou DOCX, até 4 MB)")
         self.assertContains(page, "Não anexe documentos reais nesta demonstração")
         self.assertContains(page, 'accept=".pdf,.docx,')
+
+
+@override_settings(**ON)
+class AvisoPainelTests(Base):
+    """Sprint 33: aviso amarelo do painel flutuante some depois de 35 segundos."""
+
+    def test_floating_notice_is_marked_and_timer_is_35_seconds(self):
+        from django.contrib.staticfiles import finders
+
+        home = self.client.get(reverse("home"))
+        self.assertContains(home, 'data-arise-notice')
+        script = open(finders.find("assistant/chat.js"), encoding="utf-8").read()
+        self.assertIn("const NOTICE_MS = 35000;", script)
+        self.assertIn("showNotice();", script)
