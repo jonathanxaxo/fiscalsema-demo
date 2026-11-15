@@ -1059,6 +1059,15 @@ class WorkOrder(models.Model):
     signature_date = models.DateField("data de assinatura", null=True, blank=True)
     start_date = models.DateField("início", null=True, blank=True)
     deadline = models.DateField("prazo", null=True, blank=True)
+    # Sprint 36 (referência: FiscalSema Light): prazo da fábrica e horas gastas informadas.
+    factory_deadline = models.DateField(
+        "prazo de entrega da fábrica", null=True, blank=True,
+        help_text="Data de entrega estipulada pela fábrica, usada para cobrança.",
+    )
+    spent_hours = models.DecimalField(
+        "horas efetivamente gastas", max_digits=20, decimal_places=4, null=True, blank=True,
+        help_text="Informativo: horas gastas informadas pela fábrica na entrega.",
+    )
     completion_date = models.DateField("conclusão", null=True, blank=True)
     status = models.CharField(
         "status",
@@ -1124,6 +1133,21 @@ class WorkOrder(models.Model):
         from .calculations import calculate_item_total
 
         return calculate_item_total(self.measure, self.unit_value)
+
+    @property
+    def spent_hours_difference(self):
+        """Horas da OS menos horas gastas informadas (positivo = fábrica gastou menos)."""
+        if self.hours is None or self.spent_hours is None:
+            return None
+        return self.hours - self.spent_hours
+
+    @property
+    def deadline_situation(self):
+        from django.utils import timezone
+
+        from .work_order_deadlines import deadline_situation
+
+        return deadline_situation(self, timezone.localdate())
 
     @property
     def current_item_value_difference(self):
@@ -1202,6 +1226,15 @@ class WorkOrder(models.Model):
                         )
             if not self.pk and self.unit_name != self.item.unit_display:
                 errors["unit_name"] = "A unidade deve ser a unidade vigente do item."
+        if self.factory_deadline and self.opening_date and self.factory_deadline < self.opening_date:
+            errors["factory_deadline"] = (
+                "O prazo de entrega da fábrica não pode ser anterior à abertura da OS."
+            )
+        if self.spent_hours is not None:
+            if self.spent_hours < Decimal("0"):
+                errors["spent_hours"] = "Horas gastas não podem ser negativas."
+            elif self.hours is None:
+                errors["spent_hours"] = "Horas gastas só se aplicam a OS de item por hora."
         if self.status == WorkOrderStatus.CANCELED and not self.cancellation_reason:
             errors["cancellation_reason"] = "Informe o motivo do cancelamento."
         if self.status != WorkOrderStatus.CANCELED and (

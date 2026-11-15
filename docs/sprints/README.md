@@ -96,3 +96,6 @@ documental das entregas anteriores.
 
 - `sprint-35-formatacao-cnpj`: CPF/CNPJ com máscara e validação, barras
   limitadas e comportamentos de tela (referência: FiscalSema Light).
+
+- `sprint-36-prazos-os`: prazo contratual sugerido, prazo da fábrica, horas
+  gastas e contagem de dias (referência: FiscalSema Light).

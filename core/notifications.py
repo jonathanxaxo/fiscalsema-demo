@@ -70,10 +70,23 @@ def _contract_notifications(contract, dashboard, *, can_fix):
     for work_order in dashboard.overdue_work_orders:
         add(
             "danger",
-            f"OS {work_order.number} com prazo vencido ({_date(work_order.deadline)})",
+            f"OS {work_order.number} em atraso: prazo contratual vencido ({_date(work_order.deadline)})",
             work_order_url(work_order),
             "Abrir OS para atualizar",
         )
+    for alert in dashboard.factory_deadline_alerts:
+        work_order = alert.work_order
+        if alert.is_overdue:
+            title = (f"Cobrar a fábrica: OS {work_order.number} com prazo da fábrica "
+                     f"vencido ({_date(alert.deadline)})")
+        elif alert.days == 0:
+            title = f"Cobrar a fábrica: OS {work_order.number} com entrega prevista para hoje"
+        else:
+            dias = "1 dia" if alert.days == 1 else f"{alert.days} dias"
+            title = (f"Cobrar a fábrica: OS {work_order.number} com entrega em {dias} "
+                     f"({_date(alert.deadline)})")
+        add("danger" if alert.is_overdue else "warning", title, work_order_url(work_order),
+            "Abrir OS para cobrar")
     for attention in dashboard.divergent_invoices:
         invoice = attention.invoice
         add(

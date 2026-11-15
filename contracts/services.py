@@ -2202,6 +2202,12 @@ def work_order_snapshot(work_order):
         ),
         "inicio": work_order.start_date.isoformat() if work_order.start_date else None,
         "prazo": work_order.deadline.isoformat() if work_order.deadline else None,
+        "prazo_fabrica": (
+            work_order.factory_deadline.isoformat() if work_order.factory_deadline else None
+        ),
+        "horas_gastas_informadas": (
+            str(work_order.spent_hours) if work_order.spent_hours is not None else None
+        ),
         "conclusao": (
             work_order.completion_date.isoformat() if work_order.completion_date else None
         ),

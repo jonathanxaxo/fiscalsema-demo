@@ -136,3 +136,36 @@
     });
   });
 })();
+
+// Sprint 36: prazo sugerido (ex.: OS: abertura + 6 meses). Só preenche se o campo
+// estiver vazio ou ainda tiver o último valor sugerido; a pessoa pode alterar.
+(() => {
+  document.querySelectorAll('input[data-suggest-from][data-suggest-months]').forEach((target) => {
+    const form = target.form;
+    if (!form) return;
+    const source = form.elements.namedItem(target.dataset.suggestFrom);
+    const months = Number(target.dataset.suggestMonths);
+    if (!source || !Number.isInteger(months)) return;
+    let lastSuggested = '';
+    const suggest = () => {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(source.value || '');
+      if (!match) return;
+      if (target.value && target.value !== lastSuggested) return;
+      const year = Number(match[1]);
+      const monthIndex = Number(match[2]) - 1 + months;
+      const day = Number(match[3]);
+      const targetYear = year + Math.floor(monthIndex / 12);
+      const targetMonth = monthIndex % 12;
+      const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+      const value = [
+        String(targetYear).padStart(4, '0'),
+        String(targetMonth + 1).padStart(2, '0'),
+        String(Math.min(day, lastDay)).padStart(2, '0'),
+      ].join('-');
+      target.value = value;
+      lastSuggested = value;
+    };
+    source.addEventListener('change', suggest);
+    if (!target.value) suggest();
+  });
+})();

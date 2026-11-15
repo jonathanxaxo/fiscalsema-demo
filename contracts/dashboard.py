@@ -5,6 +5,7 @@ from decimal import Decimal
 from .invoice_checks import OverallStatus
 from .models import ContractItemUnit, WorkOrderAllocationStatus, WorkOrderStatus
 from .periods import calendar_year_periods, contract_year_periods, period_for_date
+from .work_order_deadlines import FACTORY_NOTICE_DAYS
 from .services import (
     commitment_financial_position,
     contract_financial_position,
@@ -169,6 +170,16 @@ def _monthly_work_order_attentions(work_orders, *, today):
 
 
 @dataclass(frozen=True)
+class FactoryDeadlineAlert:
+    """Cobrança da fábrica: prazo da fábrica em até 7 dias ou vencido (Sprint 36)."""
+
+    work_order: object
+    deadline: date
+    days: int
+    is_overdue: bool
+
+
+@dataclass(frozen=True)
 class DashboardSnapshot:
     contract: object
     financial_position: object
@@ -202,6 +213,7 @@ class DashboardSnapshot:
     current_calendar_period: object | None
     current_contract_year: object | None
     monthly_work_order_attentions: tuple[MonthlyWorkOrderAttention, ...] = ()
+    factory_deadline_alerts: tuple[FactoryDeadlineAlert, ...] = ()
 
     @property
     def attention_count(self):
@@ -210,6 +222,7 @@ class DashboardSnapshot:
             int(self.contract_is_expired)
             + int(self.contract_balance_is_low)
             + len(self.overdue_work_orders)
+            + len(self.factory_deadline_alerts)
             + len(self.low_commitments)
             + len(self.low_hour_items)
             + len(self.work_orders_without_allocation)
@@ -306,6 +319,21 @@ def build_contract_dashboard(contract, *, today=None):
             key=lambda work_order: (work_order.deadline, work_order.pk),
         )
     )
+    factory_deadline_alerts = tuple(sorted(
+        (
+            FactoryDeadlineAlert(
+                work_order=work_order, deadline=work_order.factory_deadline,
+                days=(work_order.factory_deadline - today).days,
+                is_overdue=work_order.factory_deadline < today,
+            )
+            for work_order in open_work_orders
+            if work_order.factory_deadline
+            and (work_order.factory_deadline - today).days <= FACTORY_NOTICE_DAYS
+            # OS já em atraso pelo prazo contratual tem o aviso de atraso, mais grave.
+            and not (work_order.deadline and work_order.deadline < today)
+        ),
+        key=lambda alert: (alert.deadline, alert.work_order.pk),
+    ))
 
     pending_invoices = []
     divergent_invoices = []
@@ -499,6 +527,7 @@ def build_contract_dashboard(contract, *, today=None):
         has_operational_data=has_operational_data,
         open_work_orders=open_work_orders,
         overdue_work_orders=overdue_work_orders,
+        factory_deadline_alerts=factory_deadline_alerts,
         upcoming_work_orders=upcoming_work_orders,
         pending_invoices=tuple(pending_invoices),
         divergent_invoices=tuple(divergent_invoices),

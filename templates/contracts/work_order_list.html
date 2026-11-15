@@ -9,7 +9,7 @@
   {% if is_read_only_access %}<p class="notice"><strong>Somente leitura</strong></p>{% endif %}
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
   <table>
-    <thead><tr><th>Número</th><th>Item</th><th>Ano civil</th><th>Ano contratual</th><th>Medida</th><th>Valor unitário</th><th>Total</th><th>Prazo</th><th>Status</th><th>Ação</th></tr></thead>
+    <thead><tr><th>Número</th><th>Item</th><th>Ano civil</th><th>Ano contratual</th><th>Medida</th><th>Valor unitário</th><th>Total</th><th>Prazo contratual</th><th>Situação do prazo</th><th>Status</th><th>Ação</th></tr></thead>
     <tbody>
       {% for work_order in work_orders %}
         <tr>
@@ -20,7 +20,8 @@
           <td>{{ work_order.measure|quantidade }} {{ work_order.unit_name }}</td>
           <td>R$&nbsp;{{ work_order.unit_value|localize }}</td>
           <td>R$&nbsp;{{ work_order.total_value|localize }}</td>
-          <td>{{ work_order.deadline|date:"d/m/Y"|default:"—" }}</td>
+          {% with situacao=work_order.deadline_situation %}<td>{{ work_order.deadline|date:"d/m/Y"|default:"—" }}{% if situacao.contract_countdown and work_order.deadline %}<small class="table-note countdown countdown-{{ situacao.contract_countdown.tone }}">{{ situacao.contract_countdown.text }}</small>{% endif %}</td>
+          <td><span class="status-pill status-{{ situacao.tone }}">{{ situacao.label }}</span>{% if work_order.factory_deadline and situacao.factory_countdown %}<small class="table-note">Fábrica: {{ work_order.factory_deadline|date:"d/m/Y" }} · {{ situacao.factory_countdown.text }}</small>{% endif %}</td>{% endwith %}
           <td><span class="status-pill {% if work_order.status == 'EM_EXECUCAO' or work_order.status == 'CONCLUIDA' %}status-success{% elif work_order.status == 'SUSPENSA' %}status-warning{% elif work_order.status == 'CANCELADA' %}status-danger{% else %}status-neutral{% endif %}">{{ work_order.get_status_display }}</span></td>
           <td><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Abrir</a></td>
         </tr>
