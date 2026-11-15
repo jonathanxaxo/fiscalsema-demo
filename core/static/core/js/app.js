@@ -201,6 +201,8 @@
   stagger('.method-grid');
   stagger('.method-steps');
   stagger('.account-methods');
+  // Sprint 44: números das sprints da Metodologia acendem em onda.
+  document.querySelectorAll('.method-timeline li b').forEach((b, index) => b.style.setProperty('--fs-w', index));
   // Sprint 42: telas sem cabeçalho de página, formulários simples, detalhes e login.
   stagger('.auth-card');
   document.querySelectorAll('.content form:not(.form-grid):not(.inline-form):not(.assistant-form), .auth-card form, .content dl').forEach((group) => {

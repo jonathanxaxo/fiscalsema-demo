@@ -120,3 +120,6 @@ documental das entregas anteriores.
 
 - `sprint-43-nf-em-os-com-catalogo`: botão de cadastrar NF visível na OS com
   serviços do catálogo e atalho a partir do serviço homologado.
+
+- `sprint-44-pulso-vivo`: pulso vivo bem visível em todas as telas, menu,
+  situações, Metodologia e ícone flutuante do Arise.

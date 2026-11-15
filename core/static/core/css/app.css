@@ -729,3 +729,66 @@ h1 { letter-spacing: -.03em; }
 .auth-card { animation: fs-rise .6s var(--ease-out) both, fs-auth-glow 6s ease-in-out .6s infinite; }
 @keyframes fs-auth-glow { 50% { box-shadow: 0 20px 50px rgba(19,60,44,.11), 0 0 0 6px rgba(68,220,156,.12); } }
 html[data-motion="calmo"] .confirmation-panel-danger { animation-duration: .5s, 5s; }
+
+/* Sprint 44 — pulso vivo bem visível em todas as telas (somente visual) */
+@keyframes fs-beat { 0%, 100% { transform: scale(1); } 12% { transform: scale(1.06); } 24% { transform: scale(1); } 36% { transform: scale(1.035); } 48% { transform: scale(1); } }
+@keyframes fs-dot { 0% { box-shadow: 0 0 0 0 rgba(68,220,156,.65); } 70%, 100% { box-shadow: 0 0 0 9px rgba(68,220,156,0); } }
+@keyframes fs-dot-amber { 0% { box-shadow: 0 0 0 0 rgba(224,161,0,.65); } 70%, 100% { box-shadow: 0 0 0 9px rgba(224,161,0,0); } }
+@keyframes fs-breathe { 0%, 100% { border-color: var(--line); box-shadow: var(--shadow); } 50% { border-color: rgba(20,116,71,.35); box-shadow: var(--shadow), 0 0 0 3px rgba(68,220,156,.10); } }
+@keyframes fs-aurora { 0% { background-position: 0% 0%, 100% 0%; } 100% { background-position: 100% 100%, 0% 100%; } }
+@keyframes fs-glow-bar { 0%, 100% { filter: brightness(1); box-shadow: none; } 50% { filter: brightness(1.15); box-shadow: 0 0 10px rgba(68,220,156,.55); } }
+@keyframes fs-wave { 0%, 80%, 100% { background: transparent; color: var(--green-700); box-shadow: none; } 8% { background: var(--green-700); color: #fff; box-shadow: 0 0 0 4px rgba(68,220,156,.25); } }
+@keyframes fs-ripple-out { from { transform: scale(1); opacity: .55; } to { transform: scale(1.9); opacity: 0; } }
+
+/* Fundo com brilho suave em movimento */
+body { background-image: radial-gradient(900px 500px at 0% 0%, rgba(68,220,156,.12), transparent 60%), radial-gradient(900px 500px at 100% 100%, rgba(224,161,0,.08), transparent 60%); background-size: 160% 160%, 160% 160%; background-attachment: fixed; animation: fs-aurora 18s ease-in-out infinite alternate; }
+
+/* Título de toda tela: ponto verde pulsando antes da linha de contexto */
+.page-header .eyebrow { display: inline-flex; align-items: center; gap: .45rem; }
+.page-header .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #2fbf7d; animation: fs-dot 1.8s ease-out infinite; }
+.page-header div:has(> .live-badge) .eyebrow::before { content: none; }
+.page-header .eyebrow + .live-badge { margin-left: .6rem; }
+.content > h1 { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.content > h1::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #2fbf7d; animation: fs-dot 1.8s ease-out infinite; }
+
+/* Cartões com borda que respira (em tempos diferentes) */
+.content > .surface, .dashboard-columns > .surface, .method-grid article, .confirmation-panel { animation: fs-rise .55s var(--ease-out) both, fs-breathe 5s ease-in-out 1s infinite; }
+.content > .surface:nth-child(2n), .dashboard-columns > .surface:nth-child(2n), .method-grid article:nth-child(2n) { animation-delay: calc(var(--fs-i, 0) * 60ms), 2.5s; }
+
+/* Menu lateral: ícone da tela atual pulsa; ícones se mexem ao passar o mouse */
+.sidebar nav a .nav-icon { transition: transform .3s var(--ease-out); }
+.sidebar nav a:hover .nav-icon { transform: rotate(-10deg) scale(1.18); }
+.sidebar nav a[aria-current="page"] .nav-icon { color: #0f7a54; animation: fs-beat 2.4s ease-in-out infinite; }
+.sidebar nav a[aria-current="page"]::after { content: ""; position: absolute; right: .7rem; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #2fbf7d; animation: fs-dot 1.8s ease-out infinite; }
+
+/* Painel e Dashboard: números e barras com batida leve */
+.kpi-card strong, .exec-mini-kpis strong { display: inline-block; transform-origin: left center; animation: fs-beat 4s ease-in-out 1.5s infinite; }
+.kpi-card:nth-child(2) strong { animation-delay: 2s; } .kpi-card:nth-child(3) strong { animation-delay: 2.5s; } .kpi-card:nth-child(4) strong { animation-delay: 3s; }
+.progress > span, .exec-track > span, .bar-executed, .bar-invoiced, .bar-paid { animation: fs-glow-bar 3s ease-in-out 1.2s infinite; }
+
+/* Situações (contratos, OS, rascunhos): ponto pulsante mais visível */
+.content .status-pill::before { opacity: 1; animation: fs-dot 1.8s ease-out infinite; }
+.content .status-pill.status-warning::before { animation: fs-dot-amber 1.2s ease-out infinite; }
+.status-pill.status-warning { animation: fs-breathe-amber 2.4s ease-in-out infinite; }
+@keyframes fs-breathe-amber { 50% { box-shadow: 0 0 0 4px rgba(224,161,0,.18); } }
+.content .status-pill.status-neutral::before, .content .status-pill.status-danger::before { animation-duration: 3s; }
+
+/* Metodologia: números das sprints acendem em onda */
+.method-timeline li b { display: inline-grid; place-items: center; height: 1.6rem; border-radius: 8px; animation: fs-wave 9s ease-in-out infinite; animation-delay: calc(var(--fs-w, 0) * 180ms); }
+.method-steps > *, .method-steps li { transition: transform .2s var(--ease-out); }
+
+/* Assistente Arise (tela): selo do perfil pulsa como "online" */
+.assistant-page .page-header .badge { display: inline-flex; align-items: center; gap: .4rem; }
+.assistant-page .page-header .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #2fbf7d; animation: fs-dot 1.8s ease-out infinite; }
+
+/* Ícone flutuante: batimento, ondas saindo e ponto "online" */
+.arise-fab { position: relative; overflow: visible; }
+.arise-fab svg { animation: fs-beat 2.6s ease-in-out infinite; }
+.arise-fab::before, .arise-widget .arise-fab::after { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+.arise-fab::before { border: 2px solid rgba(68,220,156,.7); animation: fs-ripple-out 2.6s ease-out infinite; }
+.arise-widget .arise-fab::after { inset: auto 2px 2px auto; width: 13px; height: 13px; border: 2px solid #fff; background: #2fbf7d; animation: fs-dot 1.8s ease-out infinite; }
+.arise-widget.is-open .arise-fab::before, .arise-widget.is-open .arise-fab svg { animation: none; }
+
+/* Modos de movimento continuam valendo */
+html[data-motion="calmo"] body, html[data-motion="calmo"] .content > .surface, html[data-motion="calmo"] .kpi-card strong, html[data-motion="calmo"] .method-timeline li b, html[data-motion="calmo"] .progress > span, html[data-motion="calmo"] .exec-track > span { animation-duration: 30s, 10s; }
+html[data-motion="calmo"] .arise-fab::before, html[data-motion="calmo"] .arise-fab svg { animation-duration: 5s; }
