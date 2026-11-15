@@ -587,3 +587,121 @@ html[data-motion="calmo"] .status-pill::before, html[data-motion="calmo"] .progr
 html[data-motion="calmo"] .attention-list li.attention-danger, html[data-motion="calmo"] .countdown-danger { animation: none; }
 html[data-motion="sem"] *, html[data-motion="sem"] *::before, html[data-motion="sem"] *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Sprint 41 — visual vivo em todas as telas (seções, formulários, listas, menus, chat) */
+/* Seções e cartões entram em sequência (o JS define --fs-i) */
+.content > .surface, .content > section, .content > .page-header, .content > form, .content > table, .content > .table-responsive, .content > dl, .content > h2, .dashboard-columns > .surface { animation: fs-rise .55s var(--ease-out) both; animation-delay: calc(var(--fs-i, 0) * 60ms); }
+.surface { transition: box-shadow .25s ease, border-color .25s ease; }
+.surface:hover { box-shadow: 0 16px 40px rgba(19, 60, 44, .11); }
+
+/* Títulos com sublinhado vivo */
+.page-header h1, .content > h1 { position: relative; }
+.page-header h1::after, .content > h1::after { content: ""; display: block; width: 56px; height: 4px; margin-top: .45rem; border-radius: 4px; background: linear-gradient(90deg, var(--green-700), var(--mint), var(--gold)); background-size: 200% 100%; animation: fs-flow 4s linear infinite; }
+@keyframes fs-flow { to { background-position: 200% 0; } }
+.eyebrow { position: relative; }
+
+/* Mensagens do sistema deslizam e a de sucesso brilha uma vez */
+.notice, .warning, .danger, .alert { animation: fs-slide .45s var(--ease-out) both; }
+@keyframes fs-slide { from { opacity: .3; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.danger, .alert-danger { box-shadow: -4px 0 0 0 var(--danger-ink) inset; }
+.warning, .alert-warning { box-shadow: -4px 0 0 0 #d39a00 inset; }
+
+/* Formulários: campos aparecem em sequência e o campo ativo destaca o rótulo */
+.form-card .form-field, form.form-grid > div { animation: fs-rise .45s var(--ease-out) both; animation-delay: calc(var(--fs-i, 0) * 35ms); }
+.form-field:focus-within > label, .form-field:focus-within label { color: var(--green-700); }
+.form-card { transition: box-shadow .25s ease; }
+.form-card:focus-within { box-shadow: 0 18px 44px rgba(19, 60, 44, .12); }
+.errorlist { animation: fs-shake .4s ease; }
+@keyframes fs-shake { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+
+/* Tabelas: linhas entram em sequência */
+tbody tr { animation: fs-row .4s var(--ease-out) both; animation-delay: calc(min(var(--fs-r, 0), 20) * 25ms); }
+@keyframes fs-row { from { opacity: .2; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+
+/* Chips, selos e links de ação */
+.chip, .badge { transition: transform .2s var(--ease-out); }
+.chip:hover, .badge:hover { transform: translateY(-2px); }
+.action-bar .button-link, .action-list .button-link { transition: transform .2s var(--ease-out), box-shadow .2s ease, background .2s ease; }
+.action-bar-links a, .page-header-actions a:not(.button-link) { background: linear-gradient(currentColor, currentColor) 0 100% / 0 2px no-repeat; text-decoration: none; transition: background-size .3s var(--ease-out); }
+.action-bar-links a:hover, .page-header-actions a:not(.button-link):hover { background-size: 100% 2px; }
+.chip-danger strong, .count-badge { animation: fs-pop 2.2s ease-in-out infinite; }
+@keyframes fs-pop { 50% { transform: scale(1.12); } }
+
+/* Seções recolhíveis abrem com movimento */
+.more-details[open] > *:not(summary), .dashboard-disclosure[open] > *:not(summary) { animation: fs-rise .4s var(--ease-out) both; }
+.more-details > summary::after, .dashboard-disclosure summary::after { transition: background .2s ease, color .2s ease; }
+.more-details > summary:hover::after, .dashboard-disclosure summary:hover::after { background: var(--green-800); color: #fff; }
+
+/* Estados vazios flutuam */
+.empty-state > span:first-child { display: inline-block; animation: fs-float 3s ease-in-out infinite; }
+@keyframes fs-float { 50% { transform: translateY(-5px); } }
+
+/* Barra superior: avatar com anel vivo e painel de notificações que abre com escala */
+.user-avatar { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--green-100); transition: box-shadow .3s ease; }
+.user-menu:hover .user-avatar { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--mint); }
+.notifications[open] .notifications-panel { animation: fs-pop-in .25s var(--ease-out) both; transform-origin: top right; }
+@keyframes fs-pop-in { from { opacity: 0; transform: scale(.94) translateY(-6px); } to { opacity: 1; transform: none; } }
+.notifications[open] .notifications-list li { animation: fs-slide .35s var(--ease-out) both; animation-delay: calc(var(--fs-i, 0) * 45ms); }
+.notification { transition: transform .2s var(--ease-out), background .2s ease; }
+.notification:hover { transform: translateX(3px); }
+
+/* Menu no celular: desliza e os itens entram em sequência */
+body.menu-open .sidebar nav a { animation: fs-slide-x .35s var(--ease-out) both; animation-delay: calc(var(--fs-i, 0) * 40ms); }
+@keyframes fs-slide-x { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+.sidebar { transition: transform .35s var(--ease-out); }
+.menu-toggle { transition: transform .25s var(--ease-out); }
+body.menu-open .menu-toggle { box-shadow: 0 0 0 4px rgba(68, 220, 156, .35); }
+
+/* Página de Metodologia e listas de cartões */
+.method-grid > *, .method-steps > li, .account-methods > li { animation: fs-rise .5s var(--ease-out) both; animation-delay: calc(var(--fs-i, 0) * 50ms); transition: transform .2s var(--ease-out); }
+.method-grid > *:hover, .account-methods > li:hover { transform: translateY(-2px); }
+
+/* Assistente Arise (tela cheia e painel flutuante) */
+.arise-panel:not([hidden]) { animation: fs-panel .35s var(--ease-out) both; transform-origin: bottom right; }
+@keyframes fs-panel { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
+.arise-panel-head { background: linear-gradient(90deg, rgba(68,220,156,.12), transparent 60%); margin: -.8rem -.8rem 0; padding: .8rem; border-radius: 14px 14px 0 0; }
+.arise-fab svg { transition: transform .3s var(--ease-out); }
+.arise-fab:hover svg { transform: rotate(-12deg) scale(1.1); }
+.arise-widget.is-open .arise-fab { animation: none; }
+.assistant-msg { animation: fs-msg .35s var(--ease-out) both; }
+.assistant-msg-user { animation-name: fs-msg-user; }
+@keyframes fs-msg { from { opacity: 0; transform: translateY(8px) translateX(-6px); } to { opacity: 1; transform: none; } }
+@keyframes fs-msg-user { from { opacity: 0; transform: translateY(8px) translateX(6px); } to { opacity: 1; transform: none; } }
+.assistant-typing { display: inline-flex; align-items: center; gap: .45rem; }
+.assistant-typing::after { content: ""; width: 26px; height: 8px; background: radial-gradient(circle, var(--green-700) 3px, transparent 3.5px) 0 50% / 9px 8px repeat-x; animation: fs-dots 1s steps(3) infinite; -webkit-mask: linear-gradient(90deg, #000 0 100%); }
+@keyframes fs-dots { 0% { width: 8px; } 100% { width: 26px; } }
+.assistant-suggestions button, .assistant-suggestions .button-link-small { transition: transform .2s var(--ease-out), box-shadow .2s ease; }
+.assistant-suggestions button:hover { transform: translateY(-2px); }
+.assistant-form textarea:focus { box-shadow: 0 0 0 4px rgba(20, 116, 71, .15); }
+.assistant-form button[type="submit"]:not(:disabled):hover { box-shadow: 0 8px 22px var(--live-glow); }
+.assistant-history a { transition: background .2s ease, transform .2s var(--ease-out); }
+.assistant-history a:hover { transform: translateX(3px); }
+
+/* Mesmas escolhas de movimento valem para os efeitos acima */
+html[data-motion="calmo"] tbody tr, html[data-motion="calmo"] .form-card .form-field, html[data-motion="calmo"] .chip-danger strong, html[data-motion="calmo"] .count-badge, html[data-motion="calmo"] .empty-state > span:first-child, html[data-motion="calmo"] .page-header h1::after { animation: none; }
+
+/* Sprint 41 — mesma linguagem da prévia aprovada (tipografia, barras, cartões, "Ao vivo") */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 400 800; font-display: swap; src: url("../fonts/inter-latin.woff2") format("woff2"); }
+@font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 500 700; font-display: swap; src: url("../fonts/space-grotesk-latin.woff2") format("woff2"); }
+:root { --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif; --radius: 16px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+h1, h2, h3, .brand strong, .auth-brand strong, .kpi-card strong, .exec-mini-kpis strong, .wordmark, .count-badge, .notifications-head strong, .assistant-chat-head h1, .arise-panel-head strong { font-family: var(--display); letter-spacing: -.01em; }
+h1 { letter-spacing: -.03em; }
+.kpi-card strong { font-size: 1.35rem; }
+.surface, .content { border-radius: var(--radius); }
+.kpi-card { border-radius: 14px; background: var(--surface); }
+.kpi-card-highlight { background: linear-gradient(140deg, #0b5d3b, #063a25); }
+.progress { height: 10px; background: #edf2ef; border: 1px solid var(--line); }
+.progress .fs-tip { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
+.kpi-card-highlight .progress { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.2); }
+.exec-track { height: 10px; border: 1px solid var(--line); background: #edf2ef; }
+.exec-chart-month small { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+.exec-mini-kpis > div { border-radius: 12px; transition: transform .2s var(--ease-out); }
+.exec-mini-kpis > div:hover { transform: translateY(-2px); }
+.status-pill { border-radius: 999px; }
+
+/* Selo "Ao vivo" */
+.live-badge { display: inline-flex; align-items: center; gap: .45rem; color: var(--green-700); font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.live-badge i { position: relative; width: 8px; height: 8px; border-radius: 50%; background: #2fc589; box-shadow: 0 0 8px #2fc589; }
+.live-badge i::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #2fc589; animation: fs-live 1.8s ease-out infinite; }
+@keyframes fs-live { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(3); opacity: 0; } }
+.page-header .live-badge { margin-top: .35rem; }

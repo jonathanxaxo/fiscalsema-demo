@@ -111,3 +111,6 @@ documental das entregas anteriores.
 
 - `sprint-40-conhecimento-arise-mcp`: Arise e IA externa (MCP) passam a
   conhecer as funções das Sprints 35 a 39.
+
+- `sprint-41-visual-vivo`: visual vivo em todas as telas, novo logotipo
+  (lupa que confere) e controle de movimento.

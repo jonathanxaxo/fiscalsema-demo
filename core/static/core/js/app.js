@@ -186,6 +186,23 @@
   }));
   const still = () => root.dataset.motion === 'sem' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Ordem de entrada (sequência) das seções, campos, linhas, itens de menu e avisos.
+  const stagger = (selector, variable = '--fs-i') => {
+    document.querySelectorAll(selector).forEach((group) => {
+      [...group.children].forEach((child, index) => child.style.setProperty(variable, Math.min(index, 20)));
+    });
+  };
+  stagger('.content');
+  stagger('.dashboard-columns');
+  stagger('.form-card');
+  stagger('form.form-grid');
+  stagger('.sidebar nav');
+  stagger('.notifications-list');
+  stagger('.method-grid');
+  stagger('.method-steps');
+  stagger('.account-methods');
+  stagger('tbody', '--fs-r');
+
   // Barras de progresso: enchem a partir do zero, com ponto pulsante na ponta.
   const bars = [];
   document.querySelectorAll('.progress > span').forEach((span) => {

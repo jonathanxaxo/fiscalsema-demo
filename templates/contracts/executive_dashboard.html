@@ -10,7 +10,7 @@
 {% with d=dashboard fp=dashboard.financial_position s=summary %}
   <header class="page-header">
     <div>
-      <span class="eyebrow">Dashboard do contrato</span>
+      <span class="eyebrow">Dashboard do contrato</span><span class="live-badge" title="Calculado agora com os dados atuais"><i aria-hidden="true"></i>Ao vivo · atualizado agora</span>
       <h1>Contrato {{ contract.number }}</h1>
       <p>{{ contract.object|truncatechars:140 }}</p>
     </div>
