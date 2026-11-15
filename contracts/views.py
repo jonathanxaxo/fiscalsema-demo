@@ -32,6 +32,7 @@ from .forms import (
 )
 from .accountability import build_accountability_snapshot
 from .dashboard import build_contract_dashboard
+from .service_catalog import work_order_service_summary
 from .executive_dashboard import build_executive_summary, build_monthly_evolution, build_validity_progress
 from .exports import build_contract_csv, filters_for_audit
 from .reports import build_contract_report
@@ -1245,6 +1246,7 @@ class WorkOrderDetailView(WorkOrderContextMixin, DetailView):
             self.object.status != WorkOrderStatus.CANCELED and writable.exists()
         )
         context["can_cancel"] = context["can_edit"]
+        context["service_summary"] = work_order_service_summary(self.object)
         context["can_add_allocation"] = (
             self.object.status != WorkOrderStatus.CANCELED and writable.exists()
         )

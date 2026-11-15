@@ -1,0 +1,18 @@
+{% extends "accounts/base.html" %}
+{% load l10n formatacao %}
+{% block title %}Serviço da OS {{ work_order.number }} — FiscalSema{% endblock %}
+{% block content %}
+  <h1>{% if line %}Editar serviço da OS{% else %}Incluir serviço do catálogo{% endif %}</h1>
+  <p><strong>OS:</strong> {{ work_order.number }} · <strong>Item:</strong> {{ work_order.item.number }} · <strong>Valor unitário:</strong> R$&nbsp;{{ work_order.unit_value|localize }} por {{ work_order.unit_name }}</p>
+  <p class="helptext">O peso é copiado do catálogo e fica registrado na OS. A quantidade da OS passa a ser a soma das UST/HST/USN de todos os serviços incluídos, com as mesmas validações de saldo da edição da OS.</p>
+  {% if not form.fields.catalog_entry.queryset.exists %}<p class="warning">O catálogo deste contrato não tem serviços ativos. <a href="{% url 'contracts:service_catalog' contract.pk %}">Abrir catálogo</a></p>{% endif %}
+  <form class="form-card form-grid" method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-field{% if field.name == 'catalog_entry' %} form-field-wide{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}{{ field.errors }}</div>
+    {% endfor %}
+    <button type="submit">Salvar</button>
+  </form>
+  <p class="actions"><a href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">Voltar à OS</a></p>
+{% endblock %}

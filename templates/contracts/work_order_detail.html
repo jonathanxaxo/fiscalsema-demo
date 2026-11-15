@@ -46,6 +46,51 @@
   {% else %}
     <p class="helptext">Este status não compromete saldo.</p>
   {% endif %}
+  <section class="service-lines" aria-labelledby="servicos-catalogo-titulo">
+    <div class="section-heading"><div><h2 id="servicos-catalogo-titulo">Serviços do catálogo — memória de cálculo</h2></div>{% if can_edit and work_order.hours is None %}<a class="button-link button-link-small" href="{% url 'contracts:work_order_service_create' contract.pk work_order.pk %}">Incluir serviço</a>{% endif %}</div>
+    {% if service_summary.has_lines %}
+      <div class="table-responsive" role="region" aria-label="Serviços do catálogo da OS" tabindex="0"><table>
+        <thead><tr><th>Serviço</th><th>Complexidade</th><th>Quantidade</th><th>Peso</th><th>{{ work_order.unit_name }}</th><th>Valor</th><th>Situação</th>{% if can_edit %}<th>Ações</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for line in service_summary.lines %}
+            <tr>
+              <td>{% if line.service_code %}<strong>{{ line.service_code }}</strong> — {% endif %}{{ line.service_name }}<small class="table-note">{{ line.measure_label }}</small></td>
+              <td>{{ line.get_complexity_display }}</td>
+              <td class="cell-nowrap">{{ line.quantity|floatformat:"-2g" }}</td>
+              <td class="cell-nowrap">{{ line.weight|floatformat:"2g" }}</td>
+              <td class="cell-nowrap">{{ line.units|floatformat:"2g" }}</td>
+              <td class="cell-nowrap">R$&nbsp;{{ line.total_value|localize }}</td>
+              <td>
+                <span class="line-status line-status-{{ line.delivery_status }}">{{ line.get_delivery_status_display }}</span>
+                {% if line.delivery_status == "ENTREGUE" %}<small class="table-note">Entregue em {{ line.delivered_at|date:"d/m/Y" }}</small>{% elif line.delivery_status == "ACEITO" %}<small class="table-note">Aceito em {{ line.accepted_at|date:"d/m/Y" }} · falta o Termo</small>{% elif line.delivery_status == "HOMOLOGADO" %}<small class="table-note">{{ line.homologation_reference }} · {{ line.homologated_at|date:"d/m/Y" }}</small><small class="table-note">Pronto para faturar</small>{% endif %}
+                {% if line.rejection_count %}<small class="table-note">Recusado {{ line.rejection_count }}×: {{ line.last_rejection_reason }}</small>{% endif %}
+              </td>
+              {% if can_edit %}<td><div class="line-actions">
+                {% if line.delivery_status == "EM_ANDAMENTO" %}
+                  <a class="button-link button-link-small" href="{% url 'contracts:work_order_service_action' contract.pk work_order.pk line.pk 'entregar' %}">Registrar entrega</a>
+                  <a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_service_update' contract.pk work_order.pk line.pk %}">Editar</a>
+                  <a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_service_remove' contract.pk work_order.pk line.pk %}">Remover</a>
+                {% elif line.delivery_status == "ENTREGUE" %}
+                  <a class="button-link button-link-small" href="{% url 'contracts:work_order_service_action' contract.pk work_order.pk line.pk 'aceitar' %}">Aceitar</a>
+                  <a class="button-link button-link-danger button-link-small" href="{% url 'contracts:work_order_service_action' contract.pk work_order.pk line.pk 'recusar' %}">Recusar</a>
+                {% elif line.delivery_status == "ACEITO" %}
+                  <a class="button-link button-link-small" href="{% url 'contracts:work_order_service_action' contract.pk work_order.pk line.pk 'homologar' %}">Homologar</a>
+                {% else %}—{% endif %}
+              </div></td>{% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot><tr><th colspan="4">Total da OS</th><th class="cell-nowrap">{{ service_summary.total_units|floatformat:"2g" }} {{ work_order.unit_name }}</th><th class="cell-nowrap">R$&nbsp;{{ work_order.total_value|localize }}</th><th></th>{% if can_edit %}<th></th>{% endif %}</tr></tfoot>
+      </table></div>
+      <p class="helptext">Total = soma dos serviços × R$&nbsp;{{ work_order.unit_value|localize }} por {{ work_order.unit_name }}. O valor de cada linha é informativo; o valor oficial da OS é calculado sobre o total.</p>
+      <p class="helptext">Caminho de cada serviço: <strong>Em andamento → Entregue → Aceito → Homologado</strong> (Termo assinado) → faturado na NF. Recusado volta para ajuste.</p>
+      {% if can_edit and service_summary.accepted_count %}<p class="actions"><a class="button-link button-link-small" href="{% url 'contracts:work_order_service_homologate_accepted' contract.pk work_order.pk %}">Homologar todos os aceitos ({{ service_summary.accepted_count }})</a></p>{% endif %}
+    {% elif work_order.hours is not None %}
+      <p class="helptext">Esta OS é medida em horas; o catálogo de serviços vale para OS medidas em UST, HST, USN ou outra quantidade.</p>
+    {% else %}
+      <p class="helptext">Nenhum serviço do catálogo incluído. Ao incluir o primeiro, a quantidade da OS passa a ser a soma dos serviços.</p>
+    {% endif %}
+  </section>
   <h2>Rateios</h2>
   <dl>
     <dt>Total ativo rateado</dt><dd>R$&nbsp;{{ active_allocated|localize }}</dd>

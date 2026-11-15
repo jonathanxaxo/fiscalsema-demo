@@ -1,5 +1,10 @@
 from django.urls import path
 
+from .views_catalog import (
+    ServiceCatalogFormView, ServiceCatalogListView, WorkOrderHomologateAcceptedView,
+    WorkOrderServiceLineActionView, WorkOrderServiceLineFormView, WorkOrderServiceLineRemoveView,
+)
+
 from .views import (
     AccountabilityView,
     ArchivedContractListView,
@@ -55,6 +60,15 @@ app_name = "contracts"
 urlpatterns = [
     path("", ContractListView.as_view(), name="list"),
     path("dashboard/", ExecutiveDashboardView.as_view(), name="executive_dashboard"),
+    # Sprint 38: catálogo de serviços e memória de cálculo da OS
+    path("<int:contract_pk>/catalogo/", ServiceCatalogListView.as_view(), name="service_catalog"),
+    path("<int:contract_pk>/catalogo/novo/", ServiceCatalogFormView.as_view(), name="service_catalog_create"),
+    path("<int:contract_pk>/catalogo/<int:pk>/editar/", ServiceCatalogFormView.as_view(), name="service_catalog_update"),
+    path("<int:contract_pk>/os/<int:work_order_pk>/servicos/novo/", WorkOrderServiceLineFormView.as_view(), name="work_order_service_create"),
+    path("<int:contract_pk>/os/<int:work_order_pk>/servicos/<int:pk>/editar/", WorkOrderServiceLineFormView.as_view(), name="work_order_service_update"),
+    path("<int:contract_pk>/os/<int:work_order_pk>/servicos/<int:pk>/remover/", WorkOrderServiceLineRemoveView.as_view(), name="work_order_service_remove"),
+    path("<int:contract_pk>/os/<int:work_order_pk>/servicos/homologar-aceitos/", WorkOrderHomologateAcceptedView.as_view(), name="work_order_service_homologate_accepted"),
+    path("<int:contract_pk>/os/<int:work_order_pk>/servicos/<int:pk>/<slug:action>/", WorkOrderServiceLineActionView.as_view(), name="work_order_service_action"),
     path("arquivados/", ArchivedContractListView.as_view(), name="archived_list"),
     path("novo/", ContractCreateView.as_view(), name="create"),
     path("<int:contract_pk>/prestacao-de-contas/", AccountabilityView.as_view(), name="accountability"),

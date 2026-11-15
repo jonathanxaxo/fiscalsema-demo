@@ -108,6 +108,15 @@ def _as_operation(evidence, operation):
     return tuple(replace(component, operation=operation) for component in evidence)
 
 
+QUANTITY_QUANTUM = Decimal("0.0001")
+
+
+def calculate_service_units(quantity, weight):
+    """UST/HST/USN de um serviço do catálogo = quantidade × peso (Sprint 38; 4 casas)."""
+    _require_decimal(quantity=quantity, weight=weight)
+    return (quantity * weight).quantize(QUANTITY_QUANTUM, rounding=ROUND_HALF_UP)
+
+
 def calculate_item_total(quantity, unit_value):
     _require_decimal(quantity=quantity, unit_value=unit_value)
     return quantize_money(quantity * unit_value)
