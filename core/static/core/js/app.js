@@ -174,9 +174,12 @@
 (() => {
   const root = document.documentElement;
   const KEY = 'fiscalsema-movimento';
-  const read = () => { try { return localStorage.getItem(KEY) || 'vivo'; } catch (e) { return 'vivo'; } };
+  // Sprint 45: sem escolha salva, o pedido de "reduzir movimento" do sistema operacional vira "Calmo"
+  // (continua pulsando, mais devagar). "Vivo" e "Sem" escolhidos pela pessoa sempre valem.
+  const fallback = () => (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'calmo' : 'vivo');
+  const read = () => { try { return localStorage.getItem(KEY) || fallback(); } catch (e) { return fallback(); } };
   const apply = (mode) => {
-    if (mode === 'vivo') delete root.dataset.motion; else root.dataset.motion = mode;
+    root.dataset.motion = mode;
     document.querySelectorAll('[data-motion-choice]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.motionChoice === mode)));
   };
   apply(read());
@@ -184,7 +187,7 @@
     try { localStorage.setItem(KEY, button.dataset.motionChoice); } catch (e) { /* sem armazenamento */ }
     apply(button.dataset.motionChoice);
   }));
-  const still = () => root.dataset.motion === 'sem' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = () => root.dataset.motion === 'sem';
 
   // Ordem de entrada (sequência) das seções, campos, linhas, itens de menu e avisos.
   const stagger = (selector, variable = '--fs-i') => {
@@ -201,6 +204,8 @@
   stagger('.method-grid');
   stagger('.method-steps');
   stagger('.account-methods');
+  // Sprint 45: barras do gráfico mensal respiram em sequência.
+  document.querySelectorAll('.exec-chart-bars span').forEach((bar, index) => bar.style.setProperty('--fs-b', index % 12));
   // Sprint 44: números das sprints da Metodologia acendem em onda.
   document.querySelectorAll('.method-timeline li b').forEach((b, index) => b.style.setProperty('--fs-w', index));
   // Sprint 42: telas sem cabeçalho de página, formulários simples, detalhes e login.

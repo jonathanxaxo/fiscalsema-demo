@@ -9,7 +9,7 @@
   <title>{% block title %}FiscalSema{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'core/img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
-  <script>try{var m=localStorage.getItem('fiscalsema-movimento');if(m&&m!=='vivo')document.documentElement.dataset.motion=m}catch(e){}</script>
+  <script>(function(){var m=null;try{m=localStorage.getItem('fiscalsema-movimento')}catch(e){}if(!m){m=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches?'calmo':'vivo'}document.documentElement.dataset.motion=m})()</script>
   {% if assistant_enabled and request.user.is_authenticated %}<link rel="stylesheet" href="{% static 'assistant/chat.css' %}"><script src="{% static 'assistant/chat.js' %}" defer></script>{% endif %}
   {% block extra_head %}{% endblock %}
 </head>

@@ -123,3 +123,6 @@ documental das entregas anteriores.
 
 - `sprint-44-pulso-vivo`: pulso vivo bem visível em todas as telas, menu,
   situações, Metodologia e ícone flutuante do Arise.
+
+- `sprint-45-movimento-sempre-vivo`: sistema continua vivo quando o
+  computador pede menos movimento (vira "Calmo") e mais efeitos vivos.
