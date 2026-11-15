@@ -81,3 +81,6 @@ documental das entregas anteriores.
 
 - `sprint-30-execucao-autorizada`: execução de propostas pelo MCP somente com
   código de uso único gerado pela pessoa logada; pagamento nunca pela IA.
+
+- `sprint-31-mcp-homologacao`: testes de ataque e compatibilidade do MCP/OAuth,
+  guia de conexão, roteiro de homologação e ajuda no Assistente Arise.
