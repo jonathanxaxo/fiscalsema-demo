@@ -93,3 +93,6 @@ documental das entregas anteriores.
 
 - `sprint-34-arise-flutuante-arrastavel`: chat flutuante arrastável; minimizar
   mantém a conversa e fechar encerra o chat.
+
+- `sprint-35-formatacao-cnpj`: CPF/CNPJ com máscara e validação, barras
+  limitadas e comportamentos de tela (referência: FiscalSema Light).
