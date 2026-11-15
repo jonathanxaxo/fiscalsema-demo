@@ -9,6 +9,7 @@
   <title>{% block title %}FiscalSema{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'core/img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+  <script>try{var m=localStorage.getItem('fiscalsema-movimento');if(m&&m!=='vivo')document.documentElement.dataset.motion=m}catch(e){}</script>
   {% if assistant_enabled and request.user.is_authenticated %}<link rel="stylesheet" href="{% static 'assistant/chat.css' %}"><script src="{% static 'assistant/chat.js' %}" defer></script>{% endif %}
   {% block extra_head %}{% endblock %}
 </head>
@@ -73,7 +74,10 @@
             {% if perms.accounts.view_authenticationevent %}<a href="{% url 'audit:global' %}"{% if request.resolver_match.app_name == 'audit' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="auditoria" %}Auditoria</a>{% endif %}
           {% endif %}
         </nav>
-        <div class="sidebar-note">{% if is_demo %}<strong>Demonstração</strong><span>Não inserir dados ou documentos reais</span>{% else %}<strong>Ambiente interno</strong><span>Acesso restrito à rede local</span>{% endif %}</div>
+        <div class="sidebar-note">{% if is_demo %}<strong>Demonstração</strong><span>Não inserir dados ou documentos reais</span>{% else %}<strong>Ambiente interno</strong><span>Acesso restrito à rede local</span>{% endif %}
+          <span class="motion-control-label" id="movimento-titulo">Movimento</span>
+          <div class="motion-control" role="group" aria-labelledby="movimento-titulo"><button type="button" data-motion-choice="vivo" aria-pressed="true">Vivo</button><button type="button" data-motion-choice="calmo" aria-pressed="false">Calmo</button><button type="button" data-motion-choice="sem" aria-pressed="false">Sem</button></div>
+        </div>
       </aside>
       <div class="sidebar-backdrop" data-menu-close></div>
       <main id="conteudo-principal" class="content {% block main_class %}{% endblock %}" tabindex="-1">

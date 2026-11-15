@@ -169,3 +169,93 @@
     if (!target.value) suggest();
   });
 })();
+
+// Sprint 41: visual vivo. Tudo é apresentação; respeita "Movimento" e prefers-reduced-motion.
+(() => {
+  const root = document.documentElement;
+  const KEY = 'fiscalsema-movimento';
+  const read = () => { try { return localStorage.getItem(KEY) || 'vivo'; } catch (e) { return 'vivo'; } };
+  const apply = (mode) => {
+    if (mode === 'vivo') delete root.dataset.motion; else root.dataset.motion = mode;
+    document.querySelectorAll('[data-motion-choice]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.motionChoice === mode)));
+  };
+  apply(read());
+  document.querySelectorAll('[data-motion-choice]').forEach((button) => button.addEventListener('click', () => {
+    try { localStorage.setItem(KEY, button.dataset.motionChoice); } catch (e) { /* sem armazenamento */ }
+    apply(button.dataset.motionChoice);
+  }));
+  const still = () => root.dataset.motion === 'sem' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Barras de progresso: enchem a partir do zero, com ponto pulsante na ponta.
+  const bars = [];
+  document.querySelectorAll('.progress > span').forEach((span) => {
+    const target = parseFloat(span.style.width) || 0;
+    const progress = span.parentElement;
+    if (progress.closest('.col-progress') && target >= 90) progress.classList.add('is-critical');
+    if (target > 0 && !progress.querySelector('.fs-tip')) {
+      const tip = document.createElement('i');
+      tip.className = 'fs-tip';
+      tip.setAttribute('aria-hidden', 'true');
+      progress.appendChild(tip);
+    }
+    bars.push([span, target]);
+  });
+  const tracks = [...document.querySelectorAll('.exec-track > span')].map((span) => [span, parseFloat(span.style.width) || 0]);
+  const columns = [...document.querySelectorAll('.exec-chart-bars span')].map((span) => [span, span.style.height]);
+  if (!still()) {
+    bars.forEach(([span]) => { span.style.width = '0%'; });
+    tracks.forEach(([span]) => { span.style.width = '0%'; });
+    columns.forEach(([span]) => { span.style.height = '0%'; });
+    document.querySelectorAll('.progress .fs-tip').forEach((tip) => { tip.style.left = '0%'; });
+  }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    bars.forEach(([span, target]) => {
+      const width = Math.min(Math.max(target, 0), 100);
+      span.style.width = `${width}%`;
+      const tip = span.parentElement.querySelector('.fs-tip');
+      if (tip) tip.style.left = `${width}%`;
+    });
+    tracks.forEach(([span, target]) => { span.style.width = `${target}%`; });
+    columns.forEach(([span, height], index) => { setTimeout(() => { span.style.height = height; }, still() ? 0 : index * 25); });
+  }));
+
+  // Valores em R$ dos indicadores contam até o número final.
+  const parse = (text) => Number(text.replace(/[^\d,]/g, '').replace(',', '.'));
+  const format = (value) => value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (!still()) {
+    document.querySelectorAll('.kpi-card strong, .exec-mini-kpis strong').forEach((el) => {
+      const text = el.textContent.trim();
+      if (!/^R\$\s?[\d.]+(,\d{1,2})?$/.test(text.replace(/ /g, ' '))) return;
+      const target = parse(text);
+      if (!target) return;
+      const start = performance.now();
+      const step = (now) => {
+        const t = Math.min(1, (now - start) / 1200);
+        el.textContent = `R$ ${format(target * (1 - Math.pow(1 - t, 3)))}`;
+        if (t < 1) requestAnimationFrame(step); else el.textContent = text;
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  // Ondulação ao clicar em botões.
+  document.addEventListener('pointerdown', (event) => {
+    const button = event.target.closest('button, .button-link');
+    if (!button || still() || button.closest('.arise-panel, .arise-widget')) return;
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const ripple = document.createElement('span');
+    ripple.className = 'fs-ripple';
+    Object.assign(ripple.style, { width: `${size}px`, height: `${size}px`, left: `${event.clientX - rect.left - size / 2}px`, top: `${event.clientY - rect.top - size / 2}px` });
+    button.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 650);
+  });
+
+  // Sino balança uma vez por sessão quando há pendências.
+  const toggle = document.querySelector('.notifications-toggle');
+  if (toggle && toggle.querySelector('.notifications-count') && !still()) {
+    let rang = false;
+    try { rang = sessionStorage.getItem('fiscalsema-sino') === '1'; sessionStorage.setItem('fiscalsema-sino', '1'); } catch (e) { /* sem armazenamento */ }
+    if (!rang) setTimeout(() => toggle.classList.add('fs-ring'), 600);
+  }
+})();
