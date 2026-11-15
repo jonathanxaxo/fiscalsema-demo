@@ -89,3 +89,8 @@
 .arise-panel-notice { transition: opacity .4s ease; }
 .arise-panel-notice.is-fading { opacity: 0; }
 .arise-panel-notice[hidden] { display: none; }
+/* Sprint 34: chat flutuante arrastável, minimizar e fechar */
+.arise-fab { touch-action: none; cursor: grab; }
+@media (min-width: 641px) { .arise-panel-head { cursor: grab; touch-action: none; user-select: none; } }
+.arise-widget.is-dragging, .arise-widget.is-dragging .arise-fab, .arise-widget.is-dragging .arise-panel-head { cursor: grabbing; }
+.arise-widget.is-dragging .arise-fab { transform: none; }
