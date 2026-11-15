@@ -1,0 +1,129 @@
+{% extends "accounts/base.html" %}
+{% load l10n formatacao %}
+{% block title %}Dashboard do contrato — FiscalSema{% endblock %}
+{% block content %}
+{% if not contract %}
+  <header class="page-header">
+    <div><span class="eyebrow">Dashboard do contrato</span><h1>Nenhum contrato disponível</h1><p>Quando um contrato for vinculado à sua conta, a situação dele aparecerá aqui.</p></div>
+  </header>
+{% else %}
+{% with d=dashboard fp=dashboard.financial_position s=summary %}
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">Dashboard do contrato</span>
+      <h1>Contrato {{ contract.number }}</h1>
+      <p>{{ contract.object|truncatechars:140 }}</p>
+    </div>
+    <span class="badge badge-success">{{ contract.get_status_display }}</span>
+  </header>
+
+  <section class="surface contract-context" aria-labelledby="exec-contrato">
+    {% if contracts|length > 1 %}
+      <form class="selector" method="get">
+        <div class="field-grow"><label id="exec-contrato" for="exec-contract">Contrato</label><select id="exec-contract" name="contract" data-autosubmit>{% for item in contracts %}<option value="{{ item.pk }}"{% if item.pk == contract.pk %} selected{% endif %}>{{ item.number }} — {{ item.object|truncatechars:70 }}</option>{% endfor %}</select></div>
+        <button type="submit">Ver dashboard</button>
+      </form>
+    {% else %}<h2 id="exec-contrato" class="visually-hidden">Contrato</h2>{% endif %}
+    <div class="context-summary">
+      <div><small>Fornecedor</small><strong>{{ contract.supplier_name }}</strong></div>
+      <div><small>Fiscal responsável</small><strong>{{ contract.responsible_fiscal.full_name }}</strong></div>
+      <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</strong></div>
+      <div><small>Valor atual</small><strong>R$&nbsp;{{ contract.current_value|localize }}</strong></div>
+    </div>
+    <nav class="action-bar" aria-label="Ações do dashboard">
+      <a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:dashboard' contract.pk %}">Painel do contrato</a>
+      <a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:detail' contract.pk %}">Abrir contrato</a>
+      {% if can_export %}<a class="button-link button-link-small" href="{% url 'contracts:report' contract.pk %}">Relatório</a>{% endif %}
+      <span class="action-bar-links"><span class="muted">Dados de {% now "d/m/Y H:i" %}</span></span>
+    </nav>
+  </section>
+
+  <section class="surface" aria-labelledby="exec-indicadores">
+    <div class="section-heading"><div><span class="eyebrow">Posição financeira</span><h2 id="exec-indicadores">Indicadores principais</h2></div><span class="section-hint">Percentuais sobre o valor atual do contrato</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><small>Valor atual</small><strong>R$&nbsp;{{ contract.current_value|localize }}</strong><span class="kpi-note">Valor vigente cadastrado</span></div>
+      <div class="kpi-card"><small>Empenhado ativo</small><strong>R$&nbsp;{{ fp.total_committed_budget.value|localize }}</strong><span class="kpi-note">{{ s.active_commitment_count }} de {{ s.commitment_count }} empenho(s) ativo(s)</span></div>
+      {% for p in s.financial_progress %}{% if p.label == "Executado" or p.label == "Pago" %}<div class="kpi-card"><small>{{ p.label }}</small><strong>R$&nbsp;{{ p.value|localize }}</strong><span class="progress" aria-hidden="true"><span style="width: {{ p.percentage|barra }}%"></span></span><span class="kpi-note">{{ p.percentage|localize }}% do contrato</span></div>{% endif %}{% endfor %}
+      <div class="kpi-card kpi-card-highlight"><small>Saldo contratual</small><strong>R$&nbsp;{{ fp.contract_balance.value|localize }}</strong><span class="progress" aria-hidden="true"><span style="width: {{ d.contract_balance_percentage|barra }}%"></span></span><span class="kpi-note">{% if d.contract_balance_percentage is not None %}{{ d.contract_balance_percentage|localize }}% disponível{% else %}—{% endif %}</span></div>
+    </div>
+  </section>
+
+  <div class="dashboard-columns">
+    <section class="surface" aria-labelledby="exec-vigencia">
+      <div class="section-heading"><div><span class="eyebrow">Financeiro e vigência</span><h2 id="exec-vigencia">Tempo decorrido x execução</h2></div></div>
+      <p class="muted">Compare o tempo de vigência já decorrido com o que foi comprometido, executado, faturado e pago, em relação ao valor atual do contrato.</p>
+      <div class="exec-bars">
+        <div class="exec-bar-row exec-bar-time"><div><span>Vigência decorrida</span><strong>{{ validity.percentage|localize }}%</strong></div><span class="exec-track" role="img" aria-label="Vigência decorrida: {{ validity.percentage|localize }}%"><span style="width: {{ validity.percentage|barra }}%"></span></span><small>{% if validity.has_ended %}Vigência encerrada em {{ contract.validity_end|date:"d/m/Y" }}{% elif not validity.has_started %}Vigência ainda não iniciada{% else %}{{ validity.elapsed_days }} de {{ validity.total_days }} dias · faltam {{ validity.remaining_days }} dias{% endif %}</small></div>
+        {% for p in s.financial_progress %}<div class="exec-bar-row exec-bar-{{ p.tone }}"><div><span>{{ p.label }}</span><strong>{{ p.percentage|localize }}%</strong></div><span class="exec-track" role="img" aria-label="{{ p.label }}: {{ p.percentage|localize }}% do contrato"><span style="width: {{ p.percentage|barra }}%"></span></span><small>R$&nbsp;{{ p.value|localize }}</small></div>{% endfor %}
+      </div>
+    </section>
+
+    <section class="surface" aria-labelledby="exec-os">
+      <div class="section-heading"><div><span class="eyebrow">Ordens de Serviço</span><h2 id="exec-os">Situação das OS</h2></div></div>
+      <div class="exec-mini-kpis">
+        <div><small>Total</small><strong>{{ s.work_order_count }}</strong></div>
+        <div><small>Abertas</small><strong>{{ s.open_count }}</strong></div>
+        <div class="{% if d.overdue_work_orders %}is-danger{% endif %}"><small>Vencidas</small><strong>{{ d.overdue_work_orders|length }}</strong></div>
+        <div><small>Concluídas</small><strong>{{ s.completed_count }}</strong></div>
+      </div>
+      {% if s.status_rows %}
+        <div class="exec-bars">{% for row in s.status_rows %}<div class="exec-bar-row exec-bar-status"><div><span>{{ row.label }}</span><strong>{{ row.count }}</strong></div><span class="exec-track" role="img" aria-label="{{ row.label }}: {{ row.count }} OS"><span style="width: {{ row.percentage|barra }}%"></span></span></div>{% endfor %}</div>
+      {% else %}<p class="empty-compact">Nenhuma OS cadastrada.</p>{% endif %}
+      {% if s.has_hour_items %}{% with h=s.hours %}
+        <h3>Horas informadas nas OS</h3>
+        <div class="exec-mini-kpis">
+          <div><small>Em OS abertas</small><strong>{{ h.open_hours|quantidade }} h</strong></div>
+          <div><small>Entregues{% if h.delivered_period %} em {{ h.delivered_period.label }}{% endif %}</small><strong>{{ h.delivered_hours|quantidade }} h</strong></div>
+          <div><small>Gastas informadas pela fábrica</small><strong>{% if h.with_spent_count %}{{ h.spent_hours|quantidade }} h{% else %}—{% endif %}</strong></div>
+        </div>
+      {% endwith %}{% endif %}
+    </section>
+  </div>
+
+  <section class="surface" aria-labelledby="exec-os-abertas">
+    <div class="section-heading"><div><span class="eyebrow">Acompanhamento</span><h2 id="exec-os-abertas">OS abertas e prazos</h2></div><span class="section-hint">{{ s.open_count }} OS aberta(s)</span></div>
+    {% if s.open_rows %}
+      <div class="table-responsive"><table class="table-compact"><thead><tr><th>OS</th><th>Item</th><th>Situação</th><th>Prazo da fábrica</th><th>Prazo contratual</th><th>Horas da OS</th><th>Valor</th></tr></thead><tbody>
+        {% for wo in s.open_rows %}{% with situacao=wo.deadline_situation %}<tr>
+          <td><a href="{% url 'contracts:work_order_detail' contract.pk wo.pk %}">{{ wo.number }}</a></td>
+          <td>{{ wo.item.number }}<small class="table-note">{{ wo.item.description|truncatechars:50 }}</small></td>
+          <td><span class="status-pill status-{{ situacao.tone }}">{{ situacao.label }}</span><small class="table-note">{{ wo.get_status_display }}</small></td>
+          <td>{{ wo.factory_deadline|date:"d/m/Y"|default:"Não informado" }}{% if wo.factory_deadline and situacao.factory_countdown %}<small class="table-note countdown countdown-{{ situacao.factory_countdown.tone }}">{{ situacao.factory_countdown.text }}</small>{% endif %}</td>
+          <td>{% if wo.deadline %}{{ wo.deadline|date:"d/m/Y" }}{% if situacao.contract_countdown %}<small class="table-note countdown countdown-{{ situacao.contract_countdown.tone }}">{{ situacao.contract_countdown.text }}</small>{% endif %}{% else %}Sem prazo cadastrado{% endif %}</td>
+          <td>{% if wo.hours is not None %}<strong>{{ wo.hours|quantidade }} h</strong>{% if wo.spent_hours is not None %}<small class="table-note">gastas informadas: {{ wo.spent_hours|quantidade }} h</small>{% endif %}{% else %}—<small class="table-note">OS medida em {{ wo.unit_name }}</small>{% endif %}</td>
+          <td>R$&nbsp;{{ wo.total_value|localize }}</td>
+        </tr>{% endwith %}{% endfor %}
+      </tbody></table></div>
+    {% else %}<p class="empty-compact">Nenhuma OS aberta neste contrato.</p>{% endif %}
+  </section>
+
+  {% include "contracts/_posicoes.html" %}
+
+  <section class="surface" aria-labelledby="exec-mensal">
+    <div class="section-heading"><div><span class="eyebrow">Evolução mensal</span><h2 id="exec-mensal">Executado, faturado e pago por mês</h2></div><span class="section-hint">Últimos {{ evolution.entries|length }} mês(es) da vigência</span></div>
+    {% if evolution.entries %}
+      <div class="exec-legend" aria-hidden="true"><span class="legend-executed">Executado</span><span class="legend-invoiced">Faturado</span><span class="legend-paid">Pago</span></div>
+      <div class="exec-chart" role="img" aria-label="Gráfico mensal de executado, faturado e pago; os valores estão na tabela abaixo.">
+        {% for m in evolution.entries %}<div class="exec-chart-month"><div class="exec-chart-bars"><span class="bar-executed" style="height: {{ m.executed|proporcao:evolution.max_value }}%" title="Executado {{ m.label }}: R$&nbsp;{{ m.executed|localize }}"></span><span class="bar-invoiced" style="height: {{ m.invoiced|proporcao:evolution.max_value }}%" title="Faturado {{ m.label }}: R$&nbsp;{{ m.invoiced|localize }}"></span><span class="bar-paid" style="height: {{ m.paid|proporcao:evolution.max_value }}%" title="Pago {{ m.label }}: R$&nbsp;{{ m.paid|localize }}"></span></div><small>{{ m.label }}</small></div>{% endfor %}
+      </div>
+      <details class="dashboard-disclosure">
+        <summary><span><strong>Ver valores mês a mês</strong><small>Mesmos registros do motor financeiro, agrupados pela data da execução, da emissão da NF e do pagamento.</small></span></summary>
+        <div class="disclosure-content"><div class="table-responsive"><table class="table-compact"><thead><tr><th>Mês</th><th>Executado</th><th>Faturado</th><th>Pago</th></tr></thead><tbody>
+          {% for m in evolution.entries %}<tr><td>{{ m.label }}</td><td>R$&nbsp;{{ m.executed|localize }}</td><td>R$&nbsp;{{ m.invoiced|localize }}</td><td>R$&nbsp;{{ m.paid|localize }}</td></tr>{% endfor %}
+          <tr><td><strong>Total do período</strong></td><td><strong>R$&nbsp;{{ evolution.total_executed|localize }}</strong></td><td><strong>R$&nbsp;{{ evolution.total_invoiced|localize }}</strong></td><td><strong>R$&nbsp;{{ evolution.total_paid|localize }}</strong></td></tr>
+        </tbody></table></div></div>
+      </details>
+    {% else %}<p class="empty-compact">A vigência ainda não começou; não há meses para exibir.</p>{% endif %}
+    <h3>Notas Fiscais e pagamentos</h3>
+    <div class="exec-mini-kpis">
+      <div><small>NF cadastradas</small><strong>{{ d.invoice_count }}</strong></div>
+      <div class="{% if d.pending_invoices %}is-warning{% endif %}"><small>NF pendentes</small><strong>{{ d.pending_invoices|length }}</strong></div>
+      <div class="{% if d.divergent_invoices %}is-danger{% endif %}"><small>NF com divergência</small><strong>{{ d.divergent_invoices|length }}</strong></div>
+      <div><small>Pagamentos</small><strong>{{ d.payment_count }}</strong></div>
+      <div class="{% if d.invoice_financial_deadlines %}is-warning{% endif %}"><small>Prazos de NF a conferir</small><strong>{{ d.invoice_financial_deadlines|length }}</strong></div>
+    </div>
+    <p class="muted">Consulta informativa. Não constitui atesto, homologação, liquidação ou autorização de pagamento.</p>
+  </section>
+{% endwith %}
+{% endif %}
+{% endblock %}

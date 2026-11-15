@@ -27,6 +27,7 @@ from .views import (
     ContractItemListView,
     ContractItemUpdateView,
     ContractListView,
+    ExecutiveDashboardView,
     ContractRestoreView,
     ContractUpdateView,
     ContractTransferView,
@@ -53,6 +54,7 @@ app_name = "contracts"
 
 urlpatterns = [
     path("", ContractListView.as_view(), name="list"),
+    path("dashboard/", ExecutiveDashboardView.as_view(), name="executive_dashboard"),
     path("arquivados/", ArchivedContractListView.as_view(), name="archived_list"),
     path("novo/", ContractCreateView.as_view(), name="create"),
     path("<int:contract_pk>/prestacao-de-contas/", AccountabilityView.as_view(), name="accountability"),
