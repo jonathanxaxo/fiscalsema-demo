@@ -815,3 +815,9 @@ html[data-motion="calmo"] .sidebar nav a .nav-icon, html[data-motion="calmo"] .e
    do <picture> e o respeito a "reduzir movimento". Nenhuma outra animação muda. */
 .brand-picture { display: contents; }
 @media (prefers-reduced-motion: reduce) { .brand-mark { animation: none; } }
+
+/* Sprint 47 — abrir a OS clicando na linha da lista; ações da OS no topo */
+tr.row-link { cursor: pointer; }
+tr.row-link:hover td { background: var(--green-50); }
+.row-link-main { font-weight: 800; }
+.work-order-top-actions { margin-top: .5rem; padding-top: 0; border-top: 0; }

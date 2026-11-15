@@ -12,8 +12,8 @@
     <thead><tr><th>Número</th><th>Item</th><th>Ano civil</th><th>Ano contratual</th><th>Medida</th><th>Valor unitário</th><th>Total</th><th>Prazo contratual</th><th>Situação do prazo</th><th>Status</th><th>Ação</th></tr></thead>
     <tbody>
       {% for work_order in work_orders %}
-        <tr>
-          <td>{{ work_order.number }}{% if work_order.monthly_follow_up or work_order.item.unit == "MES" %} <span class="status-pill status-warning">Mensal</span>{% endif %}</td>
+        <tr class="row-link" data-row-link="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}" title="Clique para abrir a OS">
+          <td><a class="row-link-main" href="{% url 'contracts:work_order_detail' contract.pk work_order.pk %}">{{ work_order.number }}</a>{% if work_order.monthly_follow_up or work_order.item.unit == "MES" %} <span class="status-pill status-warning">Mensal</span>{% endif %}</td>
           <td>{{ work_order.item.number }}</td>
           <td>{{ work_order.annual_period_context.calendar.label|default:"Fora da vigência" }}</td>
           <td>{{ work_order.annual_period_context.contract.label|default:"Fora da vigência" }}</td>

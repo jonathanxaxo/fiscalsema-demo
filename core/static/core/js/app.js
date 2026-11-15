@@ -137,6 +137,19 @@
   });
 })();
 
+// Sprint 47: linhas marcadas com data-row-link abrem o registro ao clicar em qualquer parte da linha
+// (links, botões e formulários da linha continuam funcionando normalmente).
+(() => {
+  document.querySelectorAll('tr[data-row-link]').forEach((row) => {
+    row.addEventListener('click', (event) => {
+      if (event.target.closest('a, button, input, select, textarea, label, form, summary')) return;
+      if (window.getSelection && String(window.getSelection()).trim()) return;
+      if (event.ctrlKey || event.metaKey) { window.open(row.dataset.rowLink, '_blank', 'noopener'); return; }
+      window.location.href = row.dataset.rowLink;
+    });
+  });
+})();
+
 // Sprint 36: prazo sugerido (ex.: OS: abertura + 6 meses). Só preenche se o campo
 // estiver vazio ou ainda tiver o último valor sugerido; a pessoa pode alterar.
 (() => {
