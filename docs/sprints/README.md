@@ -69,3 +69,6 @@ documental das entregas anteriores.
 
 - `sprint-26-email-redefinicao-senha`: envio real do e-mail de redefinição
   de senha (Gmail/SMTP) e fluxo manual de senha temporária.
+
+- `sprint-27-cadastro-institucional`: cadastro pelo Google para domínio
+  institucional e exceção individual, sempre pendente de aprovação.

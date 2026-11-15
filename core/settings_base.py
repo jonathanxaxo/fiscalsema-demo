@@ -140,6 +140,10 @@ API_MAX_PAGE_SIZE = env_int("API_MAX_PAGE_SIZE", 100)
 GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
 GOOGLE_OAUTH_TIMEOUT_SECONDS = env_int("GOOGLE_OAUTH_TIMEOUT_SECONDS", 10)
+# Cadastro institucional (Sprint 27): quem pode criar conta nova. Vazio = ninguém.
+ALLOWED_SIGNUP_DOMAINS = env_list("ALLOWED_SIGNUP_DOMAINS")
+ALLOWED_SIGNUP_EMAILS = env_list("ALLOWED_SIGNUP_EMAILS")
+GOOGLE_REQUIRE_HOSTED_DOMAIN = env_bool("GOOGLE_REQUIRE_HOSTED_DOMAIN", False)
 
 # Assistente Arise (Sprint 21). A chave fica só no backend, em variável de ambiente.
 ASSISTANT_ENABLED = env_bool("ASSISTANT_ENABLED", False)

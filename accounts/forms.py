@@ -118,6 +118,35 @@ class AccountSetPasswordForm(SetPasswordForm):
         apply_password_input_limits(self, ("new_password1", "new_password2"))
 
 
+def requested_profile_for(email):
+    """Perfil solicitado num cadastro novo (mesma regra do cadastro atual).
+
+    Convite de consulta pendente (sem substituição de Fiscal pendente) →
+    Usuário de consulta; nos demais casos → Fiscal. A conta sempre nasce
+    pendente de aprovação.
+    """
+    from contracts.models import (
+        ContractInvitation,
+        ContractInvitationStatus,
+        FiscalSubstitution,
+        FiscalSubstitutionStatus,
+    )
+
+    has_pending_read_only_invitation = (
+        ContractInvitation.objects.filter(email__iexact=email, status=ContractInvitationStatus.PENDING)
+        .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now()))
+        .exists()
+    )
+    has_pending_fiscal_substitution = FiscalSubstitution.objects.filter(
+        email__iexact=email,
+        status=FiscalSubstitutionStatus.PENDING_ACCOUNT,
+        ends_on__gte=timezone.localdate(),
+    ).exists()
+    if has_pending_read_only_invitation and not has_pending_fiscal_substitution:
+        return UserProfile.CONSULTATION
+    return UserProfile.FISCAL
+
+
 class FiscalRegistrationForm(UserCreationForm):
     email = NormalizedRegistrationEmailField()
     full_name = forms.CharField(label="Nome completo", max_length=200)
@@ -142,7 +171,11 @@ class FiscalRegistrationForm(UserCreationForm):
         apply_password_input_limits(self, ("password1", "password2"))
 
     def clean_email(self):
+        from .signup_policy import is_configured, is_signup_allowed
+
         email = User.objects.normalize_login_email(self.cleaned_data["email"])
+        if is_configured() and not is_signup_allowed(email):
+            raise ValidationError("Este e-mail não está autorizado a se cadastrar.")
         if User.objects.filter(email__iexact=email).exists():
             raise ValidationError("Já existe uma conta com este e-mail.")
         return email
@@ -151,26 +184,6 @@ class FiscalRegistrationForm(UserCreationForm):
     def save(self, commit=True):
         if not commit:
             raise ValueError("FiscalRegistrationForm exige commit=True.")
-        from contracts.models import (
-            ContractInvitation,
-            ContractInvitationStatus,
-            FiscalSubstitution,
-            FiscalSubstitutionStatus,
-        )
-
-        has_pending_read_only_invitation = (
-            ContractInvitation.objects.filter(
-                email__iexact=self.cleaned_data["email"],
-                status=ContractInvitationStatus.PENDING,
-            )
-            .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now()))
-            .exists()
-        )
-        has_pending_fiscal_substitution = FiscalSubstitution.objects.filter(
-            email__iexact=self.cleaned_data["email"],
-            status=FiscalSubstitutionStatus.PENDING_ACCOUNT,
-            ends_on__gte=timezone.localdate(),
-        ).exists()
         user = User.objects.create_user(
             email=self.cleaned_data["email"],
             full_name=self.cleaned_data["full_name"],
@@ -178,12 +191,7 @@ class FiscalRegistrationForm(UserCreationForm):
             sector_name=self.cleaned_data["sector_name"],
             phone=self.cleaned_data["phone"],
             password=self.cleaned_data["password1"],
-            profile=(
-                UserProfile.CONSULTATION
-                if has_pending_read_only_invitation
-                and not has_pending_fiscal_substitution
-                else UserProfile.FISCAL
-            ),
+            profile=requested_profile_for(self.cleaned_data["email"]),
             status=AccountStatus.PENDING_APPROVAL,
         )
         RegistrationRequest.objects.create(user=user)
@@ -323,3 +331,13 @@ class UserOrganizationAssignmentForm(forms.Form):
         if sector and organization and sector.organization_id != organization.pk:
             self.add_error("sector", "O setor deve pertencer à organização selecionada.")
         return cleaned_data
+
+
+class GoogleSignupForm(forms.Form):
+    """Dados complementares do cadastro feito pelo Google (Sprint 27)."""
+
+    full_name = forms.CharField(label="Nome completo", max_length=200)
+    organization_name = forms.CharField(label="Organização", max_length=200)
+    sector_name = forms.CharField(label="Setor", max_length=200, required=False)
+    phone = forms.CharField(label="Telefone", max_length=30, required=False)
+
