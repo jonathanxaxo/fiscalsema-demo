@@ -5,6 +5,7 @@ from django.urls import path
 from . import google_views
 from .profile_switch import SwitchProfileView
 from .views import (
+    SessionKeepAliveView,
     AccountLoginView,
     AccountLogoutView,
     AccountPasswordChangeView,
@@ -21,6 +22,7 @@ app_name = "accounts"
 urlpatterns = [
     path("entrar/", AccountLoginView.as_view(), name="login"),
     path("sair/", AccountLogoutView.as_view(), name="logout"),
+    path("sessao/ativa/", SessionKeepAliveView.as_view(), name="session_keepalive"),
     path("perfil/alternar/", SwitchProfileView.as_view(), name="switch_profile"),
     path("minha-conta/", google_views.my_account, name="my_account"),
     path("google/entrar/", google_views.google_start, name="google_start"),

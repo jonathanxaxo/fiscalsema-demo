@@ -135,3 +135,6 @@ documental das entregas anteriores.
 
 - `sprint-48-linhas-clicaveis`: clicar na linha abre o registro em todas as
   listas do sistema, sem remover botões.
+
+- `sprint-49-sessao-inatividade`: qualquer perfil sai após 1 hora sem uso e
+  entra de novo com a senha.

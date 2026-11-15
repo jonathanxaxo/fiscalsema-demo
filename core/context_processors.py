@@ -11,6 +11,7 @@ def application_environment(request):
         "google_login_enabled": bool(
             settings.GOOGLE_OAUTH_CLIENT_ID and settings.GOOGLE_OAUTH_CLIENT_SECRET
         ),
+        "session_idle_timeout": int(getattr(settings, "SESSION_IDLE_TIMEOUT_SECONDS", 0) or 0),
     }
 
 

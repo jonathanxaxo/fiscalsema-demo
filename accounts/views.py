@@ -365,3 +365,19 @@ class UserOrganizationAssignmentView(AdministrativeAccessMixin, FormView):
         )
         messages.success(self.request, "Vínculo institucional atualizado com sucesso.")
         return redirect("accounts_admin:user_list")
+
+
+class SessionKeepAliveView(View):
+    """Sprint 49: o navegador avisa que a pessoa está usando a tela (digitando, rolando)
+    sem enviar formulário. Só atualiza a hora da última atividade; não altera nenhum dado."""
+
+    http_method_names = ["get"]
+
+    def get(self, request, *args, **kwargs):
+        from django.http import HttpResponse, JsonResponse
+
+        if not request.user.is_authenticated:
+            return JsonResponse({"erro": "Sessão encerrada. Entre novamente."}, status=401)
+        response = HttpResponse(status=204)
+        response["Cache-Control"] = "no-store"
+        return response
