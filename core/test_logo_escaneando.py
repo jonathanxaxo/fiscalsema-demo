@@ -1,4 +1,4 @@
-"""Sprint 46: lupa do logotipo escaneando, sem mudar o desenho, e parada quando pedem menos movimento."""
+"""Sprints 46 e 53: lupa escaneando nos modos Vivo/Calmo e parada somente no modo Sem."""
 
 import re
 
@@ -12,10 +12,11 @@ def static_text(path):
 
 
 class LogoEscaneandoTests(TestCase):
-    def test_scan_effect_lives_inside_logo_and_respects_reduced_motion(self):
+    def test_scan_effect_lives_inside_logo_including_calm_mode(self):
         logo = static_text("core/img/logo.svg")
-        for piece in ('class="beam"', 'class="glass"', "infinite alternate", "@media (prefers-reduced-motion:reduce)"):
+        for piece in ('class="beam"', 'class="glass"', "infinite alternate"):
             self.assertIn(piece, logo)
+        self.assertNotIn("prefers-reduced-motion", logo)
 
     def test_static_version_keeps_the_same_drawing(self):
         live = static_text("core/img/logo.svg")
@@ -26,11 +27,14 @@ class LogoEscaneandoTests(TestCase):
             self.assertIn(shape, live)
             self.assertIn(shape, still)
 
-    def test_header_uses_picture_with_still_source(self):
+    def test_header_uses_static_logo_only_for_explicit_no_motion_mode(self):
         page = self.client.get(reverse("accounts:login"))
         self.assertContains(page, 'class="brand-picture"')
-        self.assertContains(page, 'media="(prefers-reduced-motion: reduce)"')
-        self.assertTrue(re.search(r"logo-estatico[^\"]*\.svg", page.content.decode()))
+        self.assertContains(page, 'data-still-src=')
+        self.assertNotContains(page, 'media="(prefers-reduced-motion: reduce)"')
+        self.assertTrue(re.search(r'data-still-src="[^"]*logo-estatico[^\"]*\.svg', page.content.decode()))
         css = static_text("core/css/app.css")
         self.assertIn(".brand-picture { display: contents; }", css)
+        self.assertNotIn("@media (prefers-reduced-motion: reduce) { .brand-mark", css)
         self.assertIn("img.dataset.liveSrc", static_text("core/js/app.js"))
+        self.assertIn("img?.dataset.stillSrc", static_text("core/js/app.js"))

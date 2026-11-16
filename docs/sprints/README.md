@@ -148,3 +148,6 @@ documental das entregas anteriores.
 
 - `sprint-52-sair-ao-fechar-aba`: fechou a aba do sistema e abriu de novo →
   pede a senha; atualizar, trocar de tela e Ctrl+clique continuam logados.
+
+- `sprint-53-lupa-no-modo-calmo`: corrige a lupa para continuar escaneando no
+  modo Calmo, como os demais efeitos; somente a escolha "Sem" a deixa parada.

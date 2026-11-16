@@ -22,7 +22,7 @@
       <div class="topbar-start">
         <button class="menu-toggle" type="button" aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menu">☰</button>
         <a class="brand" href="{% url 'home' %}" aria-label="FiscalSema — Painel">
-          <picture class="brand-picture"><source srcset="{% static 'core/img/logo-estatico.svg' %}" media="(prefers-reduced-motion: reduce)"><img class="brand-mark" src="{% static 'core/img/logo.svg' %}" alt="" width="38" height="38"></picture>
+          <picture class="brand-picture"><img class="brand-mark" src="{% static 'core/img/logo.svg' %}" data-still-src="{% static 'core/img/logo-estatico.svg' %}" alt="" width="38" height="38"></picture>
           <span><strong>FiscalSema</strong><small>Gestão contratual</small></span>
         </a>
       </div>
@@ -85,7 +85,7 @@
   {% else %}
     <main id="conteudo-principal" class="auth-shell" tabindex="-1">
       <div class="auth-brand" aria-label="FiscalSema">
-        <picture class="brand-picture"><source srcset="{% static 'core/img/logo-estatico.svg' %}" media="(prefers-reduced-motion: reduce)"><img class="brand-mark" src="{% static 'core/img/logo.svg' %}" alt="" width="48" height="48"></picture>
+        <picture class="brand-picture"><img class="brand-mark" src="{% static 'core/img/logo.svg' %}" data-still-src="{% static 'core/img/logo-estatico.svg' %}" alt="" width="48" height="48"></picture>
         <span><strong>FiscalSema</strong><small>Gestão contratual simples e segura</small></span>
       </div>
       <section class="auth-card">

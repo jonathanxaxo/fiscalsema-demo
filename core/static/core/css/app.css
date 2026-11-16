@@ -811,10 +811,9 @@ html[data-motion="calmo"] .arise-fab::before, html[data-motion="calmo"] .arise-f
 html[data-motion="calmo"] .sidebar nav a .nav-icon, html[data-motion="calmo"] .exec-chart-bars span, html[data-motion="calmo"] .brand-mark { animation-duration: 7s; }
 
 /* Sprint 46 — lupa do logotipo escaneando. A animação fica dentro do próprio logo.svg
-   (varredura, brilho na lente e pulso do anel, no mesmo ritmo de 3 s); aqui só o encaixe
-   do <picture> e o respeito a "reduzir movimento". Nenhuma outra animação muda. */
+   (varredura, brilho na lente e pulso do anel, no mesmo ritmo de 3 s); aqui fica somente
+   o encaixe do <picture>. O modo "Sem" troca o arquivo pelo JavaScript. */
 .brand-picture { display: contents; }
-@media (prefers-reduced-motion: reduce) { .brand-mark { animation: none; } }
 
 /* Sprint 47 — abrir a OS clicando na linha da lista; ações da OS no topo */
 tr.row-link { cursor: pointer; }
