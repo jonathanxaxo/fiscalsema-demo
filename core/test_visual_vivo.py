@@ -13,9 +13,9 @@ def static_text(path):
 
 
 class VisualVivoTests(TestCase):
-    def test_logo_is_magnifier_and_respects_reduced_motion(self):
+    def test_logo_is_magnifier_and_follows_motion_modes(self):
         logo = static_text("core/img/logo.svg")
-        self.assertIn("prefers-reduced-motion", logo)
+        self.assertNotIn("prefers-reduced-motion", logo)
         self.assertIn("tick", logo)
         self.assertTrue(finders.find("core/fonts/space-grotesk-latin.woff2"))
         self.assertTrue(finders.find("core/fonts/inter-latin.woff2"))
