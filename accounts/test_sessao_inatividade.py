@@ -91,5 +91,41 @@ class SessaoFechaNavegadorTests(TestCase):
     def test_arise_knows_basic_rule_only(self):
         from assistant.conhecimento import help_text
         text = help_text("Se eu fechar o navegador ele desloga?", profile="FISCAL")
-        self.assertIn("Ao fechar o navegador", text)
-        self.assertIn("Fechar só uma aba não encerra", text)
+        self.assertIn("Ao fechar o sistema", text)
+        self.assertIn("a aba dele ou o navegador inteiro", text)
+
+
+
+class SessaoAbaFechadaTests(TestCase):
+    """Sprint 52: fechou a aba do sistema e abriu de novo → pede a senha."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(email="aba@example.local", full_name="Fiscal Fictício",
+                                             password=VALID_PASSWORD, status=AccountStatus.ACTIVE)
+        self.client.force_login(self.user)
+
+    def test_pages_carry_tab_check_for_logged_users(self):
+        page = self.client.get(reverse("home"))
+        self.assertContains(page, f'data-tab-closed-url="{reverse("accounts:session_tab_closed")}"')
+        self.assertContains(page, "sessionStorage.getItem('fiscalsema-aba')")
+        self.client.logout()
+        login = self.client.get(reverse("accounts:login"))
+        self.assertNotContains(login, "data-tab-closed-url")
+        self.assertNotContains(login, "fs-verificando")
+
+    def test_closed_and_reopened_ends_session_with_audit_and_message(self):
+        response = self.client.post(reverse("accounts:session_tab_closed"), HTTP_X_REQUESTED_WITH="fetch")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["login"], reverse("accounts:login"))
+        self.assertNotIn("_auth_user_id", self.client.session)
+        event = AuthenticationEvent.objects.get(user=self.user, event_type=AuthenticationEvent.EventType.LOGOUT)
+        self.assertEqual(event.details["motivo"], "sistema fechado e reaberto")
+        self.assertContains(self.client.get(reverse("accounts:login")), "o sistema foi fechado")
+
+    def test_only_post_with_csrf(self):
+        self.assertEqual(self.client.get(reverse("accounts:session_tab_closed")).status_code, 405)
+        from django.test import Client
+        strict = Client(enforce_csrf_checks=True)
+        strict.force_login(self.user)
+        self.assertEqual(strict.post(reverse("accounts:session_tab_closed")).status_code, 403)
+        self.assertIn("_auth_user_id", strict.session)

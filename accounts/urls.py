@@ -6,6 +6,7 @@ from . import google_views
 from .profile_switch import SwitchProfileView
 from .views import (
     SessionKeepAliveView,
+    SessionTabClosedView,
     AccountLoginView,
     AccountLogoutView,
     AccountPasswordChangeView,
@@ -23,6 +24,7 @@ urlpatterns = [
     path("entrar/", AccountLoginView.as_view(), name="login"),
     path("sair/", AccountLogoutView.as_view(), name="logout"),
     path("sessao/ativa/", SessionKeepAliveView.as_view(), name="session_keepalive"),
+    path("sessao/fechada/", SessionTabClosedView.as_view(), name="session_tab_closed"),
     path("perfil/alternar/", SwitchProfileView.as_view(), name="switch_profile"),
     path("minha-conta/", google_views.my_account, name="my_account"),
     path("google/entrar/", google_views.google_start, name="google_start"),

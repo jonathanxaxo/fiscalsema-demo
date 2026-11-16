@@ -145,3 +145,6 @@ documental das entregas anteriores.
 
 - `sprint-51-sair-ao-fechar-navegador`: fechar o navegador encerra o acesso;
   navegador esquecido aberto sai após 1 hora sem uso.
+
+- `sprint-52-sair-ao-fechar-aba`: fechou a aba do sistema e abriu de novo →
+  pede a senha; atualizar, trocar de tela e Ctrl+clique continuam logados.

@@ -10,10 +10,11 @@
   <link rel="icon" type="image/svg+xml" href="{% static 'core/img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
   <script>(function(){var m=null;try{m=localStorage.getItem('fiscalsema-movimento')}catch(e){}if(!m){m=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches?'calmo':'vivo'}document.documentElement.dataset.motion=m})()</script>
+  {% if request.user.is_authenticated %}<script>try{if(!sessionStorage.getItem('fiscalsema-aba'))document.documentElement.classList.add('fs-verificando')}catch(e){}</script>{% endif %}
   {% if assistant_enabled and request.user.is_authenticated %}<link rel="stylesheet" href="{% static 'assistant/chat.css' %}"><script src="{% static 'assistant/chat.js' %}" defer></script>{% endif %}
   {% block extra_head %}{% endblock %}
 </head>
-<body class="{% if request.user.is_authenticated %}app-page{% else %}auth-page{% endif %}"{% if request.user.is_authenticated and session_idle_timeout %} data-idle-timeout="{{ session_idle_timeout|stringformat:'d' }}" data-keepalive-url="{% url 'accounts:session_keepalive' %}"{% endif %}>
+<body class="{% if request.user.is_authenticated %}app-page{% else %}auth-page{% endif %}"{% if request.user.is_authenticated and session_idle_timeout %} data-idle-timeout="{{ session_idle_timeout|stringformat:'d' }}" data-keepalive-url="{% url 'accounts:session_keepalive' %}"{% endif %}{% if request.user.is_authenticated %} data-tab-closed-url="{% url 'accounts:session_tab_closed' %}"{% endif %}>
   <a class="skip-link" href="#conteudo-principal">Ir para o conteúdo principal</a>
   {% if is_demo %}<div class="environment-banner demo-banner" role="status"><strong>AMBIENTE DE DEMONSTRAÇÃO</strong> — DADOS EXCLUSIVAMENTE FICTÍCIOS</div>{% elif is_homologation %}<div class="environment-banner" role="status">AMBIENTE DE HOMOLOGAÇÃO — não utilizar para operação real</div>{% endif %}
   {% if request.user.is_authenticated %}
