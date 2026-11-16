@@ -204,7 +204,7 @@
     // Sprint 46: no modo "Sem", o logotipo usa a versão parada (a animação fica dentro do SVG).
     document.querySelectorAll('.brand-picture').forEach((picture) => {
       const img = picture.querySelector('img');
-      const still = picture.querySelector('source')?.getAttribute('srcset');
+      const still = img?.dataset.stillSrc;
       if (!img || !still) return;
       if (!img.dataset.liveSrc) img.dataset.liveSrc = img.getAttribute('src');
       img.setAttribute('src', mode === 'sem' ? still : img.dataset.liveSrc);
