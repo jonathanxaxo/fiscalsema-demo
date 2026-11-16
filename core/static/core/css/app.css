@@ -814,7 +814,7 @@ html[data-motion="calmo"] .sidebar nav a .nav-icon, html[data-motion="calmo"] .e
    (varredura, brilho na lente e pulso do anel, no mesmo ritmo de 3 s); aqui só o encaixe
    do <picture> e o respeito a "reduzir movimento". Nenhuma outra animação muda. */
 .brand-picture { display: contents; }
-@media (prefers-reduced-motion: reduce) { .brand-mark { animation: none; } }
+/* O movimento do logo segue Vivo/Calmo/Sem, sem alterar outras animacoes. */
 
 /* Sprint 47 — abrir a OS clicando na linha da lista; ações da OS no topo */
 tr.row-link { cursor: pointer; }
