@@ -381,3 +381,27 @@ class SessionKeepAliveView(View):
         response = HttpResponse(status=204)
         response["Cache-Control"] = "no-store"
         return response
+
+
+class SessionTabClosedView(View):
+    """Sprint 52: o sistema foi fechado (nenhuma aba dele estava aberta) e reaberto.
+
+    O navegador avisa por aqui; a sessão é encerrada, a saída vai para a auditoria e a
+    pessoa entra de novo com a senha. Só aceita POST com proteção CSRF.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        from django.contrib.auth import logout
+        from django.http import JsonResponse
+
+        user = request.user if request.user.is_authenticated else None
+        if user:
+            record_authentication_event(
+                AuthenticationEvent.EventType.LOGOUT, request=request, user=user, email=user.email,
+                details={"motivo": "sistema fechado e reaberto"},
+            )
+            logout(request)
+            messages.info(request, "Por segurança, o sistema foi fechado. Entre novamente com a sua senha.")
+        return JsonResponse({"ok": True, "login": reverse("accounts:login")})

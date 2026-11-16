@@ -821,3 +821,6 @@ tr.row-link { cursor: pointer; }
 tr.row-link:hover td { background: var(--green-50); }
 .row-link-main { font-weight: 800; }
 .work-order-top-actions { margin-top: .5rem; padding-top: 0; border-top: 0; }
+
+/* Sprint 52 — enquanto confere se o sistema foi fechado e reaberto, a tela não mostra dados */
+html.fs-verificando body.app-page { visibility: hidden; }

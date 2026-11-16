@@ -352,3 +352,48 @@
     if (Date.now() - last > limit + 5000) window.location.reload();
   }, 30000);
 })();
+
+// Sprint 52: fechou a aba do sistema e abriu de novo → pede a senha.
+// Cada aba guarda uma marca que some quando ela é fechada. Ao abrir uma aba sem a marca, o
+// sistema pergunta às outras abas dele se alguma está aberta; se nenhuma responder, ele foi
+// fechado e reaberto: a sessão é encerrada e a pessoa entra de novo com a senha.
+// Atualizar a página e trocar de tela mantêm a marca; Ctrl+clique abre nova aba com outra aberta.
+(() => {
+  const KEY = 'fiscalsema-aba';
+  const root = document.documentElement;
+  const body = document.body;
+  const reveal = () => root.classList.remove('fs-verificando');
+  let storageOk = true;
+  try { sessionStorage.getItem(KEY); } catch (e) { storageOk = false; }
+  if (!storageOk) { reveal(); return; }
+  if (body.classList.contains('auth-page')) { // tela de entrada: o login vai acontecer nesta aba
+    sessionStorage.setItem(KEY, '1');
+    return;
+  }
+  const closedUrl = body.dataset.tabClosedUrl;
+  const channel = 'BroadcastChannel' in window ? new BroadcastChannel('fiscalsema-abas') : null;
+  if (channel) {
+    channel.onmessage = (event) => {
+      if (event.data === 'alguem-aberto?' && sessionStorage.getItem(KEY)) channel.postMessage('estou-aberto');
+    };
+  }
+  if (!closedUrl || sessionStorage.getItem(KEY)) { reveal(); return; }
+  if (!channel) { sessionStorage.setItem(KEY, '1'); reveal(); return; } // navegador antigo: não arrisca
+  let answered = false;
+  const listen = (event) => { if (event.data === 'estou-aberto') answered = true; };
+  channel.addEventListener('message', listen);
+  channel.postMessage('alguem-aberto?');
+  setTimeout(() => {
+    channel.removeEventListener('message', listen);
+    if (answered) { sessionStorage.setItem(KEY, '1'); reveal(); return; }
+    const token = document.querySelector('form[action*="/sair/"] input[name="csrfmiddlewaretoken"]')?.value || '';
+    fetch(closedUrl, { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': token, 'X-Requested-With': 'fetch' } })
+      .then((response) => response.json().catch(() => ({})))
+      .then((data) => {
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`${data.login || '/conta/entrar/'}?next=${next}`);
+      })
+      .catch(() => { sessionStorage.setItem(KEY, '1'); reveal(); });
+  }, 700);
+  setTimeout(reveal, 4000); // segurança: nunca deixa a tela escondida
+})();
