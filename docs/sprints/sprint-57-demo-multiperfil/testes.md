@@ -21,7 +21,24 @@
 - checagem de migrations, Django, segurança, MCP e suíte integral.
 
 O ambiente Python local não contém o Django instalado. Nenhuma dependência foi
-instalada sem autorização; a suíte PostgreSQL será executada pela CI do PR.
+instalada sem autorização; a suíte PostgreSQL foi executada pela CI do PR.
+
+## CI do Pull Request
+
+- PR [#53](https://github.com/jonathanxaxo/fiscalsema-demo/pull/53);
+- GitHub Actions
+  [44588237203](https://github.com/jonathanxaxo/fiscalsema-demo/actions/runs/44588237203)
+  — aprovado;
+- migrations e configuração Django — aprovadas, sem alterações ausentes;
+- configuração Vercel sem acesso ao banco — aprovada;
+- varredura de segurança — aprovada;
+- adaptador MCP — 6 testes aprovados;
+- suíte Django em PostgreSQL 17 — **743 testes aprovados**.
+
+O status automático de Preview da Vercel foi recusado antes da construção
+porque o autor Git do commit não pertence à equipe configurada na Vercel. Isso
+não é falha de teste ou de código; a correção do vínculo e qualquer Preview
+permanecem para a etapa de publicação autorizada.
 
 ## Publicação
 
