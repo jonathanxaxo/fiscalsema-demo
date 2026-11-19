@@ -9,11 +9,26 @@
 - varredura de segredos e dados reais — aprovada;
 - compilação Python e `git diff --check` — aprovados.
 
-## Validações ainda exigidas
+## CI, Preview e produção
 
-- suíte Django completa na CI com PostgreSQL;
-- Preview da Vercel;
-- homologação visual dos cinco perfis e dos relatórios;
-- conferência final da URL de produção.
+- PR #51: GitHub Actions `44533805848` aprovado, com migrations,
+  configuração Vercel, segurança, MCP e 733 testes Django em PostgreSQL 17;
+- `main`: GitHub Actions `44534664793` aprovado para o merge `44f5803`;
+- Preview protegido da Vercel aprovado no PR, sem registrar identificadores
+  pessoais da URL no repositório;
+- migration manual `44534847543` aprovada: `accounts.0010/0011` e
+  `contracts.0024` a `0028` aplicadas, seguida da restrição do usuário de
+  execução;
+- produção: `https://fiscalsema-demo.vercel.app/conta/entrar/`, com título de
+  login, aviso permanente de dados fictícios e arquivos do logotipo corretos;
+- lupa validada em produção no modo `Calmo`: duas capturas separadas por
+  900 ms produziram quadros diferentes, confirmando a animação ativa.
 
-Essas etapas não foram declaradas como concluídas nesta sprint local.
+## Homologação humana complementar
+
+- percorrer visualmente os cinco perfis com contas fictícias individuais;
+- emitir relatórios autenticados de Gestor do Contrato e Gestor
+  Administrativo;
+- inventariar eventuais contas legadas `USUARIO_CONSULTA` antes de decidir a
+  reclassificação individual. A migration não excluiu nem reclassificou essas
+  contas automaticamente.
