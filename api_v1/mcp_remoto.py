@@ -35,7 +35,7 @@ from contracts.services import (
     contracts_visible_to, executions_visible_to, invoice_check_report,
     invoices_visible_to, items_visible_to, payments_visible_to, work_orders_visible_to,
 )
-from documents.services import documents_visible_to
+from documents.services import document_metadata_visible_to
 
 from .analise import AnalysisError, analyze_divergences
 
@@ -328,7 +328,11 @@ def run_tool(name, arguments, ctx):
         return {"contract_id": contract.pk, "position": primitive(contract_financial_position(contract)),
                 "decision_notice": PAYMENT_NOTICE}, 1
     if name == "listar_documentos":
-        return _page(arguments, documents_visible_to(user).filter(contract=contract), _document_summary)
+        return _page(
+            arguments,
+            document_metadata_visible_to(user).filter(contract=contract),
+            _document_summary,
+        )
     if name == "consultar_pendencias":
         return accountability_data(build_accountability_snapshot(contract, {})), 1
     raise ToolError("Ferramenta desconhecida.")

@@ -1,0 +1,16 @@
+{% extends "accounts/base.html" %}
+{% block title %}Alterar perfil — FiscalSema{% endblock %}
+{% block content %}
+  <h1>Alterar perfil funcional</h1>
+  <p><strong>{{ target_user.full_name }}</strong><br>{{ target_user.email }}</p>
+  <p class="notice"><strong>Perfil atual:</strong> {{ target_user.get_profile_display }}</p>
+  <p class="warning">A alteração encerra as sessões da conta. Vínculos incompatíveis são revogados com auditoria. Um Fiscal com contratos ativos deve transferi-los antes.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.profile.label_tag }}{{ form.profile }}{{ form.profile.errors }}
+    <div class="helptext">{{ form.profile.help_text }}</div>
+    <button type="submit">Confirmar alteração</button>
+  </form>
+  <p><a href="{% url 'accounts_admin:user_list' %}">Voltar aos usuários</a></p>
+{% endblock %}

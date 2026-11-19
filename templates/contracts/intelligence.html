@@ -1,0 +1,67 @@
+{% extends "accounts/base.html" %}
+{% block title %}Inteligência — Contrato {{ contract.number }}{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div><span class="eyebrow">Contract Intelligence Engine</span><h1>Inteligência do contrato {{ contract.number }}</h1><p>Detecção determinística, confirmação humana e cálculos explicáveis.</p></div>
+    {% if can_run %}<form method="post" action="{% url 'contracts:intelligence_run' contract.pk %}">{% csrf_token %}<button type="submit">Executar/reprocessar</button></form>{% endif %}
+  </header>
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <p class="notice"><strong>Controle humano:</strong> detecções não alteram o contrato e regras não confirmadas não produzem cálculo oficial. A leitura do PDF gera apenas notificações de conferência e não libera o arquivo privado para quem possui acesso somente aos metadados.</p>
+
+  <section class="form-card">
+    <h2>Classificação contratual</h2>
+    {% if classification %}
+      <p><strong>Modalidade de medição:</strong> {{ classification.get_modality_display|default:"Pendente" }} · <strong>Categoria gerencial:</strong> {{ classification.get_management_category_display|default:"Pendente" }} · <strong>Status:</strong> {{ classification.get_status_display }}</p>
+      <p>{{ classification.rationale }}</p>
+    {% else %}<p>Motor ainda não executado para este contrato.</p>{% endif %}
+    {% if can_confirm %}
+      <form method="post" action="{% url 'contracts:classification_confirm' contract.pk %}">
+        {% csrf_token %}<label for="modality">Confirmar modalidade de medição/pagamento</label>
+        <select id="modality" name="modality" required><option value="">Selecione</option>{% for value, label in modality_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <label for="management-category">Confirmar categoria gerencial</label>
+        <select id="management-category" name="management_category" required><option value="">Selecione</option>{% for value, label in management_category_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <button type="submit">Confirmar classificação</button>
+      </form>
+    {% endif %}
+  </section>
+
+  <h2>Modalidade por item</h2>
+  <table><thead><tr><th>Item</th><th>Unidade</th><th>Modalidade</th><th>Status</th><th>Confirmação</th></tr></thead><tbody>
+    {% for item in item_classifications %}<tr><td>{{ item.number }} — {{ item.description|truncatechars:60 }}</td><td>{{ item.unit_display }}</td><td>{% if item.intelligence_classification %}{{ item.intelligence_classification.get_modality_display|default:"Pendente" }}{% else %}Não executada{% endif %}</td><td>{% if item.intelligence_classification %}{{ item.intelligence_classification.get_status_display }}{% else %}—{% endif %}</td><td>{% if can_confirm %}<form method="post" action="{% url 'contracts:item_classification_confirm' contract.pk item.pk %}">{% csrf_token %}<select name="modality" required><option value="">Selecione</option>{% for value, label in modality_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select><button type="submit">Confirmar item</button></form>{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nenhum item ativo.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Pendências ativas e histórico</h2>
+  <p>O contador considera apenas pendências ativas. Marcar como lida não reduz o total; resolver ou descartar com justificativa reduz.</p>
+  <table><thead><tr><th>Gravidade</th><th>Pendência</th><th>Situação</th><th>Explicação</th><th>Ação</th></tr></thead><tbody>
+    {% for finding in findings %}<tr><td>{{ finding.get_severity_display }}</td><td>{{ finding.title }}</td><td>{{ finding.get_status_display }}</td><td>{{ finding.explanation }}{% if finding.evidence %}<details><summary>Ver evidências</summary><pre>{{ finding.evidence }}</pre></details>{% endif %}</td><td>
+      {% if can_confirm %}<form method="post" action="{% url 'contracts:finding_transition' contract.pk finding.pk %}">{% csrf_token %}
+        <select name="status">{% for value, label in finding_statuses %}<option value="{{ value }}"{% if finding.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <input type="text" name="justification" maxlength="1000" placeholder="Justificativa para descarte/resolução">
+        <button type="submit">Atualizar</button>
+      </form>{% else %}—{% endif %}
+    </td></tr>{% empty %}<tr><td colspan="5">Nenhum achado registrado.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Posição financeira explicável</h2>
+  {% if snapshot.erro_financeiro %}<p class="notice">{{ snapshot.erro_financeiro }}</p>{% else %}
+    <dl><dt>Valor atual</dt><dd>R$ {{ snapshot.financeiro.valor_atual }}</dd><dt>Empenhado</dt><dd>R$ {{ snapshot.financeiro.empenhado.valor }}</dd><dt>Comprometido</dt><dd>R$ {{ snapshot.financeiro.comprometido.valor }}</dd><dt>Executado</dt><dd>R$ {{ snapshot.financeiro.executado.valor }}</dd><dt>Faturado</dt><dd>R$ {{ snapshot.financeiro.faturado.valor }}</dd><dt>Pago</dt><dd>R$ {{ snapshot.financeiro.pago.valor }}</dd><dt>Saldo contratual</dt><dd>R$ {{ snapshot.financeiro.saldo_contratual.valor }}</dd></dl>
+    <details><summary>Ver cálculo do saldo contratual</summary><ol>{% for evidence in snapshot.financeiro.saldo_contratual.evidencias %}<li>{{ evidence.operacao }} · {{ evidence.descricao }} · R$ {{ evidence.valor }} ({{ evidence.tipo }} #{{ evidence.id }})</li>{% empty %}<li>Sem evidências.</li>{% endfor %}</ol></details>
+  {% endif %}
+
+  <h2>Cláusulas classificadas</h2>
+  <p>Trechos de Contrato ou TR entram como candidatos e só se tornam confirmados após revisão humana.</p>
+  <table><thead><tr><th>Tipo</th><th>Fonte</th><th>Evidência</th><th>Status</th><th>Revisão</th></tr></thead><tbody>
+    {% for clause in clauses %}<tr><td>{{ clause.get_clause_type_display }}</td><td>{{ clause.source_document }}<br>{{ clause.source_reference }}</td><td>{% if can_open_private_documents %}{{ clause.excerpt|truncatechars:220 }}{% else %}<span class="muted">Conteúdo privado não exibido; somente metadados administrativos.</span>{% endif %}</td><td>{{ clause.get_status_display }}</td><td>{% if can_confirm and clause.status != 'CONFIRMADA' %}<form method="post" action="{% url 'contracts:clause_review' contract.pk clause.pk %}">{% csrf_token %}<button name="action" value="confirm">Confirmar</button><button name="action" value="reject">Rejeitar</button></form>{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nenhuma cláusula classificada.</td></tr>{% endfor %}
+  </tbody></table>
+  {% if can_confirm %}<details class="dashboard-disclosure"><summary><strong>Registrar cláusula candidata</strong></summary><div class="disclosure-content"><form method="post" action="{% url 'contracts:clause_create' contract.pk %}">{% csrf_token %}{{ clause_form.as_p }}<button type="submit">Registrar para revisão</button></form></div></details>{% endif %}
+
+  <h2>Regras contratuais</h2>
+  <table><thead><tr><th>ID</th><th>Regra</th><th>Fonte</th><th>Status</th><th>Versão</th><th>Revisão</th></tr></thead><tbody>
+    {% for rule in rules %}<tr><td>{{ rule.code }}</td><td>{{ rule.name }}<br><small>{{ rule.formula_description }}</small></td><td>{{ rule.source_document|default:"Sem documento vinculado" }}<br>{{ rule.source_reference }}</td><td>{{ rule.get_status_display }}</td><td>{{ rule.version }}</td><td>{% if can_confirm and rule.status != 'CONFIRMADA' %}<form method="post" action="{% url 'contracts:rule_review' contract.pk rule.pk %}">{% csrf_token %}<button name="action" value="confirm">Confirmar</button><button name="action" value="reject">Rejeitar</button></form>{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="6">Nenhuma regra detectada ou cadastrada.</td></tr>{% endfor %}
+  </tbody></table>
+  {% if can_confirm %}<details class="dashboard-disclosure"><summary><strong>Registrar regra candidata</strong></summary><div class="disclosure-content"><p class="notice">A regra nasce aguardando confirmação. Regra de cálculo sem calculadora tipada não é aceita.</p><form method="post" action="{% url 'contracts:rule_create' contract.pk %}">{% csrf_token %}{{ rule_form.as_p }}<button type="submit">Registrar para revisão</button></form></div></details>{% endif %}
+
+  <h2>Execuções do motor</h2>
+  <ul>{% for execution in executions %}<li>{{ execution.created_at|date:"d/m/Y H:i" }} · {{ execution.executed_by.full_name|default:"Sistema" }} · {{ execution.summary }}</li>{% empty %}<li>Nenhuma execução registrada.</li>{% endfor %}</ul>
+  <p class="actions"><a href="{% url 'contracts:detail' contract.pk %}">Voltar ao contrato</a></p>
+{% endblock %}

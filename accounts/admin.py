@@ -30,7 +30,7 @@ class AccountAdmin(UserAdmin):
         "organization_name",
         "sector_name",
     )
-    readonly_fields = ("last_login", "date_joined")
+    readonly_fields = ("last_login", "date_joined", "profile")
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         (

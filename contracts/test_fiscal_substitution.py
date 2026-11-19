@@ -102,13 +102,15 @@ class FiscalSubstitutionTests(WorkOrderBase):
                 "organization_name": self.organization.name,
                 "sector_name": "",
                 "phone": "",
+                "requested_profile": UserProfile.FISCAL_TITULAR,
+                "justification": "Atuar como Fiscal substituto em demonstração.",
                 "password1": VALID_PASSWORD,
                 "password2": VALID_PASSWORD,
             },
         )
         self.assertRedirects(response, reverse("accounts:registration_submitted"))
         substitute = User.objects.get(email="substituto.novo@example.local")
-        self.assertEqual(substitute.profile, UserProfile.FISCAL)
+        self.assertEqual(substitute.profile, UserProfile.FISCAL_TITULAR)
         substitution.refresh_from_db()
         self.assertEqual(substitution.status, FiscalSubstitutionStatus.PENDING_ACCOUNT)
         self.assertNotIn(self.contract, contracts_visible_to(substitute))
@@ -149,11 +151,13 @@ class FiscalSubstitutionTests(WorkOrderBase):
                 "organization_name": self.organization.name,
                 "sector_name": "",
                 "phone": "",
+                "requested_profile": UserProfile.FISCAL_TITULAR,
+                "justification": "Atuar como Fiscal substituto em demonstração.",
                 "password1": VALID_PASSWORD,
                 "password2": VALID_PASSWORD,
             },
         )
-        self.assertEqual(User.objects.get(email=email).profile, UserProfile.FISCAL)
+        self.assertEqual(User.objects.get(email=email).profile, UserProfile.FISCAL_TITULAR)
 
     def test_ineligible_profile_status_and_other_organization_are_rejected(self):
         consultation = User.objects.create_user(

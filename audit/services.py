@@ -10,6 +10,7 @@ from contracts.models import (
     ContractEvent,
     CsvExportEvent,
     ContractItemEvent,
+    ContractIntelligenceEvent,
     ContractSharingEvent,
     FiscalSubstitutionEvent,
     InvoiceEvent,
@@ -122,6 +123,17 @@ def _contract_sources(contract=None):
         (DocumentEvent, "DOCUMENTO", lambda e: f"Documento {e.document.title} v{e.document.version}"),
         (ImportEvent, "IMPORTACAO", lambda e: f"Importação {e.spreadsheet_import_id} — {e.spreadsheet_import.file_name}"),
         (CsvExportEvent, "EXPORTACAO", lambda e: f"CSV do contrato {e.contract.number}"),
+        (
+            ContractIntelligenceEvent,
+            "INTELIGENCIA_CONTRATUAL",
+            lambda e: (
+                f"Achado {e.finding.code}" if e.finding_id else
+                f"Regra {e.rule.code}" if e.rule_id else
+                f"Execução {e.execution_id}" if e.execution_id else
+                f"Cláusula {e.details.get('clausula_id')}" if e.details.get("clausula_id") else
+                f"Classificação {e.classification_id}"
+            ),
+        ),
         (AssistantDraftEvent, "ASSISTENTE_IA", lambda e: f"Rascunho #{e.draft_id} — {e.draft.get_entity_type_display()}"),
     ]
     return [

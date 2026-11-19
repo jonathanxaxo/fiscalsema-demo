@@ -169,7 +169,7 @@ class ContractLifecycleTests(WorkOrderBase):
         self,
         email,
         *,
-        profile=UserProfile.FISCAL,
+        profile=UserProfile.FISCAL_TITULAR,
         status=AccountStatus.ACTIVE,
         organization=None,
     ):

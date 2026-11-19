@@ -148,3 +148,15 @@ documental das entregas anteriores.
 
 - `sprint-52-sair-ao-fechar-aba`: fechou a aba do sistema e abriu de novo →
   pede a senha; atualizar, trocar de tela e Ctrl+clique continuam logados.
+
+- `sprint-53-lupa-no-modo-calmo`: a lupa continua animada em Vivo e Calmo;
+  somente a escolha explícita do modo Sem usa a marca estática.
+
+- `sprint-54-perfis-autorizacao`: cinco perfis funcionais, reclassificação
+  auditada e restrições de contratos/documentos aplicadas no backend.
+
+- `sprint-55-motor-inteligente`: classificação contratual, regras com fonte e
+  confirmação humana, conferências e achados auditáveis.
+
+- `sprint-56-painel-gerencial-arise`: carteira consolidada do Gestor
+  Administrativo, relatórios por escopo e Arise limitado aos dados autorizados.

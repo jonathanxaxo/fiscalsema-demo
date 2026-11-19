@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -11,6 +11,8 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, FormView, ListView, TemplateView, UpdateView
 
+from documents.services import can_open_document_content
+
 from .forms import (
     AccountabilityFilterForm,
     ReportFilterForm,
@@ -18,9 +20,11 @@ from .forms import (
     CommitmentMovementForm,
     ContractArchiveForm,
     ContractCloseForm,
+    ContractClauseCandidateForm,
     ContractForm,
     ContractShareForm,
     ContractRestoreForm,
+    ContractRuleCandidateForm,
     ContractTransferForm,
     FiscalSubstitutionForm,
     ContractItemForm,
@@ -35,7 +39,12 @@ from .forms import (
 from .accountability import build_accountability_snapshot
 from .dashboard import build_contract_dashboard
 from .service_catalog import work_order_service_summary
-from .executive_dashboard import build_executive_summary, build_monthly_evolution, build_validity_progress
+from .executive_dashboard import (
+    build_executive_summary,
+    build_monthly_evolution,
+    build_portfolio_summary,
+    build_validity_progress,
+)
 from .exports import build_contract_csv, filters_for_audit
 from .reports import build_contract_report
 from .models import (
@@ -43,8 +52,15 @@ from .models import (
     Contract,
     CsvExportEvent,
     ContractAccess,
+    ContractClause,
+    ContractFinding,
     ContractInvitation,
     ContractItem,
+    ContractFindingStatus,
+    ContractManagementCategory,
+    ContractModality,
+    ContractRule,
+    ContractStatus,
     FiscalSubstitution,
     FiscalSubstitutionStatus,
     Invoice,
@@ -54,6 +70,17 @@ from .models import (
     WorkOrderAllocationStatus,
     WorkOrderExecution,
     WorkOrderStatus,
+)
+from .intelligence import (
+    confirm_contract_classification,
+    confirm_item_classification,
+    contract_intelligence_snapshot,
+    create_contract_clause_candidate,
+    create_contract_rule_candidate,
+    review_contract_clause,
+    review_contract_rule,
+    run_contract_intelligence,
+    transition_finding,
 )
 from .services import (
     actor_is_active_fiscal,
@@ -68,7 +95,9 @@ from .services import (
     contract_financial_position,
     contracts_visible_to,
     contracts_exportable_by,
+    contracts_scannable_by,
     contracts_lifecycle_managed_by,
+    contracts_access_managed_by,
     contracts_managed_by,
     contracts_with_access_management_visible_to,
     contracts_writable_by,
@@ -83,7 +112,7 @@ from .services import (
     create_contract,
     create_contract_item,
     create_fiscal_substitution,
-    share_contract_read_only,
+    share_contract_access,
     revoke_contract_access,
     revocable_accesses_by,
     revocable_fiscal_substitutions_by,
@@ -175,7 +204,27 @@ class ContractListView(LoginRequiredMixin, ListView):
     template_name = "contracts/contract_list.html"
 
     def get_queryset(self):
-        return contracts_visible_to(self.request.user)
+        queryset = contracts_visible_to(self.request.user)
+        filters = {
+            "numero": "number__icontains",
+            "contratada": "supplier_name__icontains",
+            "processo": "process_number__icontains",
+            "fiscal": "responsible_fiscal__full_name__icontains",
+            "status": "status",
+            "modalidade": "intelligence_classification__modality",
+            "categoria": "intelligence_classification__management_category",
+        }
+        for parameter, lookup in filters.items():
+            value = (self.request.GET.get(parameter) or "").strip()
+            if value:
+                queryset = queryset.filter(**{lookup: value})
+        year = (self.request.GET.get("exercicio") or "").strip()
+        if year.isdecimal() and len(year) == 4:
+            queryset = queryset.filter(
+                validity_start__year__lte=int(year),
+                validity_end__year__gte=int(year),
+            )
+        return queryset.distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -198,6 +247,14 @@ class ContractListView(LoginRequiredMixin, ListView):
                 starts_on__lte=today,
                 ends_on__gte=today,
             ).values_list("contract_id", flat=True)
+        )
+        context["contract_status_choices"] = ContractStatus.choices
+        context["modality_choices"] = ContractModality.choices
+        context["management_category_choices"] = ContractManagementCategory.choices
+        context["selected_filters"] = self.request.GET
+        context["can_view_archived"] = (
+            actor_is_active_fiscal(self.request.user)
+            or self.request.user.is_active_administrator
         )
         return context
 
@@ -391,10 +448,12 @@ class ContractAccessListView(LoginRequiredMixin, DetailView):
         context["substitutions"] = self.object.fiscal_substitutions.select_related(
             "substitute", "created_by", "revoked_by"
         )
-        context["can_share"] = contracts_managed_by(self.request.user).filter(
+        context["can_share"] = contracts_access_managed_by(self.request.user).filter(
             pk=self.object.pk
         ).exists()
-        context["can_create_substitution"] = context["can_share"]
+        context["can_create_substitution"] = contracts_managed_by(
+            self.request.user
+        ).filter(pk=self.object.pk).exists()
         context["revocable_access_ids"] = set(
             revocable_accesses_by(self.request.user)
             .filter(contract=self.object)
@@ -413,6 +472,229 @@ class ContractAccessListView(LoginRequiredMixin, DetailView):
         return context
 
 
+class ContractIntelligenceView(LoginRequiredMixin, DetailView):
+    model = Contract
+    pk_url_kwarg = "contract_pk"
+    context_object_name = "contract"
+    template_name = "contracts/intelligence.html"
+
+    def get_queryset(self):
+        return contracts_visible_to(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "snapshot": contract_intelligence_snapshot(self.object),
+                "classification": getattr(
+                    self.object, "intelligence_classification", None
+                ),
+                "item_classifications": self.object.items.filter(is_active=True)
+                .select_related("intelligence_classification")
+                .order_by("number", "pk"),
+                "rules": self.object.intelligence_rules.select_related(
+                    "source_document", "confirmed_by"
+                ),
+                "clauses": self.object.intelligence_clauses.select_related(
+                    "source_document", "confirmed_by"
+                ),
+                "findings": self.object.intelligence_findings.select_related(
+                    "rule", "read_by", "resolved_by"
+                ),
+                "executions": self.object.intelligence_executions.select_related(
+                    "executed_by"
+                )[:10],
+                "can_run": contracts_scannable_by(self.request.user)
+                .filter(pk=self.object.pk)
+                .exists(),
+                "can_confirm": contracts_writable_by(self.request.user)
+                .filter(pk=self.object.pk)
+                .exists(),
+                "can_open_private_documents": can_open_document_content(
+                    self.request.user
+                ),
+                "modality_choices": ContractModality.choices,
+                "management_category_choices": ContractManagementCategory.choices,
+                "finding_statuses": ContractFindingStatus.choices,
+                "clause_form": ContractClauseCandidateForm(contract=self.object),
+                "rule_form": ContractRuleCandidateForm(contract=self.object),
+            }
+        )
+        return context
+
+
+class ContractIntelligenceRunView(LoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            result = run_contract_intelligence(
+                contract_id=kwargs["contract_pk"], actor=request.user
+            )
+        except (ValidationError, Contract.DoesNotExist) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(
+                request,
+                f"Motor executado: {result.active_findings} pendência(s) ativa(s) e "
+                f"{result.resolved_findings} resolvida(s) no reprocessamento.",
+            )
+        return redirect("contracts:intelligence", contract_pk=kwargs["contract_pk"])
+
+
+class ContractClassificationConfirmView(LoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            confirm_contract_classification(
+                contract_id=kwargs["contract_pk"],
+                actor=request.user,
+                modality=request.POST.get("modality", ""),
+                management_category=request.POST.get("management_category", ""),
+            )
+        except (ValidationError, Contract.DoesNotExist) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Classificação confirmada e auditada.")
+        return redirect("contracts:intelligence", contract_pk=kwargs["contract_pk"])
+
+
+class ContractItemClassificationConfirmView(LoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            confirm_item_classification(
+                contract_id=kwargs["contract_pk"],
+                item_id=kwargs["item_pk"],
+                actor=request.user,
+                modality=request.POST.get("modality", ""),
+            )
+        except (ValidationError, Contract.DoesNotExist, ContractItem.DoesNotExist) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Classificação do item confirmada e auditada.")
+        return redirect("contracts:intelligence", contract_pk=kwargs["contract_pk"])
+
+
+class ContractRuleReviewView(LoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        rule = get_object_or_404(
+            ContractRule.objects.filter(
+                contract_id=kwargs["contract_pk"],
+                contract__in=contracts_writable_by(request.user),
+            ),
+            pk=kwargs["rule_pk"],
+        )
+        try:
+            review_contract_rule(
+                rule_id=rule.pk,
+                actor=request.user,
+                action=request.POST.get("action", ""),
+            )
+        except (ValidationError, PermissionDenied) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Revisão da regra registrada.")
+        return redirect("contracts:intelligence", contract_pk=kwargs["contract_pk"])
+
+
+class ContractClauseCreateView(LoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        contract = get_object_or_404(
+            contracts_writable_by(request.user), pk=kwargs["contract_pk"]
+        )
+        form = ContractClauseCandidateForm(request.POST, contract=contract)
+        if not form.is_valid():
+            messages.error(request, "Revise os campos da cláusula candidata.")
+        else:
+            try:
+                create_contract_clause_candidate(
+                    contract_id=contract.pk, actor=request.user, **form.cleaned_data
+                )
+            except ValidationError as error:
+                messages.error(request, str(error))
+            else:
+                messages.success(request, "Cláusula candidata registrada para revisão humana.")
+        return redirect("contracts:intelligence", contract_pk=contract.pk)
+
+
+class ContractClauseReviewView(LoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        clause = get_object_or_404(
+            ContractClause.objects.filter(
+                contract_id=kwargs["contract_pk"],
+                contract__in=contracts_writable_by(request.user),
+            ),
+            pk=kwargs["clause_pk"],
+        )
+        try:
+            review_contract_clause(
+                clause_id=clause.pk,
+                actor=request.user,
+                action=request.POST.get("action", ""),
+            )
+        except (ValidationError, PermissionDenied) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Revisão da cláusula registrada.")
+        return redirect("contracts:intelligence", contract_pk=kwargs["contract_pk"])
+
+
+class ContractRuleCreateView(LoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        contract = get_object_or_404(
+            contracts_writable_by(request.user), pk=kwargs["contract_pk"]
+        )
+        form = ContractRuleCandidateForm(request.POST, contract=contract)
+        if not form.is_valid():
+            messages.error(request, "Revise os campos da regra candidata.")
+        else:
+            try:
+                create_contract_rule_candidate(
+                    contract_id=contract.pk, actor=request.user, **form.cleaned_data
+                )
+            except ValidationError as error:
+                messages.error(request, str(error))
+            else:
+                messages.success(request, "Regra candidata registrada; ainda não produz cálculo oficial.")
+        return redirect("contracts:intelligence", contract_pk=contract.pk)
+
+
+class ContractFindingTransitionView(LoginRequiredMixin, View):
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        finding = get_object_or_404(
+            ContractFinding.objects.filter(
+                contract_id=kwargs["contract_pk"],
+                contract__in=contracts_visible_to(request.user),
+            ),
+            pk=kwargs["finding_pk"],
+        )
+        try:
+            transition_finding(
+                finding_id=finding.pk,
+                actor=request.user,
+                status=request.POST.get("status", ""),
+                justification=request.POST.get("justification", ""),
+            )
+        except (ValidationError, PermissionDenied) as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, "Situação da pendência atualizada.")
+        return redirect("contracts:intelligence", contract_pk=kwargs["contract_pk"])
+
+
 class ContractShareView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = ContractShareForm
     template_name = "contracts/access_share.html"
@@ -421,13 +703,13 @@ class ContractShareView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def get_contract(self):
         if not hasattr(self, "contract"):
             self.contract = get_object_or_404(
-                contracts_managed_by(self.request.user),
+                contracts_access_managed_by(self.request.user),
                 pk=self.kwargs["contract_pk"],
             )
         return self.contract
 
     def test_func(self):
-        return contracts_managed_by(self.request.user).filter(
+        return contracts_access_managed_by(self.request.user).filter(
             pk=self.kwargs["contract_pk"]
         ).exists()
 
@@ -441,10 +723,11 @@ class ContractShareView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def form_valid(self, form):
         try:
-            access, invitation = share_contract_read_only(
+            access, invitation = share_contract_access(
                 contract_id=self.get_contract().pk,
                 actor=self.request.user,
                 email=form.cleaned_data["email"],
+                access_type=form.cleaned_data["access_type"],
                 confirm_regrant=form.cleaned_data["confirm_regrant"],
             )
         except ValidationError as error:
@@ -453,7 +736,7 @@ class ContractShareView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if access:
             messages.success(
                 self.request,
-                "Acesso Somente leitura concedido ou reativado para a conta existente.",
+                "Vínculo ao contrato concedido ou reativado para a conta existente.",
             )
         else:
             messages.success(
@@ -1875,18 +2158,35 @@ class ExecutiveDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "contracts/executive_dashboard.html"
 
     def dispatch(self, request, *args, **kwargs):
-        from accounts.models import UserProfile
+        from accounts.models import ADMINISTRATOR_PROFILES
         from django.core.exceptions import PermissionDenied
 
-        if request.user.is_authenticated and request.user.profile == UserProfile.ADMINISTRATOR:
+        if (
+            request.user.is_authenticated
+            and request.user.profile in ADMINISTRATOR_PROFILES
+        ):
             raise PermissionDenied("O Administrador acompanha o sistema, não contratos.")
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        from accounts.models import UserProfile
         from django.http import Http404
 
         context = super().get_context_data(**kwargs)
-        contracts = contracts_visible_to(self.request.user).order_by("number", "pk")
+        contracts = contracts_visible_to(self.request.user).select_related(
+            "intelligence_classification"
+        ).order_by("number", "pk")
+        if self.request.user.profile == UserProfile.ADMINISTRATIVE_MANAGER:
+            portfolio_contracts = list(contracts)
+            context.update({
+                "portfolio": build_portfolio_summary(portfolio_contracts),
+                "management_category_choices": ContractManagementCategory.choices,
+                "selected_category": (self.request.GET.get("category") or "").strip(),
+            })
+            if context["selected_category"]:
+                contracts = contracts.filter(
+                    intelligence_classification__management_category=context["selected_category"]
+                )
         selected = self.request.GET.get("contract")
         if selected:
             if not selected.isdecimal():

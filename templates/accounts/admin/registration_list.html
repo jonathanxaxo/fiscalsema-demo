@@ -20,20 +20,21 @@
     {% endif %}
   </p>
   <table>
-    <thead><tr><th>Fiscal</th><th>Organização</th><th>Setor</th><th>Data</th><th>Status</th></tr></thead>
+    <thead><tr><th>Usuário</th><th>Perfil solicitado</th><th>Organização</th><th>Setor</th><th>Data</th><th>Status</th></tr></thead>
     <tbody>
       {% for item in registration_requests %}
         <tr>
           <td><a href="{% url 'accounts_admin:registration_review' item.pk %}">{{ item.user.full_name }}</a><br>{{ item.user.email }}</td>
+          <td>{{ item.get_requested_profile_display }}</td>
           <td>{{ item.user.organization_name }}</td>
           <td>{{ item.user.sector_name|default:"—" }}</td>
           <td>{{ item.created_at|date:"d/m/Y H:i" }}</td>
           <td>{{ item.get_status_display }}{% if item.archived_at %}<br>Arquivada{% endif %}</td>
         </tr>
       {% empty %}
-        <tr><td colspan="5">Nenhuma solicitação encontrada.</td></tr>
+        <tr><td colspan="6">Nenhuma solicitação encontrada.</td></tr>
       {% endfor %}
     </tbody>
   </table>
-  <p class="actions"><a href="{% url 'accounts_admin:fiscal_create' %}">Criar Fiscal diretamente</a><a href="{% url 'organizations:organization_list' %}">Organizações</a><a href="{% url 'home' %}">Início</a></p>
+  <p class="actions"><a href="{% url 'accounts_admin:fiscal_create' %}">Criar usuário diretamente</a><a href="{% url 'organizations:organization_list' %}">Organizações</a><a href="{% url 'home' %}">Início</a></p>
 {% endblock %}

@@ -4,6 +4,7 @@ from .views import (
     AdministrativeFiscalCreateView,
     AdministrativeUserArchiveView,
     AdministrativeUserListView,
+    AdministrativeUserProfileView,
     AdministrativeUserRestoreView,
     AdministrativeUserStatusView,
     RegistrationRequestArchiveView,
@@ -29,6 +30,11 @@ urlpatterns = [
         name="registration_archive",
     ),
     path("usuarios/novo/", AdministrativeFiscalCreateView.as_view(), name="fiscal_create"),
+    path(
+        "usuarios/<int:pk>/perfil/",
+        AdministrativeUserProfileView.as_view(),
+        name="user_profile",
+    ),
     path(
         "usuarios/<int:pk>/status/<str:action>/",
         AdministrativeUserStatusView.as_view(),

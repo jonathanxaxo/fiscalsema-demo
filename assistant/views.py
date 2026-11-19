@@ -137,11 +137,13 @@ def _ask(request):
     audit_attachment = attachment.audit() if attachment else None
 
     started = time.monotonic()
+    contract_id = (request.POST.get("contrato") or "").strip()
+    contract_id = int(contract_id) if contract_id.isdecimal() else None
     try:
         stream = stream_chat(
             build_messages(
                 question, profile=profile, route=ROUTE, history=history,
-                data=authorized_data(user, route=ROUTE),
+                data=authorized_data(user, route=ROUTE, contract_id=contract_id),
                 document=attachment,
             )
         )

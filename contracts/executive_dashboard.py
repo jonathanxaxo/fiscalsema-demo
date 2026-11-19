@@ -17,8 +17,16 @@ from decimal import Decimal
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 
-from .models import ContractItemUnit, Payment, WorkOrderExecution, WorkOrderStatus
+from .calculations import NegativeBalanceError
+from .models import (
+    ContractItemUnit,
+    ContractManagementCategory,
+    Payment,
+    WorkOrderExecution,
+    WorkOrderStatus,
+)
 from .periods import period_for_date, calendar_year_periods
+from .services import contract_financial_position
 
 MONTHLY_EVOLUTION_MONTHS = 12
 OPEN_STATUSES = (
@@ -96,6 +104,79 @@ class ExecutiveSummary:
     has_hour_items: bool
     hours: HourSummary
     open_rows: tuple
+
+
+@dataclass(frozen=True)
+class PortfolioCategorySummary:
+    category: str
+    label: str
+    contract_count: int
+    current_value: Decimal
+    committed_budget: Decimal
+    paid_value: Decimal
+    contract_balance: Decimal
+    inconsistent_count: int
+
+
+@dataclass(frozen=True)
+class PortfolioSummary:
+    categories: tuple
+    contract_count: int
+    current_value: Decimal
+    committed_budget: Decimal
+    paid_value: Decimal
+    contract_balance: Decimal
+
+
+def build_portfolio_summary(contracts):
+    """Agrupa contratos visíveis sem misturar categoria gerencial e medição."""
+    labels = dict(ContractManagementCategory.choices)
+    grouped = {}
+    zero = Decimal("0.00")
+    for contract in contracts:
+        classification = getattr(contract, "intelligence_classification", None)
+        category = classification.management_category if classification else ""
+        values = grouped.setdefault(
+            category,
+            {
+                "contract_count": 0,
+                "current_value": zero,
+                "committed_budget": zero,
+                "paid_value": zero,
+                "contract_balance": zero,
+                "inconsistent_count": 0,
+            },
+        )
+        values["contract_count"] += 1
+        values["current_value"] += contract.current_value
+        try:
+            position = contract_financial_position(contract)
+        except NegativeBalanceError:
+            values["inconsistent_count"] += 1
+            continue
+        values["committed_budget"] += position.total_committed_budget.value
+        values["paid_value"] += position.paid_value.value
+        values["contract_balance"] += position.contract_balance.value
+
+    order = {value: index for index, (value, _label) in enumerate(ContractManagementCategory.choices)}
+    rows = tuple(
+        PortfolioCategorySummary(
+            category=category,
+            label=labels.get(category, "Não classificado"),
+            **values,
+        )
+        for category, values in sorted(
+            grouped.items(), key=lambda item: (order.get(item[0], 999), item[0])
+        )
+    )
+    return PortfolioSummary(
+        categories=rows,
+        contract_count=sum(row.contract_count for row in rows),
+        current_value=sum((row.current_value for row in rows), zero),
+        committed_budget=sum((row.committed_budget for row in rows), zero),
+        paid_value=sum((row.paid_value for row in rows), zero),
+        contract_balance=sum((row.contract_balance for row in rows), zero),
+    )
 
 
 def build_validity_progress(contract, *, today=None):

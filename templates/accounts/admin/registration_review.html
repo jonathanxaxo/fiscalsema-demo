@@ -7,6 +7,8 @@
   <p><strong>Organização:</strong> {{ registration_request.user.organization_name }}</p>
   <p><strong>Setor:</strong> {{ registration_request.user.sector_name|default:"—" }}</p>
   <p><strong>Telefone:</strong> {{ registration_request.user.phone|default:"—" }}</p>
+  <p><strong>Perfil solicitado:</strong> {{ registration_request.get_requested_profile_display }}</p>
+  <p><strong>Justificativa:</strong> {{ registration_request.justification|default:"—" }}</p>
   <p><strong>Status:</strong> {{ registration_request.get_status_display }}</p>
   {% if registration_request.status == "PENDENTE" %}
     {{ form.non_field_errors }}
@@ -15,6 +17,7 @@
       <input type="hidden" name="action" value="approve">
       {{ form.organization.label_tag }}{{ form.organization }}{{ form.organization.errors }}
       {{ form.sector.label_tag }}{{ form.sector }}{{ form.sector.errors }}
+      {{ form.approved_profile.label_tag }}{{ form.approved_profile }}{{ form.approved_profile.errors }}
       <button type="submit">Aprovar</button>
     </form>
     <form method="post">

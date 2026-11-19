@@ -2,7 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404
 from django.views.generic import TemplateView
 
-from accounts.models import UserProfile
+from accounts.models import ADMINISTRATOR_PROFILES
 from contracts.services import contracts_with_access_management_visible_to
 
 from .forms import AuditFilterForm
@@ -45,7 +45,7 @@ class GlobalAuditView(UserPassesTestMixin, AuditViewBase):
         user = self.request.user
         return (
             user.is_authenticated and user.is_active
-            and user.profile == UserProfile.ADMINISTRATOR
+            and user.profile in ADMINISTRATOR_PROFILES
             and user.has_perm("accounts.view_authenticationevent")
         )
 

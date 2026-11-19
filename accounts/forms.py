@@ -13,7 +13,13 @@ from django.utils import timezone
 
 from organizations.models import Organization, Sector
 
-from .models import AccountStatus, RegistrationRequest, User, UserProfile
+from .models import (
+    AccountStatus,
+    REGISTRATION_PROFILE_CHOICES,
+    RegistrationRequest,
+    User,
+    UserProfile,
+)
 from .services import (
     is_login_blocked,
     record_authentication_event,
@@ -99,11 +105,25 @@ class AccountCreationForm(UserCreationForm):
         model = User
         fields = ("email", "full_name", "profile", "status", "must_change_password")
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["profile"].choices = (
+            (UserProfile.ADMINISTRATOR_GENERAL, UserProfile.ADMINISTRATOR_GENERAL.label),
+            *REGISTRATION_PROFILE_CHOICES,
+        )
+
 
 class AccountChangeForm(UserChangeForm):
     class Meta:
         model = User
         fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["profile"].choices = [
+            (UserProfile.ADMINISTRATOR_GENERAL, UserProfile.ADMINISTRATOR_GENERAL.label),
+            *REGISTRATION_PROFILE_CHOICES,
+        ]
 
 
 class AccountPasswordChangeForm(PasswordChangeForm):
@@ -119,32 +139,8 @@ class AccountSetPasswordForm(SetPasswordForm):
 
 
 def requested_profile_for(email):
-    """Perfil solicitado num cadastro novo (mesma regra do cadastro atual).
-
-    Convite de consulta pendente (sem substituição de Fiscal pendente) →
-    Usuário de consulta; nos demais casos → Fiscal. A conta sempre nasce
-    pendente de aprovação.
-    """
-    from contracts.models import (
-        ContractInvitation,
-        ContractInvitationStatus,
-        FiscalSubstitution,
-        FiscalSubstitutionStatus,
-    )
-
-    has_pending_read_only_invitation = (
-        ContractInvitation.objects.filter(email__iexact=email, status=ContractInvitationStatus.PENDING)
-        .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now()))
-        .exists()
-    )
-    has_pending_fiscal_substitution = FiscalSubstitution.objects.filter(
-        email__iexact=email,
-        status=FiscalSubstitutionStatus.PENDING_ACCOUNT,
-        ends_on__gte=timezone.localdate(),
-    ).exists()
-    if has_pending_read_only_invitation and not has_pending_fiscal_substitution:
-        return UserProfile.CONSULTATION
-    return UserProfile.FISCAL
+    """Compatibilidade para integrações antigas; novos formulários pedem o perfil."""
+    return UserProfile.FISCAL_TITULAR
 
 
 class FiscalRegistrationForm(UserCreationForm):
@@ -153,6 +149,16 @@ class FiscalRegistrationForm(UserCreationForm):
     organization_name = forms.CharField(label="Organização", max_length=200)
     sector_name = forms.CharField(label="Setor", max_length=200, required=False)
     phone = forms.CharField(label="Telefone", max_length=30, required=False)
+    requested_profile = forms.ChoiceField(
+        label="Perfil solicitado",
+        choices=REGISTRATION_PROFILE_CHOICES,
+    )
+    justification = forms.CharField(
+        label="Justificativa",
+        max_length=2000,
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Explique por que esse perfil é necessário para suas atividades.",
+    )
 
     class Meta:
         model = User
@@ -162,6 +168,8 @@ class FiscalRegistrationForm(UserCreationForm):
             "organization_name",
             "sector_name",
             "phone",
+            "requested_profile",
+            "justification",
             "password1",
             "password2",
         )
@@ -191,10 +199,14 @@ class FiscalRegistrationForm(UserCreationForm):
             sector_name=self.cleaned_data["sector_name"],
             phone=self.cleaned_data["phone"],
             password=self.cleaned_data["password1"],
-            profile=requested_profile_for(self.cleaned_data["email"]),
+            profile=self.cleaned_data["requested_profile"],
             status=AccountStatus.PENDING_APPROVAL,
         )
-        RegistrationRequest.objects.create(user=user)
+        RegistrationRequest.objects.create(
+            user=user,
+            requested_profile=self.cleaned_data["requested_profile"],
+            justification=self.cleaned_data["justification"].strip(),
+        )
         return user
 
 
@@ -207,6 +219,13 @@ class AdministrativeFiscalCreationForm(UserCreationForm):
         label="Setor", queryset=Sector.objects.none(), required=False
     )
     phone = forms.CharField(label="Telefone", max_length=30, required=False)
+    profile = forms.ChoiceField(
+        label="Perfil funcional",
+        choices=(
+            (UserProfile.ADMINISTRATOR_GENERAL, UserProfile.ADMINISTRATOR_GENERAL.label),
+            *REGISTRATION_PROFILE_CHOICES,
+        ),
+    )
 
     class Meta:
         model = User
@@ -216,6 +235,7 @@ class AdministrativeFiscalCreationForm(UserCreationForm):
             "organization",
             "sector",
             "phone",
+            "profile",
             "password1",
             "password2",
         )
@@ -265,10 +285,24 @@ class AdministrativeFiscalCreationForm(UserCreationForm):
             sector_name=sector.name if sector else "",
             phone=self.cleaned_data["phone"],
             password=self.cleaned_data["password1"],
-            profile=UserProfile.FISCAL,
+            profile=self.cleaned_data["profile"],
             status=AccountStatus.ACTIVE,
             must_change_password=True,
         )
+
+
+class UserProfileChangeForm(forms.Form):
+    profile = forms.ChoiceField(
+        label="Novo perfil funcional",
+        choices=(
+            (UserProfile.ADMINISTRATOR_GENERAL, UserProfile.ADMINISTRATOR_GENERAL.label),
+            *REGISTRATION_PROFILE_CHOICES,
+        ),
+        help_text=(
+            "Perfis legados não podem ser selecionados. Uma conta legada deve ser "
+            "reclassificada para uma função atual."
+        ),
+    )
 
 
 class RegistrationReviewForm(forms.Form):
@@ -285,13 +319,20 @@ class RegistrationReviewForm(forms.Form):
     sector = forms.ModelChoiceField(
         label="Setor para vínculo", queryset=Sector.objects.none(), required=False
     )
+    approved_profile = forms.ChoiceField(
+        label="Perfil aprovado",
+        choices=REGISTRATION_PROFILE_CHOICES,
+        required=False,
+    )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, requested_profile=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["organization"].queryset = Organization.objects.filter(is_active=True)
         self.fields["sector"].queryset = Sector.objects.filter(
             is_active=True, organization__is_active=True
         ).select_related("organization")
+        if requested_profile:
+            self.fields["approved_profile"].initial = requested_profile
 
     def clean(self):
         cleaned_data = super().clean()
@@ -303,9 +344,11 @@ class RegistrationReviewForm(forms.Form):
             organization = cleaned_data.get("organization")
             sector = cleaned_data.get("sector")
             if not organization:
-                self.add_error("organization", "Selecione a organização do Fiscal.")
+                self.add_error("organization", "Selecione a organização da pessoa usuária.")
             if sector and organization and sector.organization_id != organization.pk:
                 self.add_error("sector", "O setor deve pertencer à organização selecionada.")
+            if not cleaned_data.get("approved_profile"):
+                self.add_error("approved_profile", "Selecione o perfil que será aprovado.")
         return cleaned_data
 
 
@@ -340,4 +383,12 @@ class GoogleSignupForm(forms.Form):
     organization_name = forms.CharField(label="Organização", max_length=200)
     sector_name = forms.CharField(label="Setor", max_length=200, required=False)
     phone = forms.CharField(label="Telefone", max_length=30, required=False)
-
+    requested_profile = forms.ChoiceField(
+        label="Perfil solicitado",
+        choices=REGISTRATION_PROFILE_CHOICES,
+    )
+    justification = forms.CharField(
+        label="Justificativa",
+        max_length=2000,
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )

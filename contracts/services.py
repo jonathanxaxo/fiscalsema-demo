@@ -6,7 +6,12 @@ from django.db import transaction
 from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
-from accounts.models import AccountStatus, UserProfile
+from accounts.models import (
+    ADMINISTRATOR_PROFILES,
+    FISCAL_TITULAR_PROFILES,
+    AccountStatus,
+    UserProfile,
+)
 from organizations.models import Organization
 
 from .calculations import (
@@ -60,7 +65,7 @@ def actor_is_active_fiscal(actor):
         actor.is_authenticated
         and actor.is_active
         and actor.status == AccountStatus.ACTIVE
-        and actor.profile == UserProfile.FISCAL
+        and actor.profile in FISCAL_TITULAR_PROFILES
     )
 
 
@@ -83,7 +88,7 @@ def contracts_visible_to(actor):
     ).filter(archived_at__isnull=True)
     if not actor.is_authenticated or not actor.is_active or actor.status != AccountStatus.ACTIVE:
         return queryset.none()
-    if actor.profile == UserProfile.ADMINISTRATOR and actor.has_perm(
+    if actor.profile in ADMINISTRATOR_PROFILES and actor.has_perm(
         "contracts.view_all_contracts"
     ):
         return queryset
@@ -92,7 +97,7 @@ def contracts_visible_to(actor):
         accesses__access_type=ContractAccessType.READ_ONLY,
         accesses__status=ContractAccessStatus.ACTIVE,
     )
-    if actor.profile == UserProfile.FISCAL:
+    if actor.profile in FISCAL_TITULAR_PROFILES:
         queryset = queryset.annotate(
             has_effective_substitution=_effective_substitution_exists(actor)
         )
@@ -104,6 +109,16 @@ def contracts_visible_to(actor):
                 contracting_organization=actor.organization,
                 contracting_organization__is_active=True,
             )
+        ).distinct()
+    if actor.profile == UserProfile.AUXILIARY_ADMINISTRATIVE:
+        return queryset
+    if actor.profile == UserProfile.ADMINISTRATIVE_MANAGER:
+        return queryset
+    if actor.profile == UserProfile.CONTRACT_MANAGER:
+        return queryset.filter(
+            accesses__user=actor,
+            accesses__access_type=ContractAccessType.CONTRACT_MANAGER,
+            accesses__status=ContractAccessStatus.ACTIVE,
         ).distinct()
     if actor.profile == UserProfile.CONSULTATION:
         return queryset.filter(read_only_access).distinct()
@@ -161,7 +176,7 @@ def contracts_lifecycle_managed_by(actor):
         actor.is_authenticated
         and actor.is_active
         and actor.status == AccountStatus.ACTIVE
-        and actor.profile == UserProfile.ADMINISTRATOR
+        and actor.profile in ADMINISTRATOR_PROFILES
         and actor.has_perm("contracts.view_all_contracts")
     ):
         return queryset
@@ -186,7 +201,7 @@ def archived_contracts_managed_by(actor):
         actor.is_authenticated
         and actor.is_active
         and actor.status == AccountStatus.ACTIVE
-        and actor.profile == UserProfile.ADMINISTRATOR
+        and actor.profile in ADMINISTRATOR_PROFILES
         and actor.has_perm("contracts.view_all_contracts")
     ):
         return queryset
@@ -208,7 +223,7 @@ def contracts_exportable_by(actor):
     ).filter(archived_at__isnull=True)
     if not actor.is_authenticated or not actor.is_active or actor.status != AccountStatus.ACTIVE:
         return queryset.none()
-    if actor.profile == UserProfile.ADMINISTRATOR and actor.has_perm(
+    if actor.profile in ADMINISTRATOR_PROFILES and actor.has_perm(
         "contracts.view_all_contracts"
     ):
         return queryset
@@ -221,7 +236,30 @@ def contracts_exportable_by(actor):
         ).filter(
             Q(responsible_fiscal=actor) | Q(has_effective_substitution=True)
         )
+    if actor.profile == UserProfile.ADMINISTRATIVE_MANAGER:
+        return queryset
+    if actor.profile == UserProfile.CONTRACT_MANAGER:
+        return queryset.filter(
+            accesses__user=actor,
+            accesses__access_type=ContractAccessType.CONTRACT_MANAGER,
+            accesses__status=ContractAccessStatus.ACTIVE,
+        ).distinct()
     return queryset.none()
+
+
+def contracts_scannable_by(actor):
+    """Contratos em que o motor pode produzir diagnósticos, sem alterar a operação."""
+    visible = contracts_visible_to(actor)
+    if not actor.is_authenticated or not actor.is_active:
+        return visible.none()
+    if actor.profile in ADMINISTRATOR_PROFILES and actor.has_perm(
+        "contracts.view_all_contracts"
+    ):
+        return visible
+    if actor.profile == UserProfile.AUXILIARY_ADMINISTRATIVE:
+        return visible
+    writable_ids = contracts_writable_by(actor).values("pk")
+    return visible.filter(pk__in=writable_ids)
 
 
 def contracts_with_access_management_visible_to(actor):
@@ -230,7 +268,7 @@ def contracts_with_access_management_visible_to(actor):
     ).filter(archived_at__isnull=True)
     if not actor.is_authenticated or not actor.is_active:
         return queryset.none()
-    if actor.profile == UserProfile.ADMINISTRATOR and actor.has_perm(
+    if actor.profile in ADMINISTRATOR_PROFILES and actor.has_perm(
         "contracts.view_all_contracts"
     ):
         return queryset
@@ -242,12 +280,7 @@ def contract_is_read_only_for(actor, contract):
         return False
     if contracts_writable_by(actor).filter(pk=contract.pk).exists():
         return False
-    return ContractAccess.objects.filter(
-        contract=contract,
-        user=actor,
-        access_type=ContractAccessType.READ_ONLY,
-        status=ContractAccessStatus.ACTIVE,
-    ).exists()
+    return contracts_visible_to(actor).filter(pk=contract.pk).exists()
 
 
 def actor_can_administer_all_contract_accesses(actor):
@@ -255,9 +288,31 @@ def actor_can_administer_all_contract_accesses(actor):
         actor.is_authenticated
         and actor.is_active
         and actor.status == AccountStatus.ACTIVE
-        and actor.profile == UserProfile.ADMINISTRATOR
+        and actor.profile in ADMINISTRATOR_PROFILES
         and actor.has_perm("contracts.view_all_contracts")
     )
+
+
+def contracts_access_managed_by(actor):
+    """Contratos cujos vínculos podem ser corrigidos pelo Fiscal ou Administrador."""
+    queryset = Contract.objects.select_related(
+        "contracting_organization", "responsible_fiscal"
+    ).filter(archived_at__isnull=True).exclude(
+        status__in=(ContractStatus.CLOSED, ContractStatus.CANCELED)
+    )
+    if actor_can_administer_all_contract_accesses(actor):
+        return queryset
+    if (
+        actor_is_active_fiscal(actor)
+        and actor.organization_id
+        and actor.organization.is_active
+    ):
+        return queryset.filter(
+            responsible_fiscal=actor,
+            contracting_organization=actor.organization,
+            contracting_organization__is_active=True,
+        )
+    return queryset.none()
 
 
 def revocable_accesses_by(actor):
@@ -343,7 +398,7 @@ def cancel_contract_invitation(*, invitation_id, contract_id, actor):
     return invitation
 
 
-def _create_pending_contract_invitation(*, contract, actor, email):
+def _create_pending_contract_invitation(*, contract, actor, email, access_type):
     if ContractInvitation.objects.filter(
         contract=contract,
         email=email,
@@ -353,7 +408,7 @@ def _create_pending_contract_invitation(*, contract, actor, email):
     invitation = ContractInvitation.objects.create(
         contract=contract,
         email=email,
-        access_type=ContractAccessType.READ_ONLY,
+        access_type=access_type,
         invited_by=actor,
         status=ContractInvitationStatus.PENDING,
     )
@@ -362,17 +417,23 @@ def _create_pending_contract_invitation(*, contract, actor, email):
         contract=contract,
         invitation=invitation,
         actor=actor,
-        details={"email": email, "tipo": ContractAccessType.READ_ONLY},
+        details={"email": email, "tipo": access_type},
     )
     return None, invitation
 
 
 @transaction.atomic
-def share_contract_read_only(*, contract_id, actor, email, confirm_regrant=False):
-    contract = contracts_managed_by(actor).select_for_update().get(pk=contract_id)
+def share_contract_access(
+    *, contract_id, actor, email, access_type, confirm_regrant=False
+):
+    contract = contracts_access_managed_by(actor).select_for_update().get(
+        pk=contract_id
+    )
     normalized_email = get_user_model().objects.normalize_login_email(email)
     if not normalized_email:
         raise ValidationError("Informe o e-mail da pessoa.")
+    if access_type not in ContractAccessType.values:
+        raise ValidationError("Tipo de vínculo inválido.")
     if normalized_email == actor.email.casefold():
         raise ValidationError("O Fiscal responsável já possui acesso ao contrato.")
 
@@ -382,7 +443,7 @@ def share_contract_read_only(*, contract_id, actor, email, confirm_regrant=False
         .first()
     )
     if user:
-        if user.profile == UserProfile.ADMINISTRATOR and user.is_active_administrator:
+        if user.profile in ADMINISTRATOR_PROFILES and user.is_active_administrator:
             raise ValidationError("O Administrador já possui consulta administrativa.")
         if (
             user.archived_at
@@ -392,11 +453,19 @@ def share_contract_read_only(*, contract_id, actor, email, confirm_regrant=False
             raise ValidationError(
                 "Esta conta precisa ser regularizada pelo Administrador antes de receber acesso."
             )
+        if (
+            access_type == ContractAccessType.CONTRACT_MANAGER
+            and user.profile != UserProfile.CONTRACT_MANAGER
+        ):
+            raise ValidationError(
+                "O vínculo exige uma conta com perfil Gestor do Contrato."
+            )
         if user.status == AccountStatus.PENDING_APPROVAL or not user.is_active:
             return _create_pending_contract_invitation(
                 contract=contract,
                 actor=actor,
                 email=normalized_email,
+                access_type=access_type,
             )
 
         access = ContractAccess.objects.select_for_update().filter(
@@ -411,7 +480,7 @@ def share_contract_read_only(*, contract_id, actor, email, confirm_regrant=False
                     "Este acesso foi revogado. Marque a confirmação para concedê-lo novamente."
                 )
             access.status = ContractAccessStatus.ACTIVE
-            access.access_type = ContractAccessType.READ_ONLY
+            access.access_type = access_type
             access.granted_by = actor
             access.granted_at = timezone.now()
             access.revoked_by = None
@@ -431,7 +500,7 @@ def share_contract_read_only(*, contract_id, actor, email, confirm_regrant=False
             access = ContractAccess.objects.create(
                 contract=contract,
                 user=user,
-                access_type=ContractAccessType.READ_ONLY,
+                access_type=access_type,
                 status=ContractAccessStatus.ACTIVE,
                 granted_by=actor,
             )
@@ -453,7 +522,7 @@ def share_contract_read_only(*, contract_id, actor, email, confirm_regrant=False
             actor=actor,
             details={
                 "usuario_id": user.pk,
-                "tipo": ContractAccessType.READ_ONLY,
+                "tipo": access_type,
                 "reativacao": reactivated,
             },
         )
@@ -463,6 +532,18 @@ def share_contract_read_only(*, contract_id, actor, email, confirm_regrant=False
         contract=contract,
         actor=actor,
         email=normalized_email,
+        access_type=access_type,
+    )
+
+
+def share_contract_read_only(*, contract_id, actor, email, confirm_regrant=False):
+    """Compatibilidade com o fluxo anterior de compartilhamento."""
+    return share_contract_access(
+        contract_id=contract_id,
+        actor=actor,
+        email=email,
+        access_type=ContractAccessType.READ_ONLY,
+        confirm_regrant=confirm_regrant,
     )
 
 
@@ -481,6 +562,11 @@ def accept_pending_contract_invitations(user):
         .select_related("contract", "invited_by")
     )
     for invitation in invitations:
+        if (
+            invitation.access_type == ContractAccessType.CONTRACT_MANAGER
+            and user.profile != UserProfile.CONTRACT_MANAGER
+        ):
+            continue
         access = ContractAccess.objects.select_for_update().filter(
             contract=invitation.contract, user=user
         ).first()
@@ -490,13 +576,13 @@ def accept_pending_contract_invitations(user):
             access = ContractAccess.objects.create(
                 contract=invitation.contract,
                 user=user,
-                access_type=ContractAccessType.READ_ONLY,
+                access_type=invitation.access_type,
                 status=ContractAccessStatus.ACTIVE,
                 granted_by=invitation.invited_by,
             )
         elif access.status == ContractAccessStatus.REVOKED:
             access.status = ContractAccessStatus.ACTIVE
-            access.access_type = ContractAccessType.READ_ONLY
+            access.access_type = invitation.access_type
             access.granted_by = invitation.invited_by
             access.granted_at = timezone.now()
             access.revoked_by = None
@@ -569,8 +655,8 @@ def create_fiscal_substitution(*, contract_id, actor, email, starts_on, ends_on)
     status = FiscalSubstitutionStatus.PENDING_ACCOUNT
     linked_at = None
     if user:
-        if user.profile != UserProfile.FISCAL:
-            raise ValidationError("A conta substituta deve possuir perfil Fiscal.")
+        if user.profile not in FISCAL_TITULAR_PROFILES:
+            raise ValidationError("A conta substituta deve possuir perfil Fiscal Titular.")
         if (
             user.archived_at
             or user.status
@@ -624,7 +710,7 @@ def create_fiscal_substitution(*, contract_id, actor, email, starts_on, ends_on)
 @transaction.atomic
 def link_pending_fiscal_substitutions(user):
     if (
-        user.profile != UserProfile.FISCAL
+        user.profile not in FISCAL_TITULAR_PROFILES
         or user.status != AccountStatus.ACTIVE
         or not user.is_active
         or user.archived_at
@@ -844,7 +930,7 @@ def correct_contract_registration(
         actor.is_authenticated
         and actor.is_active
         and actor.status == AccountStatus.ACTIVE
-        and actor.profile == UserProfile.ADMINISTRATOR
+        and actor.profile in ADMINISTRATOR_PROFILES
         and actor.has_perm("contracts.view_all_contracts")
     ):
         raise PermissionDenied(
@@ -997,7 +1083,7 @@ def transfer_contract_responsibility(
         get_user_model().objects.select_for_update()
         .filter(
             email__iexact=normalized_email,
-            profile=UserProfile.FISCAL,
+            profile__in=FISCAL_TITULAR_PROFILES,
             status=AccountStatus.ACTIVE,
             is_active=True,
             archived_at__isnull=True,

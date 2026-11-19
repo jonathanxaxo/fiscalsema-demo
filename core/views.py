@@ -22,9 +22,9 @@ def home(request):
         contract_is_read_only_for,
     )
 
-    from accounts.models import UserProfile
+    from accounts.models import ADMINISTRATOR_PROFILES
 
-    if request.user.profile == UserProfile.ADMINISTRATOR:
+    if request.user.profile in ADMINISTRATOR_PROFILES:
         from .admin_dashboard import build_admin_dashboard
 
         admin_dashboard = build_admin_dashboard()

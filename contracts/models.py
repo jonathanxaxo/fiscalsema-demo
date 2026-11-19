@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models.functions import Lower
 from django.utils import timezone
 
-from accounts.models import UserProfile
+from accounts.models import FISCAL_TITULAR_PROFILES, UserProfile
 
 
 def normalized_text(value):
@@ -159,8 +159,11 @@ class Contract(models.Model):
             errors["validity_end"] = "O fim da vigência não pode anteceder o início."
         if self.original_value is not None and self.original_value < Decimal("0.00"):
             errors["original_value"] = "O valor original não pode ser negativo."
-        if self.responsible_fiscal_id and self.responsible_fiscal.profile != UserProfile.FISCAL:
-            errors["responsible_fiscal"] = "O responsável deve possuir perfil Fiscal."
+        if (
+            self.responsible_fiscal_id
+            and self.responsible_fiscal.profile not in FISCAL_TITULAR_PROFILES
+        ):
+            errors["responsible_fiscal"] = "O responsável deve possuir perfil Fiscal Titular."
         archived_fields_complete = bool(
             self.archived_at and self.archived_by_id and self.archive_reason
         )
@@ -190,6 +193,7 @@ class Contract(models.Model):
 
 class ContractAccessType(models.TextChoices):
     READ_ONLY = "READ_ONLY", "Somente leitura"
+    CONTRACT_MANAGER = "GESTOR_CONTRATO", "Gestor do Contrato"
 
 
 class ContractAccessStatus(models.TextChoices):
@@ -238,8 +242,14 @@ class ContractAccess(models.Model):
     def clean(self):
         super().clean()
         errors = {}
-        if self.access_type != ContractAccessType.READ_ONLY:
-            errors["access_type"] = "Somente o acesso READ_ONLY está autorizado."
+        if (
+            self.access_type == ContractAccessType.CONTRACT_MANAGER
+            and self.user_id
+            and self.user.profile != UserProfile.CONTRACT_MANAGER
+        ):
+            errors["user"] = "O vínculo de Gestor do Contrato exige o perfil correspondente."
+        elif self.access_type not in ContractAccessType.values:
+            errors["access_type"] = "Tipo de acesso ao contrato inválido."
         if self.status == ContractAccessStatus.ACTIVE:
             if self.revoked_by_id or self.revoked_at:
                 errors["status"] = "Acesso ativo não pode conter dados de revogação."
@@ -311,8 +321,16 @@ class ContractInvitation(models.Model):
         super().clean()
         self.email = (self.email or "").strip().casefold()
         errors = {}
-        if self.access_type != ContractAccessType.READ_ONLY:
-            errors["access_type"] = "Somente o acesso READ_ONLY está autorizado."
+        if self.access_type not in ContractAccessType.values:
+            errors["access_type"] = "Tipo de acesso ao contrato inválido."
+        if (
+            self.access_type == ContractAccessType.CONTRACT_MANAGER
+            and self.accepted_by_id
+            and self.accepted_by.profile != UserProfile.CONTRACT_MANAGER
+        ):
+            errors["accepted_by"] = (
+                "O vínculo de Gestor do Contrato exige o perfil correspondente."
+            )
         accepted = self.status == ContractInvitationStatus.ACCEPTED
         if accepted and (not self.accepted_by_id or not self.accepted_at):
             errors["status"] = "Convite aceito exige usuário e data de aceite."
@@ -437,7 +455,7 @@ class FiscalSubstitution(models.Model):
             self.status == FiscalSubstitutionStatus.LINKED
             and self.substitute_id is not None
             and self.substitute.is_active
-            and self.substitute.profile == UserProfile.FISCAL
+            and self.substitute.profile in FISCAL_TITULAR_PROFILES
             and self.starts_on <= today <= self.ends_on
         )
 
@@ -450,8 +468,8 @@ class FiscalSubstitution(models.Model):
         if self.contract_id and self.email == self.contract.responsible_fiscal.email.casefold():
             errors["email"] = "O Fiscal titular não pode substituir a si próprio."
         if self.substitute_id:
-            if self.substitute.profile != UserProfile.FISCAL:
-                errors["substitute"] = "O substituto deve possuir perfil Fiscal."
+            if self.substitute.profile not in FISCAL_TITULAR_PROFILES:
+                errors["substitute"] = "O substituto deve possuir perfil Fiscal Titular."
             if self.substitute.email.casefold() != self.email:
                 errors["email"] = "O e-mail deve corresponder à conta substituta."
         if self.status == FiscalSubstitutionStatus.PENDING_ACCOUNT:
@@ -2146,3 +2164,494 @@ class WorkOrderServiceLine(models.Model):
 
     def __str__(self):
         return f"{self.service_name} — OS {self.work_order.number}"
+
+
+class ContractModality(models.TextChoices):
+    MONTHLY = "MENSAL", "Mensal"
+    ON_DEMAND = "SOB_DEMANDA", "Sob demanda"
+    HOUR = "POR_HORA", "Por hora"
+    SERVICE = "POR_SERVICO", "Por serviço"
+    UNIT = "POR_UNIDADE", "Por unidade"
+    LOT = "POR_LOTE", "Por lote"
+    LICENSE = "POR_LICENCA", "Por licença"
+    USER = "POR_USUARIO", "Por usuário"
+    CLASS = "POR_TURMA", "Por turma"
+    SPRINT = "POR_SPRINT", "Por sprint"
+    UST = "POR_UST", "Por UST"
+    HST = "POR_HST", "Por HST"
+    USN = "POR_USN", "Por USN"
+    FUNCTION_POINT = "PONTO_FUNCAO", "Por ponto de função"
+    DELIVERABLE = "POR_ENTREGAVEL", "Por entregável"
+    GLOBAL_PRICE = "PRECO_GLOBAL", "Preço global"
+    MIXED = "MISTO", "Misto"
+    OTHER = "OUTRO", "Outro"
+
+
+class ContractManagementCategory(models.TextChoices):
+    SYSTEM = "SISTEMA", "Sistema"
+    EQUIPMENT = "EQUIPAMENTO", "Equipamento"
+    CONTINUOUS_SERVICE = "SERVICO_CONTINUO", "Serviço continuado"
+    ON_DEMAND_SERVICE = "SERVICO_SOB_DEMANDA", "Serviço sob demanda"
+    SINGLE_DELIVERY = "ENTREGA_UNICA", "Entrega única"
+    LICENSE = "LICENCA", "Licença ou assinatura"
+    TRAINING = "CAPACITACAO", "Capacitação"
+    CONSTRUCTION = "OBRA", "Obra ou serviço de engenharia"
+    OTHER = "OUTRO", "Outro"
+
+
+class IntelligenceReviewStatus(models.TextChoices):
+    DETECTED = "DETECTADA", "Detectada"
+    AWAITING_CONFIRMATION = "AGUARDANDO_CONFIRMACAO", "Aguardando confirmação"
+    CONFIRMED = "CONFIRMADA", "Confirmada"
+    REJECTED = "REJEITADA", "Rejeitada"
+    SUPERSEDED = "SUBSTITUIDA", "Substituída"
+    INACTIVE = "INATIVA", "Inativa"
+
+
+class ContractClassification(models.Model):
+    contract = models.OneToOneField(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="intelligence_classification",
+        verbose_name="contrato",
+    )
+    modality = models.CharField(
+        "modalidade geral",
+        max_length=30,
+        choices=ContractModality.choices,
+        blank=True,
+    )
+    management_category = models.CharField(
+        "categoria gerencial",
+        max_length=30,
+        choices=ContractManagementCategory.choices,
+        blank=True,
+        db_index=True,
+        help_text=(
+            "Classificação para agrupamento executivo; não substitui a modalidade "
+            "de medição ou pagamento."
+        ),
+    )
+    status = models.CharField(
+        "status",
+        max_length=30,
+        choices=IntelligenceReviewStatus.choices,
+        default=IntelligenceReviewStatus.DETECTED,
+        db_index=True,
+    )
+    rationale = models.TextField("fundamentação da detecção", blank=True)
+    version = models.PositiveIntegerField("versão", default=1)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="contract_classifications_confirmed",
+        verbose_name="confirmado por",
+    )
+    confirmed_at = models.DateTimeField("confirmado em", null=True, blank=True)
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "classificação contratual"
+        verbose_name_plural = "classificações contratuais"
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Classificação não pode ser excluída; preserve o histórico.")
+
+
+class ContractItemClassification(models.Model):
+    item = models.OneToOneField(
+        ContractItem,
+        on_delete=models.PROTECT,
+        related_name="intelligence_classification",
+        verbose_name="item",
+    )
+    modality = models.CharField(
+        "modalidade",
+        max_length=30,
+        choices=ContractModality.choices,
+        blank=True,
+    )
+    status = models.CharField(
+        "status",
+        max_length=30,
+        choices=IntelligenceReviewStatus.choices,
+        default=IntelligenceReviewStatus.DETECTED,
+        db_index=True,
+    )
+    rationale = models.TextField("fundamentação da detecção", blank=True)
+    version = models.PositiveIntegerField("versão", default=1)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="contract_item_classifications_confirmed",
+        verbose_name="confirmado por",
+    )
+    confirmed_at = models.DateTimeField("confirmado em", null=True, blank=True)
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "classificação de item contratual"
+        verbose_name_plural = "classificações de itens contratuais"
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Classificação não pode ser excluída; preserve o histórico.")
+
+
+class ContractClauseType(models.TextChoices):
+    OBJECT = "OBJETO", "Objeto"
+    VALIDITY = "VIGENCIA", "Vigência"
+    PRICE = "PRECO", "Preço"
+    PAYMENT = "PAGAMENTO", "Pagamento"
+    MEASUREMENT = "MEDICAO", "Medição"
+    ACCEPTANCE = "ACEITE", "Aceite"
+    DEADLINE = "PRAZO", "Prazo"
+    DELIVERY = "ENTREGA", "Entrega"
+    OBLIGATIONS = "OBRIGACOES", "Obrigações"
+    WARRANTY = "GARANTIA", "Garantia"
+    SANCTIONS = "SANCOES", "Sanções"
+    DISALLOWANCE = "GLOSA", "Glosa"
+    SLA = "SLA", "SLA"
+    IMR = "IMR", "IMR"
+    READJUSTMENT = "REAJUSTE", "Reajuste"
+    REPACTUATION = "REPACTUACAO", "Repactuação"
+    REBALANCING = "REEQUILIBRIO", "Reequilíbrio"
+    CHANGE = "ALTERACAO", "Alteração"
+    TERMINATION = "EXTINCAO", "Extinção"
+    INTELLECTUAL_PROPERTY = "PROPRIEDADE_INTELECTUAL", "Propriedade intelectual"
+    CONFIDENTIALITY = "CONFIDENCIALIDADE", "Confidencialidade"
+    LGPD = "LGPD", "LGPD"
+    SECURITY = "SEGURANCA", "Segurança"
+
+
+class ContractClause(models.Model):
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="intelligence_clauses",
+        verbose_name="contrato",
+    )
+    clause_type = models.CharField(
+        "tipo", max_length=40, choices=ContractClauseType.choices, db_index=True
+    )
+    source_document = models.ForeignKey(
+        "documents.Document",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="intelligence_clauses",
+        verbose_name="documento fonte",
+    )
+    source_reference = models.CharField("página/cláusula", max_length=200, blank=True)
+    excerpt = models.TextField("trecho", blank=True)
+    status = models.CharField(
+        "status",
+        max_length=30,
+        choices=IntelligenceReviewStatus.choices,
+        default=IntelligenceReviewStatus.DETECTED,
+        db_index=True,
+    )
+    version = models.PositiveIntegerField("versão", default=1)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="contract_clauses_confirmed",
+        verbose_name="confirmado por",
+    )
+    confirmed_at = models.DateTimeField("confirmado em", null=True, blank=True)
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ("contract", "clause_type", "version", "pk")
+        verbose_name = "cláusula classificada"
+        verbose_name_plural = "cláusulas classificadas"
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Cláusula classificada não pode ser excluída.")
+
+
+class ContractRuleType(models.TextChoices):
+    CALCULATION = "CALCULATION", "Cálculo"
+    VALIDATION = "VALIDATION", "Validação"
+    LIMIT = "LIMIT", "Limite"
+    DEADLINE = "DEADLINE", "Prazo"
+    CONSISTENCY = "CONSISTENCY", "Consistência"
+    COMPLIANCE = "COMPLIANCE", "Conformidade"
+    WARNING = "WARNING", "Aviso"
+    BLOCKING = "BLOCKING", "Bloqueio"
+    WORKFLOW = "WORKFLOW", "Fluxo"
+
+
+class ContractRule(models.Model):
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="intelligence_rules",
+        verbose_name="contrato",
+    )
+    code = models.CharField("ID da regra", max_length=100)
+    name = models.CharField("nome", max_length=200)
+    description = models.TextField("descrição")
+    rule_type = models.CharField("tipo", max_length=20, choices=ContractRuleType.choices)
+    rule_pack = models.CharField("pacote de regras", max_length=80, blank=True)
+    source_document = models.ForeignKey(
+        "documents.Document",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="contract_rules",
+        verbose_name="documento fonte",
+    )
+    source_reference = models.CharField("página/cláusula", max_length=200, blank=True)
+    parameters = models.JSONField("parâmetros", default=dict, blank=True)
+    calculator_key = models.CharField("calculadora permitida", max_length=80, blank=True)
+    formula_description = models.TextField("fórmula explicável", blank=True)
+    status = models.CharField(
+        "status",
+        max_length=30,
+        choices=IntelligenceReviewStatus.choices,
+        default=IntelligenceReviewStatus.DETECTED,
+        db_index=True,
+    )
+    version = models.PositiveIntegerField("versão", default=1)
+    supersedes = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="superseded_by",
+        verbose_name="substitui",
+    )
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="contract_rules_confirmed",
+        verbose_name="confirmado por",
+    )
+    confirmed_at = models.DateTimeField("confirmado em", null=True, blank=True)
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        ordering = ("contract", "code", "-version", "pk")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("contract", "code", "version"),
+                name="contracts_rule_code_version_unique",
+            )
+        ]
+        verbose_name = "regra contratual"
+        verbose_name_plural = "regras contratuais"
+
+    def clean(self):
+        super().clean()
+        if self.status == IntelligenceReviewStatus.CONFIRMED and (
+            not self.confirmed_by_id or not self.confirmed_at
+        ):
+            raise ValidationError("Regra confirmada exige autor e data da confirmação.")
+        if self.rule_type == ContractRuleType.CALCULATION and not self.calculator_key:
+            raise ValidationError({"calculator_key": "Regra de cálculo exige calculadora tipada."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Regra contratual não pode ser excluída; use status ou versão.")
+
+
+class ContractFindingSeverity(models.TextChoices):
+    INFO = "INFO", "Informativa"
+    WARNING = "WARNING", "Atenção"
+    CRITICAL = "CRITICAL", "Crítica"
+
+
+class ContractFindingStatus(models.TextChoices):
+    NEW = "NOVA", "Nova"
+    READ = "LIDA", "Lida"
+    IN_ANALYSIS = "EM_ANALISE", "Em análise"
+    AWAITING_INFORMATION = "AGUARDANDO_INFORMACAO", "Aguardando informação"
+    RESOLVED = "RESOLVIDA", "Resolvida"
+    DISCARDED = "DESCARTADA", "Descartada com justificativa"
+
+
+class ContractFinding(models.Model):
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="intelligence_findings",
+        verbose_name="contrato",
+    )
+    rule = models.ForeignKey(
+        ContractRule,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="findings",
+        verbose_name="regra",
+    )
+    fingerprint = models.CharField("identificador estável", max_length=160)
+    code = models.CharField("código", max_length=100)
+    severity = models.CharField(
+        "gravidade", max_length=20, choices=ContractFindingSeverity.choices
+    )
+    status = models.CharField(
+        "status",
+        max_length=30,
+        choices=ContractFindingStatus.choices,
+        default=ContractFindingStatus.NEW,
+        db_index=True,
+    )
+    title = models.CharField("título", max_length=240)
+    explanation = models.TextField("explicação")
+    data = models.JSONField("dados", default=dict, blank=True)
+    evidence = models.JSONField("evidências", default=list, blank=True)
+    first_detected_at = models.DateTimeField("detectada em", auto_now_add=True)
+    last_detected_at = models.DateTimeField("detectada novamente em", auto_now=True)
+    read_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="contract_findings_read",
+        verbose_name="lida por",
+    )
+    read_at = models.DateTimeField("lida em", null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="contract_findings_resolved",
+        verbose_name="encerrada por",
+    )
+    resolved_at = models.DateTimeField("encerrada em", null=True, blank=True)
+    resolution_justification = models.TextField("justificativa do encerramento", blank=True)
+
+    class Meta:
+        ordering = ("status", "-last_detected_at", "pk")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("contract", "fingerprint"),
+                name="contracts_finding_fingerprint_unique",
+            )
+        ]
+        verbose_name = "achado de consistência"
+        verbose_name_plural = "achados de consistência"
+
+    @property
+    def is_active_pending(self):
+        return self.status not in (
+            ContractFindingStatus.RESOLVED,
+            ContractFindingStatus.DISCARDED,
+        )
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Achado não pode ser excluído; preserve o histórico.")
+
+
+class IntelligenceExecution(models.Model):
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="intelligence_executions",
+        verbose_name="contrato",
+    )
+    executed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="intelligence_executions",
+        verbose_name="executado por",
+    )
+    reason = models.CharField("motivo", max_length=120, default="execucao_manual")
+    summary = models.JSONField("resumo", default=dict, blank=True)
+    created_at = models.DateTimeField("executado em", auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at", "-pk")
+        verbose_name = "execução do motor contratual"
+        verbose_name_plural = "execuções do motor contratual"
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Execução do motor não pode ser excluída.")
+
+
+class ContractIntelligenceEvent(models.Model):
+    class EventType(models.TextChoices):
+        ENGINE_EXECUTED = "MOTOR_EXECUTADO", "Motor executado"
+        CLASSIFICATION_CONFIRMED = "CLASSIFICACAO_CONFIRMADA", "Classificação confirmada"
+        CLAUSE_CREATED = "CLAUSULA_CRIADA", "Cláusula candidata criada"
+        CLAUSE_REVIEWED = "CLAUSULA_REVISADA", "Cláusula revisada"
+        RULE_CREATED = "REGRA_CRIADA", "Regra candidata criada"
+        RULE_REVIEWED = "REGRA_REVISADA", "Regra revisada"
+        FINDING_CREATED = "ACHADO_CRIADO", "Achado criado"
+        FINDING_REOPENED = "ACHADO_REABERTO", "Achado reaberto"
+        FINDING_TRANSITIONED = "ACHADO_TRANSICIONADO", "Situação do achado alterada"
+        FINDING_AUTO_RESOLVED = "ACHADO_AUTO_RESOLVIDO", "Achado resolvido no reprocessamento"
+
+    event_type = models.CharField("evento", max_length=40, choices=EventType.choices)
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="intelligence_events",
+        verbose_name="contrato",
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="contract_intelligence_events",
+        verbose_name="autor",
+    )
+    classification = models.ForeignKey(
+        ContractClassification,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="events",
+        verbose_name="classificação",
+    )
+    rule = models.ForeignKey(
+        ContractRule,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="events",
+        verbose_name="regra",
+    )
+    finding = models.ForeignKey(
+        ContractFinding,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="events",
+        verbose_name="achado",
+    )
+    execution = models.ForeignKey(
+        IntelligenceExecution,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="events",
+        verbose_name="execução",
+    )
+    details = models.JSONField("detalhes", default=dict, blank=True)
+    created_at = models.DateTimeField("registrado em", auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at", "-pk")
+        verbose_name = "evento do motor contratual"
+        verbose_name_plural = "eventos do motor contratual"
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Evento do motor não pode ser excluído.")

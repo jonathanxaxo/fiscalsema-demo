@@ -22,6 +22,13 @@ from pathlib import Path
 
 MAX_HELP_CHARS = 6000
 BASE_DIR = Path(__file__).resolve().parent / "conhecimento"
+PROFILE_COMPATIBILITY = {
+    "ADMINISTRADOR_GERAL": "ADMINISTRADOR",
+    "FISCAL_TITULAR": "FISCAL",
+    "AUXILIAR_ADMINISTRATIVA": "USUARIO_CONSULTA",
+    "GESTOR_ADMINISTRATIVO": "USUARIO_CONSULTA",
+    "GESTOR_DO_CONTRATO": "USUARIO_CONSULTA",
+}
 
 
 @dataclass(frozen=True)
@@ -34,7 +41,8 @@ class Section:
     body: str
 
     def visible_to(self, profile):
-        return "todos" in self.profiles or profile in self.profiles
+        compatible = PROFILE_COMPATIBILITY.get(profile, profile)
+        return "todos" in self.profiles or compatible in self.profiles
 
 
 def normalize(text):
@@ -106,6 +114,31 @@ def help_text(question, *, profile, route=""):
 
 
 SUGGESTIONS = {
+    "ADMINISTRADOR_GERAL": (
+        "Como aprovo uma solicitação de cadastro?",
+        "Como bloqueio ou restauro um usuário?",
+        "O que aparece na auditoria?",
+    ),
+    "FISCAL_TITULAR": (
+        "Qual o saldo do contrato e como foi calculado?",
+        "Quais inconsistências estão ativas?",
+        "Como cadastro uma Ordem de Serviço?",
+    ),
+    "AUXILIAR_ADMINISTRATIVA": (
+        "Quais contratos posso consultar?",
+        "Quais documentos estão disponíveis?",
+        "Existem pendências administrativas?",
+    ),
+    "GESTOR_ADMINISTRATIVO": (
+        "Quais contratos estão ativos na carteira institucional?",
+        "Qual a posição financeira consolidada?",
+        "Quais prazos exigem atenção?",
+    ),
+    "GESTOR_DO_CONTRATO": (
+        "Qual o saldo do contrato vinculado?",
+        "Quais OS estão abertas?",
+        "Existe alguma inconsistência?",
+    ),
     "ADMINISTRADOR": (
         "Como aprovo uma solicitação de cadastro?",
         "Como bloqueio ou restauro um usuário?",
@@ -125,4 +158,4 @@ SUGGESTIONS = {
 
 
 def suggestions_for(profile):
-    return SUGGESTIONS.get(profile, SUGGESTIONS["FISCAL"])
+    return SUGGESTIONS.get(profile, SUGGESTIONS["FISCAL_TITULAR"])

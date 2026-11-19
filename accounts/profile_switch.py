@@ -15,7 +15,12 @@ from django.db.models import Q
 from django.shortcuts import redirect
 from django.views import View
 
-from .models import AccountStatus, AuthenticationEvent, ProfileSwitchLink, UserProfile
+from .models import (
+    ADMINISTRATOR_PROFILES,
+    AccountStatus,
+    AuthenticationEvent,
+    ProfileSwitchLink,
+)
 from .services import record_authentication_event
 
 SESSION_KEY = "fiscalsema_perfil_conta_origem"
@@ -27,7 +32,7 @@ def _is_active(user):
 
 
 def _profile_label(user):
-    return "Administrador" if user.profile == UserProfile.ADMINISTRATOR else "Fiscal"
+    return "Administrador Geral" if user.profile in ADMINISTRATOR_PROFILES else "Fiscal Titular"
 
 
 def _other_account(link, user):
@@ -80,7 +85,7 @@ class SwitchProfileView(LoginRequiredMixin, View):
 
         event_type = (
             AuthenticationEvent.EventType.PROFILE_SWITCHED_TO_ADMIN
-            if target.profile == UserProfile.ADMINISTRATOR
+            if target.profile in ADMINISTRATOR_PROFILES
             else AuthenticationEvent.EventType.PROFILE_SWITCHED_TO_FISCAL
         )
         record_authentication_event(

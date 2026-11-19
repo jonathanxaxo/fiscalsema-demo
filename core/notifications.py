@@ -16,7 +16,12 @@ Não cria regra nova: cada aviso vem dos mesmos cálculos de
 from django.urls import reverse
 from django.utils.formats import number_format
 
-from accounts.models import RegistrationRequest, RegistrationStatus, UserProfile
+from accounts.models import (
+    ADMINISTRATOR_PROFILES,
+    RegistrationRequest,
+    RegistrationStatus,
+    UserProfile,
+)
 
 MAX_LISTED_NOTIFICATIONS = 30
 
@@ -192,7 +197,11 @@ def _contract_notifications(contract, dashboard, *, can_fix):
 
 def build_notifications(user, *, contract_id=None):
     from contracts.dashboard import build_contract_dashboard
-    from contracts.models import ContractStatus
+    from contracts.models import (
+        ContractFindingSeverity,
+        ContractFindingStatus,
+        ContractStatus,
+    )
     from contracts.services import contracts_visible_to, contracts_writable_by
 
     entries = []
@@ -213,7 +222,7 @@ def build_notifications(user, *, contract_id=None):
                 }
             )
 
-    if user.profile != UserProfile.ADMINISTRATOR:
+    if user.profile not in ADMINISTRATOR_PROFILES:
         contracts = contracts_visible_to(user).filter(
             status__in=(ContractStatus.ACTIVE, ContractStatus.SUSPENDED)
         ).order_by("number", "pk")
@@ -228,6 +237,29 @@ def build_notifications(user, *, contract_id=None):
                     can_fix=contract.pk in writable_ids,
                 )
             )
+            for finding in contract.intelligence_findings.filter(
+                status__in=(
+                    ContractFindingStatus.NEW,
+                    ContractFindingStatus.READ,
+                    ContractFindingStatus.IN_ANALYSIS,
+                    ContractFindingStatus.AWAITING_INFORMATION,
+                )
+            ).order_by("-last_detected_at", "pk"):
+                entries.append(
+                    {
+                        "level": (
+                            "danger"
+                            if finding.severity == ContractFindingSeverity.CRITICAL
+                            else "warning"
+                        ),
+                        "title": finding.title,
+                        "contract": f"Contrato {contract.number}",
+                        "url": reverse(
+                            "contracts:intelligence", kwargs={"contract_pk": contract.pk}
+                        ),
+                        "hint": "Analisar pendência",
+                    }
+                )
 
     # Itens críticos primeiro, preservando a ordem de cálculo dentro de cada nível.
     entries.sort(key=lambda entry: 0 if entry["level"] == "danger" else 1)

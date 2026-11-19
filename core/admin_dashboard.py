@@ -44,8 +44,17 @@ def build_admin_dashboard():
         ],
         "profile_rows": [
             {"label": label, "count": active.filter(profile=value).count()}
-            for value, label in UserProfile.choices
+            for value, label in (
+                (UserProfile.ADMINISTRATOR_GENERAL, UserProfile.ADMINISTRATOR_GENERAL.label),
+                (UserProfile.FISCAL_TITULAR, UserProfile.FISCAL_TITULAR.label),
+                (UserProfile.AUXILIARY_ADMINISTRATIVE, UserProfile.AUXILIARY_ADMINISTRATIVE.label),
+                (UserProfile.ADMINISTRATIVE_MANAGER, UserProfile.ADMINISTRATIVE_MANAGER.label),
+                (UserProfile.CONTRACT_MANAGER, UserProfile.CONTRACT_MANAGER.label),
+            )
         ],
+        "legacy_consultation_count": active.filter(
+            profile=UserProfile.CONSULTATION
+        ).count(),
         "pending_count": pending_requests.count(),
         "pending_preview": list(pending_requests.order_by("created_at")[:PENDING_PREVIEW]),
         "organizations_total": Organization.objects.count(),
