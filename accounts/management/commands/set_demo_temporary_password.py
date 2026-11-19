@@ -14,7 +14,7 @@ from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from accounts.models import AuthenticationEvent, User
+from accounts.models import AuthenticationEvent, DemoProfileSwitchTarget, User
 from accounts.services import clear_login_failures, record_authentication_event
 
 
@@ -33,6 +33,10 @@ class Command(BaseCommand):
         ).first()
         if user is None:
             raise CommandError("Operação recusada: conta não encontrada.")
+        if DemoProfileSwitchTarget.objects.filter(user=user, is_internal=True).exists():
+            raise CommandError(
+                "Operação recusada: conta interna de perfil não pode receber senha."
+            )
         try:
             validate_password(password, user=user)
         except ValidationError as error:

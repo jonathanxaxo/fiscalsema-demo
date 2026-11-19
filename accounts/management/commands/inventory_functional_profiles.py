@@ -19,9 +19,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write("Inventário somente leitura de perfis funcionais")
+        regular_users = User.objects.exclude(demo_profile_target__is_internal=True)
         counts = {
             row["profile"]: row["total"]
-            for row in User.objects.values("profile")
+            for row in regular_users.values("profile")
             .annotate(total=Count("pk"))
             .order_by("profile")
         }
@@ -30,7 +31,15 @@ class Command(BaseCommand):
             if total:
                 self.stdout.write(f"- {value} ({label}): {total}")
 
-        legacy = User.objects.filter(profile=UserProfile.CONSULTATION).select_related(
+        internal_count = User.objects.filter(
+            demo_profile_target__is_internal=True
+        ).count()
+        if internal_count:
+            self.stdout.write(
+                f"Contas internas da demonstração (sem login direto): {internal_count}"
+            )
+
+        legacy = regular_users.filter(profile=UserProfile.CONSULTATION).select_related(
             "organization"
         ).order_by("pk")
         self.stdout.write(f"USUARIO_CONSULTA a reclassificar: {legacy.count()}")

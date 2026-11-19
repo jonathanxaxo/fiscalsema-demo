@@ -144,6 +144,12 @@ def assign_user_organization(*, user_id, actor, organization_id, sector_id=None)
         raise PermissionDenied("Permissão para administrar usuários necessária.")
     user_model = get_user_model()
     user = user_model.objects.select_for_update().get(pk=user_id)
+    from accounts.models import DemoProfileSwitchTarget
+
+    if DemoProfileSwitchTarget.objects.filter(user=user, is_internal=True).exists():
+        raise ValidationError(
+            "Conta interna da demonstração só pode ser administrada pelo fluxo manual protegido."
+        )
     organization = Organization.objects.select_for_update().get(
         pk=organization_id, is_active=True
     )

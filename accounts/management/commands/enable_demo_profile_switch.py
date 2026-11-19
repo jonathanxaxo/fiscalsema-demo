@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from accounts.demo_profiles import ensure_switch, ensure_target
 from accounts.models import (
     ADMINISTRATOR_PROFILES,
     FISCAL_TITULAR_PROFILES,
@@ -64,12 +65,18 @@ class Command(BaseCommand):
             administrator = administrators[0]
 
             existing = ProfileSwitchLink.objects.filter(fiscal=fiscal, administrator=administrator)
-            if existing.exists():
-                self.stdout.write("Troca de perfil já habilitada para esta conta; nada foi alterado.")
-                return
-            if ProfileSwitchLink.objects.exists():
-                raise CommandError("Operação recusada: a troca de perfil já pertence a outra conta.")
+            already_enabled = existing.exists()
+            if not already_enabled:
+                if ProfileSwitchLink.objects.exists():
+                    raise CommandError("Operação recusada: a troca de perfil já pertence a outra conta.")
+                ProfileSwitchLink.objects.create(administrator=administrator, fiscal=fiscal)
 
-            ProfileSwitchLink.objects.create(administrator=administrator, fiscal=fiscal)
+            switch = ensure_switch(controller=fiscal)
+            ensure_target(switch=switch, user=fiscal, is_internal=False)
+            ensure_target(switch=switch, user=administrator, is_internal=False)
+
+        if already_enabled:
+            self.stdout.write("Troca de perfil já habilitada para esta conta; nada foi alterado.")
+            return
 
         self.stdout.write(self.style.SUCCESS("Troca de perfil habilitada com segurança."))
