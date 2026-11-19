@@ -25,10 +25,8 @@ instalada sem autorização; a suíte PostgreSQL foi executada pela CI do PR.
 
 ## CI do Pull Request
 
-- PR [#53](https://github.com/jonathanxaxo/fiscalsema-demo/pull/53);
-- GitHub Actions
-  [44588237203](https://github.com/jonathanxaxo/fiscalsema-demo/actions/runs/44588237203)
-  — aprovado;
+- PR `#53`;
+- GitHub Actions `44588237203` — aprovado;
 - migrations e configuração Django — aprovadas, sem alterações ausentes;
 - configuração Vercel sem acesso ao banco — aprovada;
 - varredura de segurança — aprovada;
