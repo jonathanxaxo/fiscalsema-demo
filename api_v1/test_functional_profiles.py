@@ -74,7 +74,7 @@ class FunctionalProfileApiTests(TestCase):
         cls.manager_access = ContractAccess.objects.create(
             contract=cls.contract_a,
             user=cls.contract_manager,
-            access_type=ContractAccessType.CONTRACT_MANAGER,
+            access_type=ContractAccessType.READ_ONLY,
             status=ContractAccessStatus.ACTIVE,
             granted_by=cls.fiscal_a,
         )

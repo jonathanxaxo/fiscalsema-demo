@@ -58,7 +58,7 @@ Dentro do Claude Code, use `/mcp` para conferir a conexão. **Importante:** atua
 - Propostas de correção ficam em **Rascunhos da IA** para revisão. Uma mensagem como "sim" no chat **não modifica os dados**.
 - Para determinadas alterações permitidas é necessária confirmação formal, com código de uso único gerado no FiscalSema. Confira a proposta antes de confirmar.
 - A IA **não pode executar pagamentos, atestos, liquidações ou homologações**.
-- Nunca forneça sua senha, chave ou token em mensagens do chat.
+- Nunca forneça credenciais ou segredos em mensagens do chat.
 - Para cancelar uma conexão: **Minha conta → Conexões externas → Revogar**.
 - Neste ambiente de demonstração, trabalhe exclusivamente com dados fictícios.
 

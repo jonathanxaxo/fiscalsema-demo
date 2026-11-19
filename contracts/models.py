@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models.functions import Lower
 from django.utils import timezone
 
-from accounts.models import FISCAL_TITULAR_PROFILES, UserProfile
+from accounts.models import FISCAL_TITULAR_PROFILES
 
 
 def normalized_text(value):
@@ -193,7 +193,6 @@ class Contract(models.Model):
 
 class ContractAccessType(models.TextChoices):
     READ_ONLY = "READ_ONLY", "Somente leitura"
-    CONTRACT_MANAGER = "GESTOR_CONTRATO", "Gestor do Contrato"
 
 
 class ContractAccessStatus(models.TextChoices):
@@ -242,13 +241,7 @@ class ContractAccess(models.Model):
     def clean(self):
         super().clean()
         errors = {}
-        if (
-            self.access_type == ContractAccessType.CONTRACT_MANAGER
-            and self.user_id
-            and self.user.profile != UserProfile.CONTRACT_MANAGER
-        ):
-            errors["user"] = "O vínculo de Gestor do Contrato exige o perfil correspondente."
-        elif self.access_type not in ContractAccessType.values:
+        if self.access_type not in ContractAccessType.values:
             errors["access_type"] = "Tipo de acesso ao contrato inválido."
         if self.status == ContractAccessStatus.ACTIVE:
             if self.revoked_by_id or self.revoked_at:
@@ -323,14 +316,6 @@ class ContractInvitation(models.Model):
         errors = {}
         if self.access_type not in ContractAccessType.values:
             errors["access_type"] = "Tipo de acesso ao contrato inválido."
-        if (
-            self.access_type == ContractAccessType.CONTRACT_MANAGER
-            and self.accepted_by_id
-            and self.accepted_by.profile != UserProfile.CONTRACT_MANAGER
-        ):
-            errors["accepted_by"] = (
-                "O vínculo de Gestor do Contrato exige o perfil correspondente."
-            )
         accepted = self.status == ContractInvitationStatus.ACCEPTED
         if accepted and (not self.accepted_by_id or not self.accepted_at):
             errors["status"] = "Convite aceito exige usuário e data de aceite."

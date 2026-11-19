@@ -117,7 +117,7 @@ def contracts_visible_to(actor):
     if actor.profile == UserProfile.CONTRACT_MANAGER:
         return queryset.filter(
             accesses__user=actor,
-            accesses__access_type=ContractAccessType.CONTRACT_MANAGER,
+            accesses__access_type=ContractAccessType.READ_ONLY,
             accesses__status=ContractAccessStatus.ACTIVE,
         ).distinct()
     if actor.profile == UserProfile.CONSULTATION:
@@ -241,7 +241,7 @@ def contracts_exportable_by(actor):
     if actor.profile == UserProfile.CONTRACT_MANAGER:
         return queryset.filter(
             accesses__user=actor,
-            accesses__access_type=ContractAccessType.CONTRACT_MANAGER,
+            accesses__access_type=ContractAccessType.READ_ONLY,
             accesses__status=ContractAccessStatus.ACTIVE,
         ).distinct()
     return queryset.none()
@@ -294,14 +294,12 @@ def actor_can_administer_all_contract_accesses(actor):
 
 
 def contracts_access_managed_by(actor):
-    """Contratos cujos vínculos podem ser corrigidos pelo Fiscal ou Administrador."""
+    """Contratos cujos vínculos podem ser concedidos pelo Fiscal responsável."""
     queryset = Contract.objects.select_related(
         "contracting_organization", "responsible_fiscal"
     ).filter(archived_at__isnull=True).exclude(
         status__in=(ContractStatus.CLOSED, ContractStatus.CANCELED)
     )
-    if actor_can_administer_all_contract_accesses(actor):
-        return queryset
     if (
         actor_is_active_fiscal(actor)
         and actor.organization_id
@@ -453,13 +451,6 @@ def share_contract_access(
             raise ValidationError(
                 "Esta conta precisa ser regularizada pelo Administrador antes de receber acesso."
             )
-        if (
-            access_type == ContractAccessType.CONTRACT_MANAGER
-            and user.profile != UserProfile.CONTRACT_MANAGER
-        ):
-            raise ValidationError(
-                "O vínculo exige uma conta com perfil Gestor do Contrato."
-            )
         if user.status == AccountStatus.PENDING_APPROVAL or not user.is_active:
             return _create_pending_contract_invitation(
                 contract=contract,
@@ -562,11 +553,6 @@ def accept_pending_contract_invitations(user):
         .select_related("contract", "invited_by")
     )
     for invitation in invitations:
-        if (
-            invitation.access_type == ContractAccessType.CONTRACT_MANAGER
-            and user.profile != UserProfile.CONTRACT_MANAGER
-        ):
-            continue
         access = ContractAccess.objects.select_for_update().filter(
             contract=invitation.contract, user=user
         ).first()

@@ -219,7 +219,6 @@ def change_user_profile(*, user_id, actor, profile):
     from contracts.models import (
         Contract,
         ContractAccessStatus,
-        ContractAccessType,
         FiscalSubstitutionStatus,
     )
     from contracts.services import revoke_contract_access, revoke_fiscal_substitution
@@ -237,9 +236,7 @@ def change_user_profile(*, user_id, actor, profile):
         status=ContractAccessStatus.ACTIVE
     )
     if profile == UserProfile.CONTRACT_MANAGER:
-        active_accesses_queryset = active_accesses_queryset.exclude(
-            access_type=ContractAccessType.CONTRACT_MANAGER
-        )
+        active_accesses_queryset = active_accesses_queryset.none()
     active_accesses = list(
         active_accesses_queryset.values_list("pk", "contract_id")
     )

@@ -235,21 +235,13 @@ class ReportFilterForm(AccountabilityFilterForm):
 
 
 class ContractShareForm(forms.Form):
-    access_type = forms.ChoiceField(
-        label="Tipo de vínculo",
-        choices=(
-            ("READ_ONLY", "Somente leitura (legado)"),
-            ("GESTOR_CONTRATO", "Gestor do Contrato"),
-        ),
-        help_text=(
-            "Gestor do Contrato exige uma conta aprovada com esse perfil e vale somente "
-            "para o contrato selecionado."
-        ),
-    )
     email = forms.EmailField(
         label="E-mail da pessoa",
         max_length=254,
-        help_text="Informe um e-mail individual; o vínculo será auditado.",
+        help_text=(
+            "Informe um e-mail individual. O vínculo é somente leitura, vale apenas "
+            "para este contrato e será auditado."
+        ),
     )
     confirm_regrant = forms.BooleanField(
         required=False,

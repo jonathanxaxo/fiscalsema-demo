@@ -11,7 +11,23 @@
 - `python manage.py test accounts.test_functional_profiles
   contracts.test_profiles_intelligence.IntelligencePureUnitTests
   --settings=core.settings_test --noinput` — 6 testes aprovados;
+- `python manage.py test
+  assistant.test_conhecimento_sprint50.ConhecimentoNovidadesTests
+  core.test_valores_sem_quebra.ValoresSemQuebraTemplatesTests
+  --settings=core.settings_test --noinput` — 9 testes aprovados;
+- `python -m unittest scripts.test_mcp_server` — 6 testes aprovados;
+- `python scripts/security/scan_repository.py` — aprovado, sem segredo ou
+  dado real conhecido;
 - `git diff --check` — aprovado.
+
+## Primeira execução integrada no PR
+
+A execução `44525936327` do GitHub Actions rodou 733 testes e identificou
+7 falhas e 3 erros antes do merge. A publicação permaneceu bloqueada. As
+causas foram corrigidas no mesmo PR: bloqueio PostgreSQL sem `DISTINCT`,
+preservação do vínculo único `READ_ONLY`, compatibilidade do formulário de
+compartilhamento, contratos de texto da interface e formatação financeira.
+Uma nova execução integral da CI é obrigatória antes do merge.
 
 ## Pendente antes da publicação
 

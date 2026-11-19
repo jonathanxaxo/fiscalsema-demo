@@ -44,7 +44,7 @@ from .services import (
     contracts_exportable_by,
     contracts_visible_to,
     contracts_writable_by,
-    share_contract_access,
+    share_contract_read_only,
 )
 from documents.models import Document, DocumentType, RelatedEntityType
 from documents.services import document_metadata_visible_to, documents_visible_to
@@ -153,7 +153,7 @@ class ProfileAuthorizationAndEngineTests(TestCase):
         ContractAccess.objects.create(
             contract=cls.contract_a,
             user=cls.contract_manager,
-            access_type=ContractAccessType.CONTRACT_MANAGER,
+            access_type=ContractAccessType.READ_ONLY,
             status=ContractAccessStatus.ACTIVE,
             granted_by=cls.fiscal_a,
         )
@@ -292,17 +292,17 @@ class ProfileAuthorizationAndEngineTests(TestCase):
         self.assertEqual(self.contract_manager.profile, UserProfile.AUXILIARY_ADMINISTRATIVE)
         self.assertEqual(access.status, ContractAccessStatus.REVOKED)
 
-    def test_administrator_can_correct_contract_manager_links_without_becoming_fiscal(self):
-        access, invitation = share_contract_access(
+    def test_fiscal_can_link_contract_manager_without_granting_write(self):
+        access, invitation = share_contract_read_only(
             contract_id=self.contract_b.pk,
-            actor=self.admin,
+            actor=self.fiscal_b,
             email=self.contract_manager.email,
-            access_type=ContractAccessType.CONTRACT_MANAGER,
         )
         self.assertIsNone(invitation)
         self.assertEqual(access.status, ContractAccessStatus.ACTIVE)
-        self.assertEqual(access.granted_by, self.admin)
-        self.assertFalse(contracts_writable_by(self.admin).exists())
+        self.assertEqual(access.access_type, ContractAccessType.READ_ONLY)
+        self.assertEqual(access.granted_by, self.fiscal_b)
+        self.assertFalse(contracts_writable_by(self.contract_manager).exists())
 
     def test_auxiliary_sees_document_metadata_but_not_private_file(self):
         document = Document.objects.bulk_create([
@@ -406,7 +406,7 @@ class ProfileAuthorizationAndEngineTests(TestCase):
                 status=ContractFindingStatus.READ,
             )
 
-    def test_duplicate_item_finding_is_resolved_by_reprocessing(self):
+    def test_item_total_finding_is_resolved_by_reprocessing(self):
         first = ContractItem.objects.create(
             contract=self.contract_a,
             number="01",
@@ -419,22 +419,22 @@ class ProfileAuthorizationAndEngineTests(TestCase):
         )
         second = ContractItem.objects.create(
             contract=self.contract_a,
-            number=" 01 ",
-            description="Item repetido para teste",
+            number="02",
+            description="Segundo item para completar o valor",
             category="TIC",
             unit=ContractItemUnit.UNIT,
             contracted_quantity=Decimal("1.0000"),
-            unit_value=Decimal("100.00"),
+            unit_value=Decimal("50.00"),
             created_by=self.fiscal_a,
         )
         run_contract_intelligence(contract_id=self.contract_a.pk, actor=self.fiscal_a)
         finding = self.contract_a.intelligence_findings.get(
-            code="DUPLICATE_ITEM_NUMBER"
+            code="ITEM_TOTAL_DIVERGENT"
         )
         self.assertEqual(finding.status, ContractFindingStatus.NEW)
 
-        second.is_active = False
-        second.save(update_fields=("is_active", "updated_at"))
+        second.unit_value = Decimal("100.00")
+        second.save(update_fields=("unit_value", "updated_at"))
         run_contract_intelligence(contract_id=self.contract_a.pk, actor=self.fiscal_a)
         finding.refresh_from_db()
         self.assertEqual(finding.status, ContractFindingStatus.RESOLVED)

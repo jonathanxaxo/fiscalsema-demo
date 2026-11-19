@@ -652,7 +652,12 @@ def _persist_findings(contract, actor, detected):
 
 @transaction.atomic
 def run_contract_intelligence(*, contract_id, actor, reason="execucao_manual"):
-    contract = contracts_scannable_by(actor).select_for_update().get(pk=contract_id)
+    if not contracts_scannable_by(actor).filter(pk=contract_id).exists():
+        raise Contract.DoesNotExist
+    # A consulta de autorização pode usar DISTINCT por causa dos vínculos. O
+    # PostgreSQL não permite FOR UPDATE nessa forma; depois de autorizar, o
+    # bloqueio é aplicado diretamente à linha do contrato.
+    contract = Contract.objects.select_for_update().get(pk=contract_id)
     item_classifications = [
         _upsert_item_classification(item)
         for item in contract.items.filter(is_active=True).order_by("number", "pk")

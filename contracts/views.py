@@ -112,7 +112,7 @@ from .services import (
     create_contract,
     create_contract_item,
     create_fiscal_substitution,
-    share_contract_access,
+    share_contract_read_only,
     revoke_contract_access,
     revocable_accesses_by,
     revocable_fiscal_substitutions_by,
@@ -723,11 +723,10 @@ class ContractShareView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def form_valid(self, form):
         try:
-            access, invitation = share_contract_access(
+            access, invitation = share_contract_read_only(
                 contract_id=self.get_contract().pk,
                 actor=self.request.user,
                 email=form.cleaned_data["email"],
-                access_type=form.cleaned_data["access_type"],
                 confirm_regrant=form.cleaned_data["confirm_regrant"],
             )
         except ValidationError as error:

@@ -44,8 +44,8 @@
 
   <h2>Posição financeira explicável</h2>
   {% if snapshot.erro_financeiro %}<p class="notice">{{ snapshot.erro_financeiro }}</p>{% else %}
-    <dl><dt>Valor atual</dt><dd>R$ {{ snapshot.financeiro.valor_atual }}</dd><dt>Empenhado</dt><dd>R$ {{ snapshot.financeiro.empenhado.valor }}</dd><dt>Comprometido</dt><dd>R$ {{ snapshot.financeiro.comprometido.valor }}</dd><dt>Executado</dt><dd>R$ {{ snapshot.financeiro.executado.valor }}</dd><dt>Faturado</dt><dd>R$ {{ snapshot.financeiro.faturado.valor }}</dd><dt>Pago</dt><dd>R$ {{ snapshot.financeiro.pago.valor }}</dd><dt>Saldo contratual</dt><dd>R$ {{ snapshot.financeiro.saldo_contratual.valor }}</dd></dl>
-    <details><summary>Ver cálculo do saldo contratual</summary><ol>{% for evidence in snapshot.financeiro.saldo_contratual.evidencias %}<li>{{ evidence.operacao }} · {{ evidence.descricao }} · R$ {{ evidence.valor }} ({{ evidence.tipo }} #{{ evidence.id }})</li>{% empty %}<li>Sem evidências.</li>{% endfor %}</ol></details>
+    <dl><dt>Valor atual</dt><dd>R$&nbsp;{{ snapshot.financeiro.valor_atual }}</dd><dt>Empenhado</dt><dd>R$&nbsp;{{ snapshot.financeiro.empenhado.valor }}</dd><dt>Comprometido</dt><dd>R$&nbsp;{{ snapshot.financeiro.comprometido.valor }}</dd><dt>Executado</dt><dd>R$&nbsp;{{ snapshot.financeiro.executado.valor }}</dd><dt>Faturado</dt><dd>R$&nbsp;{{ snapshot.financeiro.faturado.valor }}</dd><dt>Pago</dt><dd>R$&nbsp;{{ snapshot.financeiro.pago.valor }}</dd><dt>Saldo contratual</dt><dd>R$&nbsp;{{ snapshot.financeiro.saldo_contratual.valor }}</dd></dl>
+    <details><summary>Ver cálculo do saldo contratual</summary><ol>{% for evidence in snapshot.financeiro.saldo_contratual.evidencias %}<li>{{ evidence.operacao }} · {{ evidence.descricao }} · R$&nbsp;{{ evidence.valor }} ({{ evidence.tipo }} #{{ evidence.id }})</li>{% empty %}<li>Sem evidências.</li>{% endfor %}</ol></details>
   {% endif %}
 
   <h2>Cláusulas classificadas</h2>

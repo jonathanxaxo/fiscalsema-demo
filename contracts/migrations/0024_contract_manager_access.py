@@ -9,10 +9,7 @@ class Migration(migrations.Migration):
             model_name="contractaccess",
             name="access_type",
             field=models.CharField(
-                choices=[
-                    ("READ_ONLY", "Somente leitura"),
-                    ("GESTOR_CONTRATO", "Gestor do Contrato"),
-                ],
+                choices=[("READ_ONLY", "Somente leitura")],
                 default="READ_ONLY",
                 max_length=20,
                 verbose_name="tipo de acesso",
@@ -22,10 +19,7 @@ class Migration(migrations.Migration):
             model_name="contractinvitation",
             name="access_type",
             field=models.CharField(
-                choices=[
-                    ("READ_ONLY", "Somente leitura"),
-                    ("GESTOR_CONTRATO", "Gestor do Contrato"),
-                ],
+                choices=[("READ_ONLY", "Somente leitura")],
                 default="READ_ONLY",
                 max_length=20,
                 verbose_name="tipo de acesso",

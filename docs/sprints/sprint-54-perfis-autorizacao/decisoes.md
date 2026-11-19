@@ -11,9 +11,10 @@
    Ficam marcadas para reclassificação auditada pelo Administrador Geral.
 5. Autorização é aplicada nas consultas e serviços do backend. Ocultar botão
    na tela é apenas uma segunda camada de apresentação.
-6. O Administrador Geral pode corrigir vínculos de leitura e do Gestor do
-   Contrato sem assumir o papel operacional do Fiscal. A criação de
-   substituição continua reservada ao Fiscal Titular responsável.
+6. Todo vínculo individual de contrato permanece tecnicamente `READ_ONLY`.
+   O Administrador Geral pode auditá-lo e revogar incompatibilidades ao alterar
+   um perfil, mas o compartilhamento operacional continua reservado ao Fiscal
+   Titular responsável.
 7. Abrir uma tela ou consultar a API não altera achados nem registros
    operacionais. Perfis somente leitura também não recebem capacidade de
    rascunho controlado, mesmo que uma credencial técnica esteja mal configurada.
