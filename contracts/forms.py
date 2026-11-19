@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.utils import timezone
+from documents.models import Document
 
 from .models import (
     BudgetCommitment,
@@ -20,7 +21,73 @@ from .models import (
     WorkOrderAllocationStatus,
     WorkOrderExecution,
     WorkOrderStatus,
+    ContractClauseType,
+    ContractRuleType,
 )
+
+
+CALCULATOR_CHOICES = (
+    ("", "Não se aplica"),
+    ("QUANTITY_X_UNIT_VALUE", "Quantidade × valor unitário"),
+)
+
+
+class ContractClauseCandidateForm(forms.Form):
+    clause_type = forms.ChoiceField(label="Tipo de cláusula", choices=ContractClauseType.choices)
+    source_document = forms.ModelChoiceField(
+        label="Documento fonte", queryset=Document.objects.none()
+    )
+    source_reference = forms.CharField(label="Página/cláusula", max_length=200)
+    excerpt = forms.CharField(
+        label="Trecho de evidência",
+        max_length=4000,
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+
+    def __init__(self, *args, contract=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["source_document"].queryset = Document.objects.filter(
+            contract=contract
+        ).order_by("document_type", "-version", "-uploaded_at")
+
+
+class ContractRuleCandidateForm(forms.Form):
+    code = forms.CharField(label="ID da regra", max_length=100)
+    name = forms.CharField(label="Nome", max_length=200)
+    description = forms.CharField(
+        label="Descrição", max_length=4000, widget=forms.Textarea(attrs={"rows": 3})
+    )
+    rule_type = forms.ChoiceField(label="Tipo", choices=ContractRuleType.choices)
+    source_document = forms.ModelChoiceField(
+        label="Documento fonte", queryset=Document.objects.none()
+    )
+    source_reference = forms.CharField(label="Página/cláusula", max_length=200)
+    calculator_key = forms.ChoiceField(
+        label="Calculadora tipada", choices=CALCULATOR_CHOICES, required=False
+    )
+    formula_description = forms.CharField(
+        label="Fórmula explicável",
+        max_length=2000,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
+
+    def __init__(self, *args, contract=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["source_document"].queryset = Document.objects.filter(
+            contract=contract
+        ).order_by("document_type", "-version", "-uploaded_at")
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("rule_type") == ContractRuleType.CALCULATION:
+            if not cleaned.get("calculator_key"):
+                self.add_error("calculator_key", "Selecione uma calculadora tipada.")
+            if not (cleaned.get("formula_description") or "").strip():
+                self.add_error("formula_description", "Explique a fórmula da regra.")
+        else:
+            cleaned["calculator_key"] = ""
+        return cleaned
 from .periods import calendar_year_periods, contract_year_periods
 from .work_order_deadlines import DEFAULT_DEADLINE_MONTHS, suggested_deadline
 
@@ -171,7 +238,10 @@ class ContractShareForm(forms.Form):
     email = forms.EmailField(
         label="E-mail da pessoa",
         max_length=254,
-        help_text="O acesso concedido será exclusivamente Somente leitura.",
+        help_text=(
+            "Informe um e-mail individual. O vínculo é somente leitura, vale apenas "
+            "para este contrato e será auditado."
+        ),
     )
     confirm_regrant = forms.BooleanField(
         required=False,

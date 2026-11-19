@@ -24,6 +24,7 @@ from .forms import (
     EmailAuthenticationForm,
     FiscalRegistrationForm,
     RegistrationReviewForm,
+    UserProfileChangeForm,
     UserOrganizationAssignmentForm,
 )
 from .models import AuthenticationEvent, RegistrationRequest, RegistrationStatus, User
@@ -31,6 +32,7 @@ from organizations.services import assign_user_organization
 from .services import (
     archive_user,
     archive_registration_request,
+    change_user_profile,
     change_user_status,
     clear_login_failures,
     record_authentication_event,
@@ -223,6 +225,11 @@ class RegistrationRequestReviewView(AdministrativeAccessMixin, FormView):
         context["registration_request"] = self.get_registration_request()
         return context
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["requested_profile"] = self.get_registration_request().requested_profile
+        return kwargs
+
     def form_valid(self, form):
         try:
             registration = review_registration_request(
@@ -236,6 +243,7 @@ class RegistrationRequestReviewView(AdministrativeAccessMixin, FormView):
                 form.cleaned_data.get("sector").pk
                 if form.cleaned_data.get("sector")
                 else None,
+                form.cleaned_data.get("approved_profile"),
             )
         except ValidationError as error:
             form.add_error(None, error)
@@ -257,15 +265,15 @@ class AdministrativeFiscalCreateView(AdministrativeAccessMixin, FormView):
             form.add_error("email", "Já existe uma conta com este e-mail.")
             return self.form_invalid(form)
         record_authentication_event(
-            AuthenticationEvent.EventType.FISCAL_CREATED,
+            AuthenticationEvent.EventType.USER_CREATED,
             request=self.request,
             user=user,
             email=user.email,
-            details={"autor_id": self.request.user.pk},
+            details={"autor_id": self.request.user.pk, "perfil": user.profile},
         )
         messages.success(
             self.request,
-            "Fiscal criado com sucesso. A troca da senha temporária será exigida no primeiro acesso.",
+            "Usuário criado com sucesso. A troca da senha temporária será exigida no primeiro acesso.",
         )
         return redirect(reverse("accounts_admin:fiscal_create"))
 
@@ -303,6 +311,38 @@ class AdministrativeUserStatusView(AdministrativeAccessMixin, View):
         else:
             messages.success(request, f"Status de {user.full_name} atualizado com segurança.")
         return redirect("accounts_admin:user_list")
+
+
+class AdministrativeUserProfileView(AdministrativeAccessMixin, FormView):
+    permission_required = "accounts.manage_users"
+    form_class = UserProfileChangeForm
+    template_name = "accounts/admin/user_profile.html"
+
+    def get_target(self):
+        if not hasattr(self, "target_user"):
+            self.target_user = get_object_or_404(User, pk=self.kwargs["pk"])
+        return self.target_user
+
+    def form_valid(self, form):
+        try:
+            target = change_user_profile(
+                user_id=self.get_target().pk,
+                actor=self.request.user,
+                profile=form.cleaned_data["profile"],
+            )
+        except ValidationError as error:
+            form.add_error(None, error)
+            return self.form_invalid(form)
+        messages.success(
+            self.request,
+            f"Perfil de {target.full_name} alterado com auditoria e sessões encerradas.",
+        )
+        return redirect("accounts_admin:user_list")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["target_user"] = self.get_target()
+        return context
 
 
 class AdministrativeUserArchiveView(AdministrativeAccessMixin, View):

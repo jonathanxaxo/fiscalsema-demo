@@ -28,7 +28,7 @@ from api_v1.oauth import connections_for, revoke_connection
 
 from .backends import AccountStatusBackend
 from .google_oidc import GoogleLoginError, complete_flow, is_configured, start_flow
-from .forms import GoogleSignupForm, requested_profile_for
+from .forms import GoogleSignupForm
 from .models import AccountStatus, AuthenticationEvent, ExternalIdentity, RegistrationRequest, User
 from .signup_policy import is_signup_allowed
 from .services import (
@@ -199,13 +199,17 @@ def google_signup(request):
                     organization_name=form.cleaned_data["organization_name"],
                     sector_name=form.cleaned_data["sector_name"],
                     phone=form.cleaned_data["phone"],
-                    profile=requested_profile_for(email),
+                    profile=form.cleaned_data["requested_profile"],
                     status=AccountStatus.PENDING_APPROVAL,
                 )
                 user.set_unusable_password()
                 user.full_clean(exclude={"password"})
                 user.save()
-                registration = RegistrationRequest.objects.create(user=user)
+                registration = RegistrationRequest.objects.create(
+                    user=user,
+                    requested_profile=form.cleaned_data["requested_profile"],
+                    justification=form.cleaned_data["justification"].strip(),
+                )
                 ExternalIdentity.objects.create(
                     user=user, provider=ExternalIdentity.Provider.GOOGLE,
                     subject=pending["subject"], email=email,

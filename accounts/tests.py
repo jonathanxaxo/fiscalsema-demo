@@ -211,7 +211,7 @@ class UserIdentityTests(TestCase):
             password=VALID_PASSWORD,
         )
         self.assertEqual(user.status, AccountStatus.PENDING_APPROVAL)
-        self.assertEqual(user.profile, UserProfile.FISCAL)
+        self.assertEqual(user.profile, UserProfile.FISCAL_TITULAR)
         self.assertFalse(user.is_active)
         self.assertEqual(list(user.groups.values_list("name", flat=True)), [FISCAL_GROUP])
 
@@ -446,6 +446,8 @@ class FiscalRegistrationTests(TestCase):
             "organization_name": "  DEMO   MT  ",
             "sector_name": "  Unidade   Técnica  ",
             "phone": " (65)  99999-0000 ",
+            "requested_profile": UserProfile.FISCAL_TITULAR,
+            "justification": "Atuar na fiscalização de contratos demonstrativos.",
             "password1": VALID_PASSWORD,
             "password2": VALID_PASSWORD,
         }
@@ -458,7 +460,7 @@ class FiscalRegistrationTests(TestCase):
         self.assertEqual(user.organization_name, "DEMO MT")
         self.assertEqual(user.sector_name, "Unidade Técnica")
         self.assertEqual(user.phone, "(65) 99999-0000")
-        self.assertEqual(user.profile, UserProfile.FISCAL)
+        self.assertEqual(user.profile, UserProfile.FISCAL_TITULAR)
         self.assertEqual(user.status, AccountStatus.PENDING_APPROVAL)
         self.assertFalse(user.is_active)
         self.assertTrue(user.check_password(VALID_PASSWORD))
@@ -470,12 +472,15 @@ class FiscalRegistrationTests(TestCase):
             ).exists()
         )
 
-    def test_registration_exposes_password_limits_but_not_profile_choice(self):
+    def test_registration_exposes_password_limits_and_current_profile_choices(self):
         response = self.client.get(reverse("accounts:register"))
         form = response.context["form"]
         self.assertEqual(form.fields["password1"].widget.attrs["minlength"], 6)
         self.assertEqual(form.fields["password1"].widget.attrs["maxlength"], 24)
-        self.assertNotIn("profile", form.fields)
+        choices = {value for value, _label in form.fields["requested_profile"].choices}
+        self.assertIn(UserProfile.FISCAL_TITULAR, choices)
+        self.assertNotIn(UserProfile.ADMINISTRATOR_GENERAL, choices)
+        self.assertNotIn(UserProfile.CONSULTATION, choices)
 
     def test_duplicate_email_is_rejected_case_insensitively(self):
         User.objects.create_user(
@@ -543,6 +548,7 @@ class RegistrationAdministrationTests(TestCase):
                 "rejection_reason": "",
                 "organization": self.organization.pk,
                 "sector": self.sector.pk,
+                "approved_profile": UserProfile.FISCAL_TITULAR,
             },
         )
         self.assertRedirects(response, reverse("accounts_admin:registration_list"))
@@ -605,6 +611,7 @@ class RegistrationAdministrationTests(TestCase):
             "rejection_reason": "",
             "organization": self.organization.pk,
             "sector": self.sector.pk,
+            "approved_profile": UserProfile.FISCAL_TITULAR,
         }
         self.client.post(url, approval)
         response = self.client.post(url, approval)
@@ -664,7 +671,7 @@ class RegistrationAdministrationTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(reverse("home"))
         self.assertContains(response, "Solicitações de cadastro")
-        self.assertContains(response, "Criar Fiscal")
+        self.assertContains(response, "Criar usuário")
 
     def test_django_admin_cannot_bypass_audited_creation_flow(self):
         self.client.force_login(self.admin)
@@ -680,6 +687,7 @@ class RegistrationAdministrationTests(TestCase):
                 "organization": self.organization.pk,
                 "sector": self.sector.pk,
                 "phone": "",
+                "profile": UserProfile.FISCAL_TITULAR,
                 "password1": OTHER_VALID_PASSWORD,
                 "password2": OTHER_VALID_PASSWORD,
             },
@@ -693,7 +701,7 @@ class RegistrationAdministrationTests(TestCase):
         self.assertEqual(user.sector, self.sector)
         self.assertFalse(RegistrationRequest.objects.filter(user=user).exists())
         self.assertTrue(AuthenticationEvent.objects.filter(
-            event_type=AuthenticationEvent.EventType.FISCAL_CREATED,
+            event_type=AuthenticationEvent.EventType.USER_CREATED,
             user=user,
         ).exists())
         self.client.logout()
@@ -709,10 +717,16 @@ class RegistrationAdministrationTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.post(
             reverse("accounts_admin:registration_review", args=[self.registration.pk]),
-            {"action": "approve", "rejection_reason": "", "organization": "", "sector": ""},
+            {
+                "action": "approve",
+                "rejection_reason": "",
+                "organization": "",
+                "sector": "",
+                "approved_profile": UserProfile.FISCAL_TITULAR,
+            },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Selecione a organização do Fiscal.")
+        self.assertContains(response, "Selecione a organização da pessoa usuária.")
         self.registration.refresh_from_db()
         self.fiscal.refresh_from_db()
         self.assertEqual(self.registration.status, RegistrationStatus.PENDING)
@@ -731,6 +745,7 @@ class RegistrationAdministrationTests(TestCase):
                 "rejection_reason": "",
                 "organization": self.organization.pk,
                 "sector": other_sector.pk,
+                "approved_profile": UserProfile.FISCAL_TITULAR,
             },
         )
         self.assertEqual(response.status_code, 200)

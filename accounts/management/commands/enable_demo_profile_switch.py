@@ -4,7 +4,13 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from accounts.models import AccountStatus, ProfileSwitchLink, User, UserProfile
+from accounts.models import (
+    ADMINISTRATOR_PROFILES,
+    FISCAL_TITULAR_PROFILES,
+    AccountStatus,
+    ProfileSwitchLink,
+    User,
+)
 
 
 def _active_accounts():
@@ -32,7 +38,7 @@ class Command(BaseCommand):
                 .select_for_update()
                 .filter(
                     email__iexact=User.objects.normalize_login_email(fiscal_email),
-                    profile=UserProfile.FISCAL,
+                    profile__in=FISCAL_TITULAR_PROFILES,
                     is_superuser=False,
                 )
                 .first()
@@ -43,7 +49,7 @@ class Command(BaseCommand):
                 )
 
             administrators = _active_accounts().filter(
-                profile=UserProfile.ADMINISTRATOR, is_superuser=True
+                profile__in=ADMINISTRATOR_PROFILES, is_superuser=True
             )
             if admin_email:
                 administrators = administrators.filter(

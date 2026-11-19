@@ -14,6 +14,13 @@ from .models import (
     FiscalSubstitutionEvent,
     ContractItem,
     ContractItemEvent,
+    ContractClassification,
+    ContractClause,
+    ContractItemClassification,
+    ContractRule,
+    ContractFinding,
+    ContractIntelligenceEvent,
+    IntelligenceExecution,
     Invoice,
     InvoiceEvent,
     Payment,
@@ -130,6 +137,57 @@ class ContractItemEventAdmin(ReadOnlyAdmin):
     list_display = ("event_type", "item", "contract", "actor", "created_at")
     list_filter = ("event_type", "created_at")
     search_fields = ("item__number", "contract__number", "actor__email")
+
+
+@admin.register(ContractClassification)
+class ContractClassificationAdmin(ReadOnlyAdmin):
+    list_display = (
+        "contract", "modality", "management_category", "status", "version", "updated_at"
+    )
+    list_filter = ("modality", "management_category", "status")
+    search_fields = ("contract__number", "rationale")
+
+
+@admin.register(ContractItemClassification)
+class ContractItemClassificationAdmin(ReadOnlyAdmin):
+    list_display = ("item", "modality", "status", "version", "updated_at")
+    list_filter = ("modality", "status")
+    search_fields = ("item__number", "item__contract__number", "rationale")
+
+
+@admin.register(ContractClause)
+class ContractClauseAdmin(ReadOnlyAdmin):
+    list_display = ("contract", "clause_type", "source_reference", "status", "version")
+    list_filter = ("clause_type", "status")
+    search_fields = ("contract__number", "source_reference", "excerpt")
+
+
+@admin.register(ContractRule)
+class ContractRuleAdmin(ReadOnlyAdmin):
+    list_display = ("code", "contract", "rule_type", "status", "version", "rule_pack")
+    list_filter = ("rule_type", "status", "rule_pack")
+    search_fields = ("code", "name", "contract__number", "source_reference")
+
+
+@admin.register(ContractFinding)
+class ContractFindingAdmin(ReadOnlyAdmin):
+    list_display = ("code", "contract", "severity", "status", "last_detected_at")
+    list_filter = ("severity", "status")
+    search_fields = ("code", "title", "contract__number", "explanation")
+
+
+@admin.register(IntelligenceExecution)
+class IntelligenceExecutionAdmin(ReadOnlyAdmin):
+    list_display = ("contract", "executed_by", "reason", "created_at")
+    list_filter = ("reason", "created_at")
+    search_fields = ("contract__number", "executed_by__email")
+
+
+@admin.register(ContractIntelligenceEvent)
+class ContractIntelligenceEventAdmin(ReadOnlyAdmin):
+    list_display = ("event_type", "contract", "actor", "created_at")
+    list_filter = ("event_type", "created_at")
+    search_fields = ("contract__number", "actor__email")
 
 
 @admin.register(BudgetCommitment)

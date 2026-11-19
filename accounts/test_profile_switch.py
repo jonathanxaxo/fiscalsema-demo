@@ -120,7 +120,11 @@ class ProfileSwitchFlowTests(ProfileSwitchBase):
         self.assertEqual(get_user(self.client), self.admin)
         self.assertEqual(self.client.session[SESSION_KEY], self.fiscal.pk)
         home = self.client.get(reverse("home"))
-        self.assertContains(home, "Você está atuando como <strong>Administrador</strong>", html=False)
+        self.assertContains(
+            home,
+            "Você está atuando como <strong>Administrador Geral</strong>",
+            html=False,
+        )
         self.assertContains(home, "Voltar a Fiscal")
         self.assertEqual(self.client.get(reverse("accounts_admin:user_list")).status_code, 200)
 

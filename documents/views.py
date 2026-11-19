@@ -15,7 +15,12 @@ from contracts.services import (
 
 from .forms import DocumentUploadForm
 from .models import DocumentEvent
-from .services import create_document, documents_visible_to
+from .services import (
+    can_open_document_content,
+    create_document,
+    document_metadata_visible_to,
+    documents_visible_to,
+)
 
 
 class ContractDocumentContextMixin(LoginRequiredMixin):
@@ -39,9 +44,10 @@ class DocumentListView(ContractDocumentContextMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["documents"] = documents_visible_to(self.request.user).filter(
+        context["documents"] = document_metadata_visible_to(self.request.user).filter(
             contract=self.contract
         )
+        context["can_open_documents"] = can_open_document_content(self.request.user)
         context["can_upload"] = (
             settings.FILE_FEATURES_ENABLED
             and contracts_writable_by(self.request.user).filter(pk=self.contract.pk).exists()

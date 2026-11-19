@@ -1,7 +1,7 @@
 {% extends "accounts/base.html" %}
 {% block title %}Usuários — FiscalSema{% endblock %}
 {% block content %}
-  <header class="page-header"><div><span class="eyebrow">Administração</span><h1>Usuários</h1><p>Gerencie vínculos e o ciclo de acesso sem excluir o histórico.</p></div><div class="page-header-actions"><a class="button-link" href="{% url 'accounts_admin:fiscal_create' %}">Criar Fiscal</a>{% if show_archived %}<a class="button-link button-link-secondary" href="{% url 'accounts_admin:user_list' %}">Ver contas atuais</a>{% else %}<a class="button-link button-link-secondary" href="?excluidos=1">Ver contas excluídas</a>{% endif %}</div></header>
+  <header class="page-header"><div><span class="eyebrow">Administração</span><h1>Usuários</h1><p>Gerencie vínculos e o ciclo de acesso, incluindo perfis, sem excluir o histórico.</p></div><div class="page-header-actions"><a class="button-link" href="{% url 'accounts_admin:fiscal_create' %}">Criar usuário</a>{% if show_archived %}<a class="button-link button-link-secondary" href="{% url 'accounts_admin:user_list' %}">Ver contas atuais</a>{% else %}<a class="button-link button-link-secondary" href="?excluidos=1">Ver contas excluídas</a>{% endif %}</div></header>
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
   <table>
     <thead><tr><th>Nome</th><th>Perfil</th><th>Organização</th><th>Setor</th><th>Status</th><th>Ação</th></tr></thead>
@@ -9,7 +9,7 @@
       {% for user_item in users %}
         <tr>
           <td>{{ user_item.full_name }}<br>{{ user_item.email }}</td>
-          <td>{{ user_item.get_profile_display }}</td>
+          <td>{{ user_item.get_profile_display }}{% if user_item.profile == 'USUARIO_CONSULTA' %}<br><small class="status-pill status-warning">Reclassificação obrigatória</small>{% endif %}</td>
           <td>{{ user_item.organization.name|default:"—" }}</td>
           <td>{{ user_item.sector.name|default:"—" }}</td>
           <td><span class="status-pill {% if user_item.status == 'ATIVO' %}status-success{% elif user_item.status == 'BLOQUEADO' or user_item.status == 'REJEITADO' %}status-danger{% elif user_item.status == 'PENDENTE_DE_APROVACAO' %}status-warning{% else %}status-neutral{% endif %}">{{ user_item.get_status_display }}</span>{% if user_item.archived_at %}<br><small>Excluída logicamente</small>{% endif %}</td>
@@ -18,12 +18,17 @@
               <form class="inline-form" method="post" action="{% url 'accounts_admin:user_restore' user_item.pk %}" onsubmit="return confirm('Restaurar esta conta como inativa?');">{% csrf_token %}<button type="submit">Restaurar</button></form>
             {% else %}
               <a href="{% url 'accounts_admin:user_organization' user_item.pk %}">Organização e setor</a>
+              {% if user_item.pk != request.user.pk %}<a href="{% url 'accounts_admin:user_profile' user_item.pk %}">Alterar perfil</a>{% endif %}
               {% if user_item.pk != request.user.pk %}
                 {% if user_item.status == 'ATIVO' %}
                   <form class="inline-form" method="post" action="{% url 'accounts_admin:user_status' user_item.pk 'deactivate' %}" onsubmit="return confirm('Inativar esta conta e encerrar suas sessões?');">{% csrf_token %}<button type="submit">Inativar</button></form>
+                  <form class="inline-form" method="post" action="{% url 'accounts_admin:user_status' user_item.pk 'block' %}" onsubmit="return confirm('Bloquear esta conta e encerrar suas sessões?');">{% csrf_token %}<button type="submit">Bloquear</button></form>
                 {% elif user_item.status == 'INATIVO' %}
                   <form class="inline-form" method="post" action="{% url 'accounts_admin:user_status' user_item.pk 'activate' %}" onsubmit="return confirm('Ativar novamente esta conta?');">{% csrf_token %}<button type="submit">Ativar</button></form>
+                  <form class="inline-form" method="post" action="{% url 'accounts_admin:user_status' user_item.pk 'block' %}" onsubmit="return confirm('Bloquear esta conta?');">{% csrf_token %}<button type="submit">Bloquear</button></form>
                   <form class="inline-form" method="post" action="{% url 'accounts_admin:user_archive' user_item.pk %}" onsubmit="return confirm('Excluir logicamente esta conta? O acesso será bloqueado e o histórico preservado.');">{% csrf_token %}<button type="submit">Excluir</button></form>
+                {% elif user_item.status == 'BLOQUEADO' %}
+                  <form class="inline-form" method="post" action="{% url 'accounts_admin:user_status' user_item.pk 'unblock' %}" onsubmit="return confirm('Desbloquear esta conta como inativa?');">{% csrf_token %}<button type="submit">Desbloquear</button></form>
                 {% else %}
                   <form class="inline-form" method="post" action="{% url 'accounts_admin:user_archive' user_item.pk %}" onsubmit="return confirm('Excluir logicamente esta conta? O histórico será preservado.');">{% csrf_token %}<button type="submit">Excluir</button></form>
                 {% endif %}
@@ -34,5 +39,5 @@
       {% empty %}<tr><td colspan="6">Nenhum usuário cadastrado.</td></tr>{% endfor %}
     </tbody>
   </table>
-  <p class="actions"><a href="{% url 'accounts_admin:fiscal_create' %}">Criar Fiscal</a><a href="{% url 'home' %}">Início</a></p>
+  <p class="actions"><a href="{% url 'accounts_admin:fiscal_create' %}">Criar usuário</a><a href="{% url 'home' %}">Início</a></p>
 {% endblock %}

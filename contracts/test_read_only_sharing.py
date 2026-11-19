@@ -110,7 +110,7 @@ class ReadOnlySharingTests(WorkOrderBase):
         self.assertIn(self.contract, contracts_visible_to(reader))
         self.assertEqual(access.access_type, ContractAccessType.READ_ONLY)
 
-    def test_invited_public_registration_becomes_consultation_after_approval(self):
+    def test_invited_public_registration_keeps_selected_current_profile(self):
         _, invitation = share_contract_read_only(
             contract_id=self.contract.pk,
             actor=self.owner,
@@ -124,13 +124,15 @@ class ReadOnlySharingTests(WorkOrderBase):
                 "organization_name": "Organização informada",
                 "sector_name": "Setor informado",
                 "phone": "",
+                "requested_profile": UserProfile.FISCAL_TITULAR,
+                "justification": "Consultar contrato demonstrativo compartilhado.",
                 "password1": VALID_PASSWORD,
                 "password2": VALID_PASSWORD,
             },
         )
         self.assertRedirects(response, reverse("accounts:registration_submitted"))
         reader = User.objects.get(email="consulta.cadastrada@example.local")
-        self.assertEqual(reader.profile, UserProfile.CONSULTATION)
+        self.assertEqual(reader.profile, UserProfile.FISCAL_TITULAR)
         self.assertEqual(reader.status, AccountStatus.PENDING_APPROVAL)
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, ContractInvitationStatus.PENDING)
@@ -147,7 +149,7 @@ class ReadOnlySharingTests(WorkOrderBase):
         reader.refresh_from_db()
         invitation.refresh_from_db()
         self.assertEqual(reader.status, AccountStatus.ACTIVE)
-        self.assertEqual(reader.profile, UserProfile.CONSULTATION)
+        self.assertEqual(reader.profile, UserProfile.FISCAL_TITULAR)
         self.assertEqual(invitation.status, ContractInvitationStatus.ACCEPTED)
         self.assertIn(self.contract, contracts_visible_to(reader))
 

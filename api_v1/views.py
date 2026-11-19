@@ -7,12 +7,16 @@ from django.http import FileResponse
 
 from contracts.accountability import build_accountability_snapshot
 from contracts.services import (
-    allocations_visible_to, commitments_visible_to, contract_financial_position,
+    actor_is_active_fiscal, allocations_visible_to, commitments_visible_to, contract_financial_position,
     contracts_visible_to, executions_visible_to, invoice_check_report,
     invoices_visible_to, items_visible_to, payments_visible_to, work_orders_visible_to,
 )
 from documents.models import DocumentEvent
-from documents.services import documents_visible_to
+from documents.services import (
+    can_open_document_content,
+    document_metadata_visible_to,
+    documents_visible_to,
+)
 
 from .base import ApiRequestError, ControlledWriteApiView, ReadOnlyApiView
 from .drafts import (
@@ -78,12 +82,20 @@ class ContractListView(ReadOnlyApiView):
 
 class CapabilityView(ReadOnlyApiView):
     def get(self, request):
-        can_draft = request.api_credential.access_mode == request.api_credential.AccessMode.CONTROLLED_DRAFT
-        request.api_result_count = len(READ_TOOLS) + (len(DRAFT_TYPES) if can_draft else 0)
+        read_tools = tuple(
+            tool for tool in READ_TOOLS
+            if tool != "documents.read" or can_open_document_content(request.api_actor)
+        )
+        can_draft = (
+            request.api_credential.access_mode
+            == request.api_credential.AccessMode.CONTROLLED_DRAFT
+            and actor_is_active_fiscal(request.api_actor)
+        )
+        request.api_result_count = len(read_tools) + (len(DRAFT_TYPES) if can_draft else 0)
         return self.json({
             "api_version": "v1",
             "credential_mode": request.api_credential.access_mode,
-            "read_tools": READ_TOOLS,
+            "read_tools": read_tools,
             "controlled_drafts": DRAFT_TYPES if can_draft else (),
             "controlled_operations": ("CRIAR", "ATUALIZAR") if can_draft else (),
             "transactional_batches": can_draft,
@@ -173,8 +185,15 @@ class ContractPaymentListView(ReadOnlyApiView):
 class ContractDocumentListView(ReadOnlyApiView):
     def get(self, request, contract_id):
         contract = visible_contract(request, contract_id)
-        queryset = documents_visible_to(request.api_actor).filter(contract=contract)
-        return self.json(paginated(request, queryset, document_data))
+        queryset = document_metadata_visible_to(request.api_actor).filter(contract=contract)
+
+        def authorized_document_data(document):
+            data = document_data(document)
+            if not can_open_document_content(request.api_actor):
+                data.pop("content_url", None)
+            return data
+
+        return self.json(paginated(request, queryset, authorized_document_data))
 
 
 def accountability_data(snapshot):
@@ -299,7 +318,11 @@ class AssistantDraftCreateView(ControlledWriteApiView):
         return self.json(paginated(request, queryset, draft_data))
 
     def post(self, request):
-        if request.api_credential.access_mode != request.api_credential.AccessMode.CONTROLLED_DRAFT:
+        if (
+            request.api_credential.access_mode
+            != request.api_credential.AccessMode.CONTROLLED_DRAFT
+            or not actor_is_active_fiscal(request.api_actor)
+        ):
             raise ApiRequestError(
                 "insufficient_credential_scope",
                 "Esta credencial é somente leitura e não pode criar rascunhos.", 403,
@@ -343,7 +366,11 @@ class AssistantDraftBatchCreateView(ControlledWriteApiView):
     allowed_methods = {"POST"}
 
     def post(self, request):
-        if request.api_credential.access_mode != request.api_credential.AccessMode.CONTROLLED_DRAFT:
+        if (
+            request.api_credential.access_mode
+            != request.api_credential.AccessMode.CONTROLLED_DRAFT
+            or not actor_is_active_fiscal(request.api_actor)
+        ):
             raise ApiRequestError(
                 "insufficient_credential_scope",
                 "Esta credencial é somente leitura e não pode criar rascunhos.", 403,

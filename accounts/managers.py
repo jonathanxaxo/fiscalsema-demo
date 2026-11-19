@@ -23,7 +23,7 @@ class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         from .models import AccountStatus, UserProfile
 
-        extra_fields.setdefault("profile", UserProfile.FISCAL)
+        extra_fields.setdefault("profile", UserProfile.FISCAL_TITULAR)
         extra_fields.setdefault("status", AccountStatus.PENDING_APPROVAL)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(email, password, **extra_fields)
@@ -31,12 +31,12 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         from .models import AccountStatus, UserProfile
 
-        extra_fields.setdefault("profile", UserProfile.ADMINISTRATOR)
+        extra_fields.setdefault("profile", UserProfile.ADMINISTRATOR_GENERAL)
         extra_fields.setdefault("status", AccountStatus.ACTIVE)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("must_change_password", False)
-        if extra_fields.get("profile") != UserProfile.ADMINISTRATOR:
-            raise ValueError("Superusuário deve possuir perfil Administrador.")
+        if extra_fields.get("profile") != UserProfile.ADMINISTRATOR_GENERAL:
+            raise ValueError("Superusuário deve possuir perfil Administrador Geral.")
         if extra_fields.get("status") != AccountStatus.ACTIVE:
             raise ValueError("Superusuário deve estar ativo.")
         if extra_fields.get("is_superuser") is not True:

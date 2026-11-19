@@ -14,6 +14,7 @@ from .models import (
     RegistrationRequest,
     RegistrationStatus,
     User,
+    UserProfile,
 )
 from organizations.models import Organization, OrganizationEvent, Sector
 
@@ -88,6 +89,7 @@ def review_registration_request(
     rejection_reason="",
     organization_id=None,
     sector_id=None,
+    approved_profile=None,
 ):
     if not actor.is_authenticated or not actor.has_perm("accounts.review_registration"):
         raise PermissionDenied("Acesso administrativo necessário.")
@@ -105,7 +107,7 @@ def review_registration_request(
     registration.reviewed_at = now
     if action == "approve":
         if not organization_id:
-            raise ValidationError("Selecione a organização do Fiscal.")
+            raise ValidationError("Selecione a organização da pessoa usuária.")
         organization = Organization.objects.select_for_update().get(
             pk=organization_id, is_active=True
         )
@@ -118,6 +120,17 @@ def review_registration_request(
             )
         registration.status = RegistrationStatus.APPROVED
         registration.rejection_reason = ""
+        approved_profile = approved_profile or registration.requested_profile
+        allowed_profiles = {
+            UserProfile.FISCAL_TITULAR,
+            UserProfile.AUXILIARY_ADMINISTRATIVE,
+            UserProfile.ADMINISTRATIVE_MANAGER,
+            UserProfile.CONTRACT_MANAGER,
+        }
+        if approved_profile not in allowed_profiles:
+            raise ValidationError("Selecione um perfil funcional válido para aprovação.")
+        previous_profile = user.profile
+        user.profile = approved_profile
         user.status = AccountStatus.ACTIVE
         user.organization = organization
         user.sector = sector
@@ -133,7 +146,7 @@ def review_registration_request(
     else:
         raise ValidationError("Ação de análise inválida.")
 
-    user.save(update_fields=("status", "organization", "sector"))
+    user.save(update_fields=("profile", "status", "organization", "sector"))
     registration.full_clean()
     registration.save(
         update_fields=("status", "reviewed_by", "reviewed_at", "rejection_reason")
@@ -142,7 +155,13 @@ def review_registration_request(
         event_type,
         user=user,
         email=user.email,
-        details={"solicitacao_id": registration.pk, "autor_id": actor.pk},
+        details={
+            "solicitacao_id": registration.pk,
+            "autor_id": actor.pk,
+            "perfil_solicitado": registration.requested_profile,
+            "perfil_aprovado": user.profile,
+            "perfil_anterior": previous_profile if action == "approve" else user.profile,
+        },
     )
     if action == "approve":
         OrganizationEvent.objects.create(
@@ -176,6 +195,99 @@ def _delete_user_sessions(user_id):
 
 
 @transaction.atomic
+def change_user_profile(*, user_id, actor, profile):
+    """Reclassifica uma conta com auditoria e revoga vínculos incompatíveis."""
+    _require_user_administrator(actor)
+    allowed_profiles = {
+        UserProfile.ADMINISTRATOR_GENERAL,
+        UserProfile.FISCAL_TITULAR,
+        UserProfile.AUXILIARY_ADMINISTRATIVE,
+        UserProfile.ADMINISTRATIVE_MANAGER,
+        UserProfile.CONTRACT_MANAGER,
+    }
+    if profile not in allowed_profiles:
+        raise ValidationError("Selecione um perfil funcional atual.")
+
+    target = User.objects.select_for_update().get(pk=user_id)
+    if target.pk == actor.pk:
+        raise ValidationError("Você não pode alterar o perfil da própria conta.")
+    if target.archived_at:
+        raise ValidationError("Restaure a conta antes de alterar o perfil.")
+    if target.profile == profile:
+        raise ValidationError("A conta já possui esse perfil.")
+
+    from contracts.models import (
+        Contract,
+        ContractAccessStatus,
+        FiscalSubstitutionStatus,
+    )
+    from contracts.services import revoke_contract_access, revoke_fiscal_substitution
+
+    if target.profile in (UserProfile.FISCAL_TITULAR, UserProfile.FISCAL):
+        if profile != UserProfile.FISCAL_TITULAR and Contract.objects.filter(
+            responsible_fiscal=target, archived_at__isnull=True
+        ).exists():
+            raise ValidationError(
+                "Transfira os contratos ativos deste Fiscal antes de alterar o perfil."
+            )
+
+    revoked_accesses = 0
+    active_accesses_queryset = target.contract_accesses.select_for_update().filter(
+        status=ContractAccessStatus.ACTIVE
+    )
+    if profile == UserProfile.CONTRACT_MANAGER:
+        active_accesses_queryset = active_accesses_queryset.none()
+    active_accesses = list(
+        active_accesses_queryset.values_list("pk", "contract_id")
+    )
+    if active_accesses:
+        for access_id, contract_id in active_accesses:
+            revoke_contract_access(
+                access_id=access_id, contract_id=contract_id, actor=actor
+            )
+            revoked_accesses += 1
+
+    revoked_substitutions = 0
+    if profile != UserProfile.FISCAL_TITULAR:
+        substitutions = list(
+            target.fiscal_substitutions.select_for_update()
+            .filter(
+                status__in=(
+                    FiscalSubstitutionStatus.PENDING_ACCOUNT,
+                    FiscalSubstitutionStatus.LINKED,
+                )
+            )
+            .values_list("pk", "contract_id")
+        )
+        for substitution_id, contract_id in substitutions:
+            revoke_fiscal_substitution(
+                substitution_id=substitution_id,
+                contract_id=contract_id,
+                actor=actor,
+            )
+            revoked_substitutions += 1
+
+    previous_profile = target.profile
+    target.profile = profile
+    target.save(update_fields=("profile",))
+    removed_sessions = _delete_user_sessions(target.pk)
+    record_authentication_event(
+        AuthenticationEvent.EventType.PROFILE_CHANGED,
+        user=target,
+        email=target.email,
+        details={
+            "autor_id": actor.pk,
+            "perfil_anterior": previous_profile,
+            "perfil_novo": profile,
+            "sessoes_encerradas": removed_sessions,
+            "acessos_revogados": revoked_accesses,
+            "substituicoes_revogadas": revoked_substitutions,
+        },
+    )
+    return target
+
+
+@transaction.atomic
 def change_user_status(*, user_id, actor, action):
     _require_user_administrator(actor)
     target = User.objects.select_for_update().get(pk=user_id)
@@ -193,11 +305,23 @@ def change_user_status(*, user_id, actor, action):
         if target.status != AccountStatus.INACTIVE:
             raise ValidationError("Somente uma conta inativa pode ser ativada.")
         target.status = AccountStatus.ACTIVE
+    elif action == "block":
+        if target.status not in (AccountStatus.ACTIVE, AccountStatus.INACTIVE):
+            raise ValidationError("Somente uma conta ativa ou inativa pode ser bloqueada.")
+        target.status = AccountStatus.BLOCKED
+    elif action == "unblock":
+        if target.status != AccountStatus.BLOCKED:
+            raise ValidationError("Somente uma conta bloqueada pode ser desbloqueada.")
+        target.status = AccountStatus.INACTIVE
     else:
         raise ValidationError("Ação de status inválida.")
 
     target.save(update_fields=("status",))
-    removed_sessions = _delete_user_sessions(target.pk) if action == "deactivate" else 0
+    removed_sessions = (
+        _delete_user_sessions(target.pk)
+        if action in ("deactivate", "block", "unblock")
+        else 0
+    )
     record_authentication_event(
         AuthenticationEvent.EventType.ACCOUNT_STATUS_CHANGED,
         user=target,

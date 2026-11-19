@@ -6,24 +6,39 @@
     <div><span class="eyebrow">Gestão contratual</span><h1>Contratos</h1><p>Consulte o painel, o cadastro e a situação de cada contrato no seu escopo.</p></div>
     <div class="page-header-actions">
       {% if can_create %}<a class="button-link" href="{% url 'contracts:create' %}">Cadastrar contrato</a>{% endif %}
-      <a class="button-link button-link-secondary" href="{% url 'contracts:archived_list' %}">Contratos arquivados</a>
+      {% if can_view_archived %}<a class="button-link button-link-secondary" href="{% url 'contracts:archived_list' %}">Contratos arquivados</a>{% endif %}
     </div>
   </header>
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  <form method="get" class="form-card">
+    <h2>Filtrar contratos</h2>
+    <label for="numero">Número</label><input id="numero" name="numero" value="{{ selected_filters.numero }}">
+    <label for="contratada">Contratada</label><input id="contratada" name="contratada" value="{{ selected_filters.contratada }}">
+    <label for="processo">Processo</label><input id="processo" name="processo" value="{{ selected_filters.processo }}">
+    <label for="fiscal">Fiscal Titular</label><input id="fiscal" name="fiscal" value="{{ selected_filters.fiscal }}">
+    <label for="exercicio">Exercício</label><input id="exercicio" name="exercicio" inputmode="numeric" maxlength="4" value="{{ selected_filters.exercicio }}">
+    <label for="status">Status</label><select id="status" name="status"><option value="">Todos</option>{% for value, label in contract_status_choices %}<option value="{{ value }}"{% if selected_filters.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <label for="modalidade">Tipo/modalidade</label><select id="modalidade" name="modalidade"><option value="">Todas</option>{% for value, label in modality_choices %}<option value="{{ value }}"{% if selected_filters.modalidade == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <label for="categoria">Categoria gerencial</label><select id="categoria" name="categoria"><option value="">Todas</option>{% for value, label in management_category_choices %}<option value="{{ value }}"{% if selected_filters.categoria == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <button type="submit">Filtrar</button> <a href="{% url 'contracts:list' %}">Limpar</a>
+  </form>
   <table>
-    <thead><tr><th>Número</th><th>Fornecedor</th><th>Vigência</th><th>Valor atual</th><th>Status</th><th>Ação</th></tr></thead>
+    <thead><tr><th>Número/processo</th><th>Fornecedor</th><th>Fiscal Titular</th><th>Vigência</th><th>Tipo/modalidade</th><th>Categoria</th><th>Valor atual</th><th>Status</th><th>Ação</th></tr></thead>
     <tbody>
       {% for contract in contracts %}
         <tr data-row-link="{% url 'contracts:detail' contract.pk %}">
-          <td>{{ contract.number }}</td>
+          <td>{{ contract.number }}<br><small>{{ contract.process_number }}</small></td>
           <td>{{ contract.supplier_name }}</td>
+          <td>{{ contract.responsible_fiscal.full_name }}</td>
           <td>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</td>
+          <td>{% if contract.intelligence_classification %}{{ contract.intelligence_classification.get_modality_display|default:"Pendente" }}{% else %}Não classificado{% endif %}</td>
+          <td>{% if contract.intelligence_classification %}{{ contract.intelligence_classification.get_management_category_display|default:"Pendente" }}{% else %}Não classificado{% endif %}</td>
           <td>R$&nbsp;{{ contract.current_value|localize }}</td>
           <td><span class="status-pill {% if contract.status == 'ATIVO' %}status-success{% elif contract.status == 'SUSPENSO' %}status-warning{% elif contract.status == 'CANCELADO' %}status-danger{% else %}status-neutral{% endif %}">{{ contract.get_status_display }}</span>{% if contract.pk in read_only_contract_ids %}<br><span class="status-pill status-neutral">Somente leitura</span>{% elif contract.pk in substitute_contract_ids %}<br><span class="status-pill status-warning">Fiscal substituto</span>{% endif %}</td>
           <td><div class="row-actions"><a class="button-link button-link-small" href="{% url 'contracts:dashboard' contract.pk %}">Dashboard</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:detail' contract.pk %}">Abrir cadastro</a></div></td>
         </tr>
       {% empty %}
-        <tr><td colspan="6">Você ainda não possui contratos.</td></tr>
+        <tr><td colspan="9">Nenhum contrato encontrado no seu escopo.</td></tr>
       {% endfor %}
     </tbody>
   </table>

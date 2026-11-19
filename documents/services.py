@@ -1,17 +1,35 @@
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 
+from accounts.models import UserProfile
 from contracts.services import contracts_visible_to, contracts_writable_by
 
 from .models import Document, DocumentEvent
 from .validators import inspect_upload
 
 
-def documents_visible_to(actor):
+def document_metadata_visible_to(actor):
     return Document.objects.select_related(
         "contract", "uploaded_by", "item", "commitment", "work_order",
         "execution", "invoice", "payment", "previous_version",
     ).filter(contract__in=contracts_visible_to(actor))
+
+
+def documents_visible_to(actor):
+    """Arquivos privados; Auxiliar recebe apenas a consulta de metadados."""
+    queryset = document_metadata_visible_to(actor)
+    if getattr(actor, "profile", None) == UserProfile.AUXILIARY_ADMINISTRATIVE:
+        return queryset.none()
+    return queryset
+
+
+def can_open_document_content(actor):
+    return bool(
+        getattr(actor, "is_authenticated", False)
+        and actor.is_active
+        and actor.profile != UserProfile.AUXILIARY_ADMINISTRATIVE
+        and actor.has_perm("documents.view_document")
+    )
 
 
 @transaction.atomic

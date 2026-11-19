@@ -2,7 +2,8 @@
 {% block title %}Documentos — Contrato {{ contract.number }}{% endblock %}
 {% block content %}
   <h1>Documentos do contrato {{ contract.number }}</h1>
-  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura:</strong> você pode consultar e baixar documentos autorizados, mas não anexar arquivos.</p>{% endif %}
+  {% if is_read_only_access %}<p class="notice"><strong>Somente leitura:</strong> você não pode alterar registros nem anexar arquivos.</p>{% endif %}
+  {% if not can_open_documents %}<p class="notice"><strong>Metadados administrativos:</strong> você pode consultar nome, tipo, versão, data, responsável e integridade, mas não abrir ou baixar o conteúdo privado.</p>{% endif %}
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
   <p class="helptext">Arquivos são privados, validados e armazenados fora do Git. O SHA-256 permite conferir sua integridade.</p>
   {% if can_upload %}<p><a href="{% url 'documents:upload' contract.pk %}">Anexar documento</a></p>{% endif %}
@@ -18,7 +19,7 @@
           <td>{{ document.uploaded_at|date:"d/m/Y H:i" }}</td>
           <td>{{ document.uploaded_by.full_name }}</td>
           <td><code title="{{ document.sha256 }}">{{ document.sha256|slice:":12" }}…</code></td>
-          <td><a href="{% url 'documents:download' document.pk %}">Baixar</a></td>
+          <td>{% if can_open_documents %}<a href="{% url 'documents:download' document.pk %}">Baixar</a>{% else %}<span class="muted">Conteúdo restrito</span>{% endif %}</td>
         </tr>
       {% empty %}<tr><td colspan="8">Nenhum documento anexado.</td></tr>{% endfor %}
     </tbody>

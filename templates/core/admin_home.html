@@ -33,6 +33,7 @@
     </div>
     <h3>Contas ativas por perfil</h3>
     <div class="status-summary-list">{% for row in d.profile_rows %}<div><span>{{ row.label }}</span><strong>{{ row.count }}</strong></div>{% endfor %}</div>
+    {% if d.legacy_consultation_count %}<p class="warning"><strong>{{ d.legacy_consultation_count }} conta(s) legada(s)</strong> ainda precisam ser reclassificadas. O perfil Usuário de Consulta não está disponível para novos cadastros ou alterações.</p>{% endif %}
   </section>
 
   <div class="dashboard-columns">
@@ -67,7 +68,7 @@
   <section class="surface" aria-labelledby="atalhos-titulo">
     <div class="section-heading"><div><span class="eyebrow">Atalhos</span><h2 id="atalhos-titulo">Ações administrativas</h2></div></div>
     <div class="module-grid">
-      <a class="module-card" href="{% url 'accounts_admin:fiscal_create' %}"><strong>Criar Fiscal</strong><span>Cadastrar uma conta de Fiscal com organização</span></a>
+      <a class="module-card" href="{% url 'accounts_admin:fiscal_create' %}"><strong>Criar usuário</strong><span>Cadastrar uma conta e definir seu perfil funcional</span></a>
       <a class="module-card" href="{% url 'accounts_admin:registration_list' %}"><strong>Solicitações de cadastro</strong><span>Aprovar ou rejeitar pedidos de acesso</span></a>
       <a class="module-card" href="{% url 'accounts_admin:user_list' %}"><strong>Usuários</strong><span>Ativar, bloquear e gerenciar vínculos</span></a>
       <a class="module-card" href="{% url 'audit:global' %}"><strong>Auditoria</strong><span>Histórico de acessos e alterações</span></a>

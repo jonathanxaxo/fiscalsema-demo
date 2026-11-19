@@ -1,8 +1,7 @@
 {% extends "accounts/base.html" %}
 {% block title %}Compartilhar — Contrato {{ contract.number }}{% endblock %}
 {% block content %}
-  <header class="page-header"><div><span class="eyebrow">Somente leitura</span><h1>Compartilhar contrato {{ contract.number }}</h1><p>Conceda consulta sem permitir alterações operacionais.</p></div></header>
-  <p><strong>Permissão:</strong> Somente leitura.</p>
+  <header class="page-header"><div><span class="eyebrow">Autorização individual</span><h1>Vincular ao contrato {{ contract.number }}</h1><p>Conceda consulta sem permitir alterações operacionais.</p></div></header>
   <p class="helptext">Se existir uma conta ativa, o acesso será vinculado. Para conta pendente ou inexistente, um convite ficará aguardando cadastro e aprovação administrativa, sem criar conta duplicada. O envio por e-mail depende do SMTP institucional.</p>
   <form class="form-card" method="post" novalidate>
     {% csrf_token %}

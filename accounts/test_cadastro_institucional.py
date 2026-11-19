@@ -62,7 +62,13 @@ class CadastroGoogleTests(GoogleBase):
         return response
 
     def complete(self, **data):
-        payload = {"full_name": "Servidora Fictícia", "organization_name": "Secretaria Fictícia", **data}
+        payload = {
+            "full_name": "Servidora Fictícia",
+            "organization_name": "Secretaria Fictícia",
+            "requested_profile": UserProfile.FISCAL_TITULAR,
+            "justification": "Atuar em contratos demonstrativos.",
+            **data,
+        }
         return self.client.post(reverse("accounts:google_signup"), payload)
 
     def test_new_institutional_user_becomes_pending_with_google_link(self):
@@ -75,7 +81,7 @@ class CadastroGoogleTests(GoogleBase):
         self.assertContains(done, "aguardando aprovação")
         user = User.objects.get(email="nova@instituicao.example")
         self.assertEqual(user.status, AccountStatus.PENDING_APPROVAL)
-        self.assertEqual(user.profile, UserProfile.FISCAL)
+        self.assertEqual(user.profile, UserProfile.FISCAL_TITULAR)
         self.assertFalse(user.is_active)
         self.assertFalse(user.has_usable_password())
         self.assertIsNone(user.organization_id)

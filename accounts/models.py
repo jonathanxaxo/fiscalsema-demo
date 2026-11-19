@@ -6,9 +6,12 @@ from django.utils import timezone
 
 from .constants import (
     ACCESS_GROUPS,
-    ADMIN_GROUP,
-    CONSULTATION_GROUP,
-    FISCAL_GROUP,
+    ADMINISTRATIVE_MANAGER_GROUP,
+    ADMINISTRATOR_GENERAL_GROUP,
+    AUXILIARY_ADMINISTRATIVE_GROUP,
+    CONTRACT_MANAGER_GROUP,
+    FISCAL_TITULAR_GROUP,
+    LEGACY_CONSULTATION_GROUP,
 )
 from .managers import UserManager
 
@@ -22,9 +25,33 @@ class AccountStatus(models.TextChoices):
 
 
 class UserProfile(models.TextChoices):
-    ADMINISTRATOR = "ADMINISTRADOR", "Administrador"
-    FISCAL = "FISCAL", "Fiscal"
-    CONSULTATION = "USUARIO_CONSULTA", "Usuário de Consulta"
+    ADMINISTRATOR_GENERAL = "ADMINISTRADOR_GERAL", "Administrador Geral"
+    FISCAL_TITULAR = "FISCAL_TITULAR", "Fiscal Titular"
+    AUXILIARY_ADMINISTRATIVE = "AUXILIAR_ADMINISTRATIVA", "Auxiliar Administrativa"
+    ADMINISTRATIVE_MANAGER = "GESTOR_ADMINISTRATIVO", "Gestor Administrativo"
+    CONTRACT_MANAGER = "GESTOR_DO_CONTRATO", "Gestor do Contrato"
+
+    # Valores transitórios: permanecem reconhecidos até a migration e a
+    # classificação humana das contas de consulta existentes.
+    ADMINISTRATOR = "ADMINISTRADOR", "Administrador (legado)"
+    FISCAL = "FISCAL", "Fiscal (legado)"
+    CONSULTATION = "USUARIO_CONSULTA", "Usuário de Consulta (legado)"
+
+
+ADMINISTRATOR_PROFILES = (
+    UserProfile.ADMINISTRATOR_GENERAL,
+    UserProfile.ADMINISTRATOR,
+)
+FISCAL_TITULAR_PROFILES = (
+    UserProfile.FISCAL_TITULAR,
+    UserProfile.FISCAL,
+)
+REGISTRATION_PROFILE_CHOICES = (
+    (UserProfile.FISCAL_TITULAR, UserProfile.FISCAL_TITULAR.label),
+    (UserProfile.AUXILIARY_ADMINISTRATIVE, UserProfile.AUXILIARY_ADMINISTRATIVE.label),
+    (UserProfile.ADMINISTRATIVE_MANAGER, UserProfile.ADMINISTRATIVE_MANAGER.label),
+    (UserProfile.CONTRACT_MANAGER, UserProfile.CONTRACT_MANAGER.label),
+)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -50,7 +77,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name="setor",
     )
     profile = models.CharField(
-        "perfil", max_length=20, choices=UserProfile.choices, default=UserProfile.FISCAL
+        "perfil",
+        max_length=30,
+        choices=UserProfile.choices,
+        default=UserProfile.FISCAL_TITULAR,
     )
     status = models.CharField(
         "status",
@@ -109,7 +139,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_active_administrator(self):
         return (
-            self.profile == UserProfile.ADMINISTRATOR
+            self.profile in ADMINISTRATOR_PROFILES
             and self.status == AccountStatus.ACTIVE
             and self.is_active
         )
@@ -126,8 +156,8 @@ class User(AbstractBaseUser, PermissionsMixin):
                 raise ValidationError({"organization": "O setor exige uma organização."})
             if self.sector.organization_id != self.organization_id:
                 raise ValidationError({"sector": "O setor deve pertencer à organização selecionada."})
-        if self.is_superuser and self.profile != UserProfile.ADMINISTRATOR:
-            raise ValidationError({"profile": "Superusuário deve ser Administrador."})
+        if self.is_superuser and self.profile not in ADMINISTRATOR_PROFILES:
+            raise ValidationError({"profile": "Superusuário deve ser Administrador Geral."})
 
     @staticmethod
     def _lock_administrator_changes():
@@ -142,7 +172,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         if not previous.is_active_administrator or self.is_active_administrator:
             return False
         return not type(self).objects.filter(
-            profile=UserProfile.ADMINISTRATOR,
+            profile__in=ADMINISTRATOR_PROFILES,
             status=AccountStatus.ACTIVE,
             is_active=True,
         ).exclude(pk=self.pk).exists()
@@ -151,9 +181,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         groups = {group.name: group for group in Group.objects.filter(name__in=ACCESS_GROUPS)}
         self.groups.remove(*groups.values())
         target = {
-            UserProfile.ADMINISTRATOR: ADMIN_GROUP,
-            UserProfile.FISCAL: FISCAL_GROUP,
-            UserProfile.CONSULTATION: CONSULTATION_GROUP,
+            UserProfile.ADMINISTRATOR_GENERAL: ADMINISTRATOR_GENERAL_GROUP,
+            UserProfile.FISCAL_TITULAR: FISCAL_TITULAR_GROUP,
+            UserProfile.AUXILIARY_ADMINISTRATIVE: AUXILIARY_ADMINISTRATIVE_GROUP,
+            UserProfile.ADMINISTRATIVE_MANAGER: ADMINISTRATIVE_MANAGER_GROUP,
+            UserProfile.CONTRACT_MANAGER: CONTRACT_MANAGER_GROUP,
+            UserProfile.ADMINISTRATOR: ADMINISTRATOR_GENERAL_GROUP,
+            UserProfile.FISCAL: FISCAL_TITULAR_GROUP,
+            UserProfile.CONSULTATION: LEGACY_CONSULTATION_GROUP,
         }.get(self.profile)
         if target is None:
             raise RuntimeError(f"Perfil sem grupo técnico correspondente: {self.profile}")
@@ -168,7 +203,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.sector_name = " ".join(self.sector_name.split())
         self.phone = " ".join(self.phone.split())
         self.is_active = self.status == AccountStatus.ACTIVE
-        self.is_staff = self.profile == UserProfile.ADMINISTRATOR and self.is_active
+        self.is_staff = self.profile in ADMINISTRATOR_PROFILES and self.is_active
         if kwargs.get("update_fields") is not None:
             kwargs["update_fields"] = tuple(
                 set(kwargs["update_fields"]) | {"email", "full_name", "is_active", "is_staff"}
@@ -188,7 +223,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             self._lock_administrator_changes()
             current = type(self).objects.select_for_update().get(pk=self.pk)
             if current.is_active_administrator and not type(self).objects.filter(
-                profile=UserProfile.ADMINISTRATOR,
+                profile__in=ADMINISTRATOR_PROFILES,
                 status=AccountStatus.ACTIVE,
                 is_active=True,
             ).exclude(pk=self.pk).exists():
@@ -212,6 +247,8 @@ class AuthenticationEvent(models.Model):
         REGISTRATION_REJECTED = "CADASTRO_REJEITADO", "Cadastro rejeitado"
         REGISTRATION_ARCHIVED = "CADASTRO_ARQUIVADO", "Cadastro arquivado"
         FISCAL_CREATED = "FISCAL_CRIADO", "Fiscal criado pelo Administrador"
+        USER_CREATED = "USUARIO_CRIADO", "Usuário criado pelo Administrador"
+        PROFILE_CHANGED = "PERFIL_ALTERADO", "Perfil alterado pelo Administrador"
         ACCOUNT_STATUS_CHANGED = "CONTA_STATUS_ALTERADO", "Status da conta alterado"
         ACCOUNT_ARCHIVED = "CONTA_ARQUIVADA", "Conta excluída logicamente"
         ACCOUNT_RESTORED = "CONTA_RESTAURADA", "Conta restaurada"
@@ -265,6 +302,13 @@ class RegistrationRequest(models.Model):
     status = models.CharField(
         "status", max_length=20, choices=RegistrationStatus.choices, default=RegistrationStatus.PENDING
     )
+    requested_profile = models.CharField(
+        "perfil solicitado",
+        max_length=30,
+        choices=UserProfile.choices,
+        default=UserProfile.FISCAL_TITULAR,
+    )
+    justification = models.TextField("justificativa", blank=True)
     created_at = models.DateTimeField("solicitado em", auto_now_add=True, db_index=True)
     reviewed_at = models.DateTimeField("analisado em", null=True, blank=True)
     reviewed_by = models.ForeignKey(
@@ -353,11 +397,11 @@ class ProfileSwitchLink(models.Model):
             raise ValidationError("O vínculo exige duas contas distintas.")
         if not (
             self.administrator.is_superuser
-            and self.administrator.profile == UserProfile.ADMINISTRATOR
+            and self.administrator.profile in ADMINISTRATOR_PROFILES
         ):
-            raise ValidationError({"administrator": "A conta de origem deve ser Administrador."})
-        if self.fiscal.profile != UserProfile.FISCAL or self.fiscal.is_superuser:
-            raise ValidationError({"fiscal": "A conta vinculada deve ser Fiscal."})
+            raise ValidationError({"administrator": "A conta de origem deve ser Administrador Geral."})
+        if self.fiscal.profile not in FISCAL_TITULAR_PROFILES or self.fiscal.is_superuser:
+            raise ValidationError({"fiscal": "A conta vinculada deve ser Fiscal Titular."})
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -399,4 +443,3 @@ class ExternalIdentity(models.Model):
 
     def __str__(self):
         return f"{self.get_provider_display()} — {self.email}"
-

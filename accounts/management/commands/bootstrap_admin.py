@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if User.objects.filter(
-            profile=UserProfile.ADMINISTRATOR,
+            profile=UserProfile.ADMINISTRATOR_GENERAL,
             status=AccountStatus.ACTIVE,
             is_active=True,
         ).exists():
@@ -33,7 +33,7 @@ class Command(BaseCommand):
         candidate = User(
             email=User.objects.normalize_login_email(email),
             full_name=full_name,
-            profile=UserProfile.ADMINISTRATOR,
+            profile=UserProfile.ADMINISTRATOR_GENERAL,
             status=AccountStatus.ACTIVE,
             is_superuser=True,
         )

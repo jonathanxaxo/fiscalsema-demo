@@ -9,7 +9,7 @@ from .forms import (
     AdministrativeFiscalCreationForm,
     FiscalRegistrationForm,
 )
-from .models import AccountStatus, User
+from .models import AccountStatus, User, UserProfile
 from .tests import VALID_PASSWORD
 
 
@@ -21,6 +21,8 @@ class ClearRegistrationValidationTests(TestCase):
             "organization_name": "DEMO",
             "sector_name": "CSTI",
             "phone": "",
+            "requested_profile": UserProfile.FISCAL_TITULAR,
+            "justification": "Atuar em contratos demonstrativos.",
             "password1": VALID_PASSWORD,
             "password2": VALID_PASSWORD,
         }

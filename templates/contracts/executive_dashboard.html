@@ -2,6 +2,27 @@
 {% load l10n formatacao %}
 {% block title %}Dashboard do contrato — FiscalSema{% endblock %}
 {% block content %}
+{% if portfolio %}
+  <header class="page-header">
+    <div><span class="eyebrow">Visão institucional</span><h1>Carteira consolidada de contratos</h1><p>Acompanhamento executivo de todos os contratos ativos, com agrupamento gerencial e seleção individual.</p></div>
+  </header>
+  <section class="surface" aria-labelledby="portfolio-summary">
+    <div class="section-heading"><div><span class="eyebrow">Resumo da carteira</span><h2 id="portfolio-summary">Totais consolidados</h2></div><span class="section-hint">{{ portfolio.contract_count }} contrato(s)</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><small>Valor atual</small><strong>R$&nbsp;{{ portfolio.current_value|localize }}</strong></div>
+      <div class="kpi-card"><small>Empenhado ativo</small><strong>R$&nbsp;{{ portfolio.committed_budget|localize }}</strong></div>
+      <div class="kpi-card"><small>Pago</small><strong>R$&nbsp;{{ portfolio.paid_value|localize }}</strong></div>
+      <div class="kpi-card kpi-card-highlight"><small>Saldo contratual</small><strong>R$&nbsp;{{ portfolio.contract_balance|localize }}</strong></div>
+    </div>
+    <form class="selector" method="get">
+      <div class="field-grow"><label for="portfolio-category">Filtrar categoria gerencial</label><select id="portfolio-category" name="category"><option value="">Todas as categorias</option>{% for value, label in management_category_choices %}<option value="{{ value }}"{% if selected_category == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <button type="submit">Aplicar</button>
+    </form>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Categoria</th><th>Contratos</th><th>Valor atual</th><th>Empenhado</th><th>Pago</th><th>Saldo</th><th>Conferência</th></tr></thead><tbody>
+      {% for row in portfolio.categories %}<tr><td>{{ row.label }}</td><td>{{ row.contract_count }}</td><td>R$&nbsp;{{ row.current_value|localize }}</td><td>R$&nbsp;{{ row.committed_budget|localize }}</td><td>R$&nbsp;{{ row.paid_value|localize }}</td><td>R$&nbsp;{{ row.contract_balance|localize }}</td><td>{% if row.inconsistent_count %}<span class="status-pill status-warning">{{ row.inconsistent_count }} a conferir</span>{% else %}<span class="status-pill status-success">Consistente</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="7">Nenhum contrato disponível.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+{% endif %}
 {% if not contract %}
   <header class="page-header">
     <div><span class="eyebrow">Dashboard do contrato</span><h1>Nenhum contrato disponível</h1><p>Quando um contrato for vinculado à sua conta, a situação dele aparecerá aqui.</p></div>
@@ -20,6 +41,7 @@
   <section class="surface contract-context" aria-labelledby="exec-contrato">
     {% if contracts|length > 1 %}
       <form class="selector" method="get">
+        {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
         <div class="field-grow"><label id="exec-contrato" for="exec-contract">Contrato</label><select id="exec-contract" name="contract" data-autosubmit>{% for item in contracts %}<option value="{{ item.pk }}"{% if item.pk == contract.pk %} selected{% endif %}>{{ item.number }} — {{ item.object|truncatechars:70 }}</option>{% endfor %}</select></div>
         <button type="submit">Ver dashboard</button>
       </form>

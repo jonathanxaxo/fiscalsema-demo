@@ -16,6 +16,7 @@ AUDIT_CATEGORIES = (
     ("DOCUMENTO", "Documento"),
     ("IMPORTACAO", "Importação"),
     ("EXPORTACAO", "Exportação"),
+    ("INTELIGENCIA_CONTRATUAL", "Inteligência contratual"),
     ("AUTENTICACAO", "Autenticação"),
     ("ORGANIZACAO", "Organização"),
     ("API", "API"),

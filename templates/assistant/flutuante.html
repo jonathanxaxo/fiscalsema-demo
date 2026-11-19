@@ -27,6 +27,7 @@
     <form class="assistant-form" method="post" action="{% url 'assistant:ask' %}" data-assistant-form data-no-submit-lock>
       {% csrf_token %}
       <input type="hidden" name="conversa" value="">
+      <input type="hidden" name="contrato" value="{{ assistant_contract_id|default:'' }}">
       {% include "assistant/_anexo.html" with prefix="arise" %}
       <label class="visually-hidden" for="arise-pergunta">Sua pergunta</label>
       <textarea id="arise-pergunta" name="pergunta" rows="1" maxlength="2000" placeholder="Pergunte qualquer coisa…" required></textarea>

@@ -4,7 +4,7 @@
   <h1>Cadastro de usuário</h1>
   <p>Preencha seus dados. O acesso só será liberado depois da aprovação de um Administrador.</p>
   <p class="helptext">A senha deve ter de 6 a 24 caracteres e incluir letra maiúscula, letra minúscula, número e caractere especial. Se faltar algum requisito, o formulário indicará exatamente qual.</p>
-  <p class="helptext">Se o seu e-mail foi convidado somente para consultar um contrato, o sistema criará o perfil Usuário de Consulta. Convite para substituição temporária mantém o cadastro como Fiscal. O perfil é definido com segurança pelo backend e não pode ser escolhido nesta tela.</p>
+  <p class="helptext">Solicite o perfil compatível com sua atividade. Administrador Geral e Fiscal Substituto não são opções de cadastro: o primeiro é administrado internamente e o segundo é um vínculo temporário por contrato.</p>
   <form method="post" novalidate>
     {% csrf_token %}
     {{ form.non_field_errors }}
