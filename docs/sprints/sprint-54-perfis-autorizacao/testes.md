@@ -27,16 +27,25 @@ A execução `44525936327` do GitHub Actions rodou 733 testes e identificou
 causas foram corrigidas no mesmo PR: bloqueio PostgreSQL sem `DISTINCT`,
 preservação do vínculo único `READ_ONLY`, compatibilidade do formulário de
 compartilhamento, contratos de texto da interface e formatação financeira.
-Uma nova execução integral da CI é obrigatória antes do merge.
+Uma segunda execução (`44529380727`) confirmou as correções anteriores e
+isolou quatro erros em um único import ausente no motor. O merge continuou
+bloqueado até a correção.
 
-## Pendente antes da publicação
+## Revalidação integral e Preview
 
-A suíte Django integrada depende de PostgreSQL. O banco local configurado não
-está disponível para esta execução; por isso, a validação integral deverá ser
-executada pela CI com o serviço PostgreSQL antes de qualquer merge/deploy.
-Essa suíte inclui os testes integrados de perfis da interface e da API,
-revogação dinâmica de vínculo, substituição vencida, metadados sem conteúdo
-privado e bloqueio de rascunho para perfis somente leitura.
+- GitHub Actions `44532087566`: aprovado em PostgreSQL 17, com migrations,
+  configuração Vercel, varredura de segurança, 6 testes MCP e 733 testes
+  Django aprovados;
+- Preview Vercel:
+  `https://fiscalsema-demo-gp1sqc7sq-projetos-jonathan.vercel.app`;
+- homologação da tela de login: HTTP funcional no navegador autenticado,
+  título `Entrar — FiscalSema`, aviso permanente de dados fictícios e fontes
+  animada/estática do logotipo presentes;
+- verificação visual da lupa no modo `Calmo`: duas capturas separadas por
+  900 ms produziram quadros diferentes, confirmando que a animação existente
+  permaneceu ativa.
+
+## Pendente antes da migração da demo
 
 Antes de aplicar a migração na base da demo, executar
 `python manage.py inventory_functional_profiles --details` e registrar a
