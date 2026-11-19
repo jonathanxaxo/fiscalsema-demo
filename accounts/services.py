@@ -10,6 +10,7 @@ from .managers import UserManager
 from .models import (
     AccountStatus,
     AuthenticationEvent,
+    DemoProfileSwitchTarget,
     LoginThrottle,
     RegistrationRequest,
     RegistrationStatus,
@@ -194,6 +195,13 @@ def _delete_user_sessions(user_id):
     return len(session_keys)
 
 
+def _reject_internal_demo_account(user):
+    if DemoProfileSwitchTarget.objects.filter(user=user, is_internal=True).exists():
+        raise ValidationError(
+            "Conta interna da demonstração só pode ser administrada pelo fluxo manual protegido."
+        )
+
+
 @transaction.atomic
 def change_user_profile(*, user_id, actor, profile):
     """Reclassifica uma conta com auditoria e revoga vínculos incompatíveis."""
@@ -209,6 +217,7 @@ def change_user_profile(*, user_id, actor, profile):
         raise ValidationError("Selecione um perfil funcional atual.")
 
     target = User.objects.select_for_update().get(pk=user_id)
+    _reject_internal_demo_account(target)
     if target.pk == actor.pk:
         raise ValidationError("Você não pode alterar o perfil da própria conta.")
     if target.archived_at:
@@ -291,6 +300,7 @@ def change_user_profile(*, user_id, actor, profile):
 def change_user_status(*, user_id, actor, action):
     _require_user_administrator(actor)
     target = User.objects.select_for_update().get(pk=user_id)
+    _reject_internal_demo_account(target)
     if target.pk == actor.pk:
         raise ValidationError("Você não pode alterar o status da própria conta.")
     if target.archived_at:
@@ -340,6 +350,7 @@ def change_user_status(*, user_id, actor, action):
 def archive_user(*, user_id, actor):
     _require_user_administrator(actor)
     target = User.objects.select_for_update().get(pk=user_id)
+    _reject_internal_demo_account(target)
     if target.pk == actor.pk:
         raise ValidationError("Você não pode excluir logicamente a própria conta.")
     if target.archived_at:
@@ -377,6 +388,7 @@ def archive_user(*, user_id, actor):
 def restore_user(*, user_id, actor):
     _require_user_administrator(actor)
     target = User.objects.select_for_update().get(pk=user_id)
+    _reject_internal_demo_account(target)
     if not target.archived_at:
         raise ValidationError("Esta conta não está excluída logicamente.")
     target.archived_at = None

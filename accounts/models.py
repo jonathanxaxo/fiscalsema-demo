@@ -53,6 +53,15 @@ REGISTRATION_PROFILE_CHOICES = (
     (UserProfile.CONTRACT_MANAGER, UserProfile.CONTRACT_MANAGER.label),
 )
 
+DEMO_SWITCH_PROFILE_CHOICES = (
+    (UserProfile.ADMINISTRATOR_GENERAL, UserProfile.ADMINISTRATOR_GENERAL.label),
+    (UserProfile.FISCAL_TITULAR, UserProfile.FISCAL_TITULAR.label),
+    (UserProfile.AUXILIARY_ADMINISTRATIVE, UserProfile.AUXILIARY_ADMINISTRATIVE.label),
+    (UserProfile.ADMINISTRATIVE_MANAGER, UserProfile.ADMINISTRATIVE_MANAGER.label),
+    (UserProfile.CONTRACT_MANAGER, UserProfile.CONTRACT_MANAGER.label),
+)
+DEMO_SWITCH_PROFILES = tuple(value for value, _label in DEMO_SWITCH_PROFILE_CHOICES)
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField("e-mail", unique=True, max_length=254)
@@ -254,6 +263,7 @@ class AuthenticationEvent(models.Model):
         ACCOUNT_RESTORED = "CONTA_RESTAURADA", "Conta restaurada"
         PROFILE_SWITCHED_TO_FISCAL = "PERFIL_FISCAL", "Perfil alternado para Fiscal"
         PROFILE_SWITCHED_TO_ADMIN = "PERFIL_ADMIN", "Perfil alternado para Administrador"
+        PROFILE_SWITCHED = "PERFIL_ALTERNADO", "Perfil de demonstração alternado"
         GOOGLE_LOGIN = "LOGIN_GOOGLE", "Login com Google"
         GOOGLE_LOGIN_DENIED = "LOGIN_GOOGLE_NEGADO", "Login com Google recusado"
         GOOGLE_LINKED = "GOOGLE_VINCULADO", "Conta Google vinculada"
@@ -406,6 +416,80 @@ class ProfileSwitchLink(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class DemoProfileSwitch(models.Model):
+    """Exceção da demo: uma única conta controla perfis internos de apresentação."""
+
+    controller = models.OneToOneField(
+        User,
+        on_delete=models.PROTECT,
+        related_name="demo_profile_switch",
+        verbose_name="conta controladora",
+    )
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "troca multiperfil da demonstração"
+        verbose_name_plural = "trocas multiperfil da demonstração"
+
+    def __str__(self):
+        return f"Troca multiperfil — {self.controller.email}"
+
+
+class DemoProfileSwitchTarget(models.Model):
+    """Conta que materializa as permissões reais de um perfil na demonstração."""
+
+    switch = models.ForeignKey(
+        DemoProfileSwitch,
+        on_delete=models.CASCADE,
+        related_name="targets",
+        verbose_name="troca multiperfil",
+    )
+    profile = models.CharField(
+        "perfil",
+        max_length=30,
+        choices=DEMO_SWITCH_PROFILE_CHOICES,
+    )
+    user = models.OneToOneField(
+        User,
+        on_delete=models.PROTECT,
+        related_name="demo_profile_target",
+        verbose_name="conta do perfil",
+    )
+    is_internal = models.BooleanField("conta interna sem login direto", default=False)
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ("profile", "pk")
+        verbose_name = "perfil disponível na demonstração"
+        verbose_name_plural = "perfis disponíveis na demonstração"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("switch", "profile"),
+                name="accounts_demo_switch_profile_unique",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.profile not in DEMO_SWITCH_PROFILES:
+            raise ValidationError({"profile": "Selecione um perfil funcional atual."})
+        if self.user_id and self.user.profile != self.profile:
+            raise ValidationError(
+                {"user": "A conta interna deve possuir o mesmo perfil do vínculo."}
+            )
+        if self.is_internal and self.user_id and self.user.has_usable_password():
+            raise ValidationError(
+                {"user": "Conta interna de perfil não pode aceitar login por senha."}
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.get_profile_display()} — {self.switch.controller.email}"
 
 
 class ExternalIdentity(models.Model):

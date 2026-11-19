@@ -290,6 +290,7 @@ class AdministrativeUserListView(AdministrativeAccessMixin, ListView):
             super().get_queryset()
             .select_related("organization", "sector", "archived_by")
             .filter(archived_at__isnull=not self.show_archived)
+            .exclude(demo_profile_target__is_internal=True)
         )
 
     def get_context_data(self, **kwargs):

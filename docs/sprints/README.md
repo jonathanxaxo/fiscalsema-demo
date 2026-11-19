@@ -160,3 +160,6 @@ documental das entregas anteriores.
 
 - `sprint-56-painel-gerencial-arise`: carteira consolidada do Gestor
   Administrativo, relatórios por escopo e Arise limitado aos dados autorizados.
+
+- `sprint-57-demo-multiperfil`: um único login de demonstração alterna entre
+  os cinco perfis, com contas internas sem senha e carteira fictícia idempotente.

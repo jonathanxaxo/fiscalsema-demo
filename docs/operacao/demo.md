@@ -61,6 +61,30 @@ Atenção: quem conhece a senha dessa conta Fiscal passa a ter os poderes do
 Administrador. Toda troca é registrada na auditoria ("Perfil alternado para
 Administrador" / "Perfil alternado para Fiscal") em nome da conta Fiscal.
 
+## Login único com os cinco perfis e carteira fictícia
+
+A Sprint 57 evolui a exceção anterior sem alterar a senha da conta principal.
+Depois do merge e da migration autorizados, execute o fluxo manual
+**"Preparar perfis e carteira ficticia do FiscalSema Demo"**
+(`.github/workflows/prepare-demo-multprofile.yml`):
+
+1. informe `admin@exemplo.com.br` como conta controladora;
+2. digite exatamente `PREPARAR DEMO`;
+3. o fluxo cria somente as contas internas que faltarem, todas sem senha
+   utilizável, e vincula os cinco perfis;
+4. o fluxo cria uma carteira fictícia marcada, classificada e idempotente;
+5. entre normalmente com a senha já existente da conta controladora e use o
+   seletor **Trocar perfil**.
+
+As demais contas não recebem o seletor. Contas internas não aparecem na gestão
+comum, não aceitam login por senha e existem apenas para aplicar as permissões
+reais do perfil. Sair da sessão e entrar novamente sempre começa na conta
+controladora. A carga não altera senha ou perfil das contas existentes e falha
+se encontrar Fiscal ativo sem organização ativa.
+
+Os registros fictícios não são apagados fisicamente. Para reiniciar do zero,
+use o procedimento de recriação do banco exclusivo da demo.
+
 ## Limpar a demonstração
 
 Não use o banco da VM e não importe dumps. Para reiniciar, descarte o banco demo

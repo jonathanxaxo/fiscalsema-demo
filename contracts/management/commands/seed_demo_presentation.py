@@ -82,6 +82,23 @@ def presentation_timeline(contract, today):
     }
 
 
+def seed_contract_presentation(*, contract, actor):
+    """Cria o pacote de apresentação uma única vez no contrato informado."""
+    if ContractItem.objects.filter(contract=contract, number="DEMO-1").exists():
+        return False
+
+    balance = contract_financial_position(contract).contract_balance.value
+    budget = _money(balance * Decimal("0.5"))
+    if budget < MIN_BUDGET:
+        raise CommandError(
+            "Operação recusada: saldo do contrato insuficiente para os dados de apresentação."
+        )
+    timeline = presentation_timeline(contract, timezone.localdate())
+    with transaction.atomic():
+        Command()._seed(contract, actor, budget, timeline)
+    return True
+
+
 class Command(BaseCommand):
     help = "Preenche um contrato da demo com itens, empenhos, OS, execuções, NFs e pagamento fictícios."
 
@@ -103,19 +120,9 @@ class Command(BaseCommand):
             )
         contract = contracts.get(responsible_fiscal=fiscal)
 
-        if ContractItem.objects.filter(contract=contract, number="DEMO-1").exists():
+        if not seed_contract_presentation(contract=contract, actor=fiscal):
             self.stdout.write("Dados de apresentação já existem neste contrato; nada foi alterado.")
             return
-
-        balance = contract_financial_position(contract).contract_balance.value
-        budget = _money(balance * Decimal("0.5"))
-        if budget < MIN_BUDGET:
-            raise CommandError("Operação recusada: saldo do contrato insuficiente para os dados de apresentação.")
-
-        timeline = presentation_timeline(contract, timezone.localdate())
-
-        with transaction.atomic():
-            self._seed(contract, fiscal, budget, timeline)
 
         self.stdout.write(self.style.SUCCESS("Dados de apresentação criados com segurança."))
 

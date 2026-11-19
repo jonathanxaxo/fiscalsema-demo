@@ -66,9 +66,13 @@ p { margin: .55rem 0 1rem; }
 .button-quiet { min-height: 30px; padding: .26rem .6rem; color: var(--green-800); background: transparent; border-color: var(--line); }
 .button-quiet:hover { background: var(--green-50); color: var(--green-950); box-shadow: none; }
 .profile-switch { white-space: nowrap; }
+.profile-switch-form { display: flex; align-items: center; gap: .35rem; margin: 0; }
+.profile-switch-form select { width: auto; max-width: 190px; min-height: 32px; padding: .25rem 1.8rem .25rem .5rem; font-size: .82rem; }
 .acting-banner { display: flex; align-items: center; justify-content: center; gap: .9rem; flex-wrap: wrap; padding: .55rem 1rem; background: var(--info-bg); color: var(--info-ink); border-bottom: 1px solid #c9dcf2; font-size: .9rem; }
 .acting-banner form { margin: 0; }
 .sidebar-switch { display: none; margin: 0 0 .6rem; }
+.sidebar-switch label { display: block; margin-bottom: .25rem; color: #fff; font-size: .78rem; }
+.sidebar-switch select { width: 100%; margin-bottom: .4rem; }
 .sidebar-switch button { width: 100%; background: #fff; color: var(--green-950); }
 
 .app-shell { min-height: calc(100vh - 72px); display: grid; grid-template-columns: 208px minmax(0, 1fr); }
