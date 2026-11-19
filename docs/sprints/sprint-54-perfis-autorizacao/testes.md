@@ -36,8 +36,9 @@ bloqueado até a correção.
 - GitHub Actions `44532087566`: aprovado em PostgreSQL 17, com migrations,
   configuração Vercel, varredura de segurança, 6 testes MCP e 733 testes
   Django aprovados;
-- Preview Vercel:
-  `https://fiscalsema-demo-gp1sqc7sq-projetos-jonathan.vercel.app`;
+- Preview Vercel protegido associado ao commit `83c4c71`, com URL registrada
+  pelo provedor no PR #51 sem reproduzir identificadores pessoais neste
+  repositório;
 - homologação da tela de login: HTTP funcional no navegador autenticado,
   título `Entrar — FiscalSema`, aviso permanente de dados fictícios e fontes
   animada/estática do logotipo presentes;
