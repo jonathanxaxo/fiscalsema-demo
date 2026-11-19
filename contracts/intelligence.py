@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from .calculations import NegativeBalanceError, calculate_item_total
 from .models import (
+    Contract,
     ContractClassification,
     ContractClause,
     ContractClauseType,
