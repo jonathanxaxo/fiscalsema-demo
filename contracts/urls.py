@@ -8,6 +8,7 @@ from .views_catalog import (
 
 from .views import (
     AccountabilityView,
+    AdministrativePortfolioReportView,
     ArchivedContractListView,
     ContractReportView,
     ContractCsvExportView,
@@ -70,6 +71,11 @@ app_name = "contracts"
 urlpatterns = [
     path("", ContractListView.as_view(), name="list"),
     path("dashboard/", ExecutiveDashboardView.as_view(), name="executive_dashboard"),
+    path(
+        "dashboard/relatorio-gerencial/",
+        AdministrativePortfolioReportView.as_view(),
+        name="administrative_portfolio_report",
+    ),
     # Sprint 38: catálogo de serviços e memória de cálculo da OS
     path("<int:contract_pk>/catalogo/", ServiceCatalogListView.as_view(), name="service_catalog"),
     path("<int:contract_pk>/catalogo/novo/", ServiceCatalogFormView.as_view(), name="service_catalog_create"),

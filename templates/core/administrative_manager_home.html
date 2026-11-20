@@ -1,37 +1,63 @@
 {% extends "accounts/base.html" %}
-{% load l10n %}
+{% load l10n formatacao %}
 {% block title %}Painel do Gestor Administrativo — FiscalSema{% endblock %}
 {% block main_class %}dashboard-page{% endblock %}
 {% block content %}
-{% with d=administrative_dashboard p=administrative_dashboard.portfolio %}
+{% with d=administrative_dashboard p=administrative_dashboard.portfolio f=administrative_dashboard.financial_totals %}
   <header class="page-header">
-    <div><span class="eyebrow">Perfil Gestor Administrativo</span><h1>Painel executivo da carteira</h1><p>Visão institucional para Superintendente e Secretário, com contratos agrupados por classificação e acesso individual aos indicadores.</p></div>
-    <span class="badge badge-success">Visão consolidada</span>
+    <div><span class="eyebrow">Perfil Gestor Administrativo</span><h1>Dashboard gerencial dos contratos</h1><p>Visão geral para acompanhamento institucional e seleção individual de qualquer contrato disponível, com indicadores financeiros, classificação, Ordens de Serviço e relatórios.</p></div>
+    <span class="badge badge-success">Visão geral</span>
   </header>
 
+  <section class="surface" aria-labelledby="gestor-adm-selecao">
+    <div class="section-heading"><div><span class="eyebrow">Escopo do painel</span><h2 id="gestor-adm-selecao">{{ d.scope_label }}</h2></div><span class="section-hint">{{ d.contracts|length }} contrato(s) disponível(is)</span></div>
+    <form class="selector" method="get">
+      <div class="field-grow"><label for="gestor-adm-contract">Selecionar contrato</label><select id="gestor-adm-contract" name="contract"><option value="">Todos os contratos</option>{% for contract in d.contracts %}<option value="{{ contract.pk }}"{% if d.selected_contract and contract.pk == d.selected_contract.pk %} selected{% endif %}>{{ contract.number }} — {{ contract.object|truncatechars:80 }}</option>{% endfor %}</select></div>
+      <button type="submit">Atualizar dashboard</button>
+      {% if d.selected_contract %}<a class="button-link button-link-quiet" href="{% url 'home' %}">Ver todos</a>{% endif %}
+    </form>
+    <nav class="action-bar" aria-label="Relatórios gerenciais">
+      <a class="button-link" href="{% url 'contracts:administrative_portfolio_report' %}{% if d.selected_contract %}?contract={{ d.selected_contract.pk }}{% endif %}">Emitir relatório gerencial</a>
+      {% if d.selected_contract %}<a class="button-link button-link-secondary" href="{% url 'contracts:executive_dashboard' %}?contract={{ d.selected_contract.pk }}">Dashboard detalhado</a>{% endif %}
+    </nav>
+  </section>
+
   <section class="surface" aria-labelledby="gestor-adm-totais">
-    <div class="section-heading"><div><span class="eyebrow">Carteira institucional</span><h2 id="gestor-adm-totais">Totais consolidados</h2></div><span class="section-hint">{{ p.contract_count }} contrato(s) ativo(s)</span></div>
+    <div class="section-heading"><div><span class="eyebrow">Posição consolidada</span><h2 id="gestor-adm-totais">Indicadores financeiros</h2></div><span class="section-hint">{{ p.contract_count }} contrato(s) no escopo</span></div>
     <div class="kpi-grid">
       <div class="kpi-card"><small>Valor atual</small><strong>R$&nbsp;{{ p.current_value|localize }}</strong></div>
-      <div class="kpi-card"><small>Empenhado ativo</small><strong>R$&nbsp;{{ p.committed_budget|localize }}</strong></div>
-      <div class="kpi-card"><small>Pago</small><strong>R$&nbsp;{{ p.paid_value|localize }}</strong></div>
-      <div class="kpi-card kpi-card-highlight"><small>Saldo contratual</small><strong>R$&nbsp;{{ p.contract_balance|localize }}</strong></div>
+      <div class="kpi-card"><small>Empenhado ativo</small><strong>R$&nbsp;{{ f.committed_budget|localize }}</strong></div>
+      <div class="kpi-card"><small>Comprometido em OS</small><strong>R$&nbsp;{{ f.committed|localize }}</strong></div>
+      <div class="kpi-card"><small>Executado</small><strong>R$&nbsp;{{ f.executed|localize }}</strong></div>
+      <div class="kpi-card"><small>Faturado</small><strong>R$&nbsp;{{ f.invoiced|localize }}</strong></div>
+      <div class="kpi-card"><small>Pago</small><strong>R$&nbsp;{{ f.paid|localize }}</strong></div>
+      <div class="kpi-card kpi-card-highlight"><small>Saldo contratual</small><strong>R$&nbsp;{{ f.balance|localize }}</strong></div>
+      <div class="kpi-card {% if d.overdue_count %}kpi-card-highlight{% endif %}"><small>OS abertas / em atraso</small><strong>{{ d.open_count }} / {{ d.overdue_count }}</strong><span class="kpi-note">{{ d.work_order_count }} OS no escopo</span></div>
     </div>
+    {% if f.inconsistent_count %}<p class="warning"><strong>Atenção:</strong> {{ f.inconsistent_count }} contrato(s) possui(em) inconsistência financeira e exige(m) conferência da fonte.</p>{% endif %}
   </section>
+
+  <div class="dashboard-columns">
+    <section class="surface" aria-labelledby="gestor-adm-financeiro">
+      <div class="section-heading"><div><span class="eyebrow">Gráfico financeiro</span><h2 id="gestor-adm-financeiro">Execução sobre o valor atual</h2></div></div>
+      <div class="exec-bars">{% for row in d.financial_rows %}<div class="exec-bar-row exec-bar-{{ row.tone }}"><div><span>{{ row.label }}</span><strong>{{ row.percentage|localize }}%</strong></div><span class="exec-track" role="img" aria-label="{{ row.label }}: {{ row.percentage|localize }}%"><span style="width: {{ row.percentage|barra }}%"></span></span><small>R$&nbsp;{{ row.value|localize }}</small></div>{% endfor %}</div>
+    </section>
+    <section class="surface" aria-labelledby="gestor-adm-os">
+      <div class="section-heading"><div><span class="eyebrow">Gráfico operacional</span><h2 id="gestor-adm-os">Situação das OS</h2></div><span class="section-hint">{{ d.overdue_count }} em atraso</span></div>
+      {% if d.status_rows %}<div class="exec-bars">{% for row in d.status_rows %}<div class="exec-bar-row exec-bar-status"><div><span>{{ row.label }}</span><strong>{{ row.count }}</strong></div><span class="exec-track" role="img" aria-label="{{ row.label }}: {{ row.count }} OS"><span style="width: {{ row.percentage|barra }}%"></span></span></div>{% endfor %}</div>{% else %}<p class="empty-compact">Nenhuma OS cadastrada no escopo.</p>{% endif %}
+    </section>
+  </div>
 
   <section class="surface" aria-labelledby="gestor-adm-classificacoes">
     <div class="section-heading"><div><span class="eyebrow">Agrupamento gerencial</span><h2 id="gestor-adm-classificacoes">Contratos por classificação</h2></div><span class="section-hint">{{ d.classification_pending_count }} classificação(ões) a confirmar</span></div>
-    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Classificação</th><th>Contratos</th><th>Valor atual</th><th>Empenhado</th><th>Pago</th><th>Saldo</th><th>Conferência</th></tr></thead><tbody>
-      {% for row in p.categories %}<tr><td><strong>{{ row.label }}</strong></td><td>{{ row.contract_count }}</td><td>R$&nbsp;{{ row.current_value|localize }}</td><td>R$&nbsp;{{ row.committed_budget|localize }}</td><td>R$&nbsp;{{ row.paid_value|localize }}</td><td>R$&nbsp;{{ row.contract_balance|localize }}</td><td>{% if row.inconsistent_count %}<span class="status-pill status-warning">{{ row.inconsistent_count }} a conferir</span>{% else %}<span class="status-pill status-success">Consistente</span>{% endif %}</td></tr>
-      {% empty %}<tr><td colspan="7">Nenhum contrato ativo disponível.</td></tr>{% endfor %}
-    </tbody></table></div>
+    {% if d.category_rows %}<div class="exec-bars">{% for row in d.category_rows %}<div class="exec-bar-row exec-bar-status"><div><span>{{ row.summary.label }}</span><strong>{{ row.summary.contract_count }} contrato(s)</strong></div><span class="exec-track" role="img" aria-label="{{ row.summary.label }}: {{ row.percentage|localize }}% do valor atual"><span style="width: {{ row.percentage|barra }}%"></span></span><small>R$&nbsp;{{ row.summary.current_value|localize }} · {{ row.percentage|localize }}% da carteira</small></div>{% endfor %}</div>{% else %}<p class="empty-compact">Nenhum contrato disponível.</p>{% endif %}
   </section>
 
   <section class="surface" aria-labelledby="gestor-adm-contratos">
-    <div class="section-heading"><div><span class="eyebrow">Seleção individual</span><h2 id="gestor-adm-contratos">Acompanhar cada contrato</h2></div><span class="section-hint">Dashboard e relatório em somente leitura</span></div>
-    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Contrato</th><th>Classificação</th><th>Contratante</th><th>Fiscal</th><th>Valor atual</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-      {% for row in d.rows %}<tr><td><strong>{{ row.contract.number }}</strong><small class="table-note">{{ row.contract.object|truncatechars:70 }}</small></td><td>{{ row.category_label }}</td><td>{{ row.contract.contracting_organization.name }}</td><td>{{ row.contract.responsible_fiscal.full_name }}</td><td>R$&nbsp;{{ row.contract.current_value|localize }}</td><td><span class="status-pill status-success">{{ row.contract.get_status_display }}</span></td><td><a href="{% url 'contracts:executive_dashboard' %}?contract={{ row.contract.pk }}">Dashboard</a>{% if row.can_export %} · <a href="{% url 'contracts:report' row.contract.pk %}">Relatório</a>{% endif %}</td></tr>
-      {% empty %}<tr><td colspan="7">Nenhum contrato ativo disponível.</td></tr>{% endfor %}
+    <div class="section-heading"><div><span class="eyebrow">Acompanhamento individual</span><h2 id="gestor-adm-contratos">Contratos do escopo</h2></div><span class="section-hint">Dashboard e relatórios em somente leitura</span></div>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Contrato</th><th>Classificação</th><th>Fiscal</th><th>Valor atual</th><th>Executado</th><th>Pago</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
+      {% for row in d.rows %}<tr><td><strong>{{ row.contract.number }}</strong><small class="table-note">{{ row.contract.object|truncatechars:70 }}</small></td><td>{{ row.category_label }}</td><td>{{ row.contract.responsible_fiscal.full_name }}</td><td>R$&nbsp;{{ row.contract.current_value|localize }}</td><td>R$&nbsp;{{ row.financial.executed|localize }}<small class="table-note">{{ row.executed_percentage|localize }}%</small></td><td>R$&nbsp;{{ row.financial.paid|localize }}<small class="table-note">{{ row.paid_percentage|localize }}%</small></td><td>{% if row.inconsistent %}<span class="status-pill status-warning">Conferir</span>{% else %}<span class="status-pill status-success">{{ row.contract.get_status_display }}</span>{% endif %}</td><td><a href="{% url 'home' %}?contract={{ row.contract.pk }}">Selecionar</a> · <a href="{% url 'contracts:executive_dashboard' %}?contract={{ row.contract.pk }}">Dashboard</a>{% if row.can_export %} · <a href="{% url 'contracts:report' row.contract.pk %}">Relatório</a>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="8">Nenhum contrato disponível.</td></tr>{% endfor %}
     </tbody></table></div>
   </section>
 {% endwith %}
