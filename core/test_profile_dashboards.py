@@ -258,8 +258,11 @@ class IndependentProfileDashboardTests(TestCase):
 
         selected = self.client.get(reverse("home"), {"contract": self.contract_b.pk})
         self.assertEqual(selected.status_code, 200)
-        self.assertNotContains(selected, self.open_order.number)
-        self.assertContains(selected, self.signed_order.number)
+        selected_orders = [
+            row["work_order"].pk
+            for row in selected.context["auxiliary_dashboard"]["work_order_rows"]
+        ]
+        self.assertEqual(selected_orders, [self.signed_order.pk])
         forbidden = self.client.get(
             reverse("home"), {"contract": self.archived_contract.pk}
         )

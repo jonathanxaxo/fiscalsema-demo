@@ -37,3 +37,13 @@ Data: 19/11/2026.
 - suíte Django integral com PostgreSQL — pendente da CI do Pull Request.
 
 Nenhum banco real ou de produção foi acessado.
+
+## CI do Pull Request
+
+- primeira execução do GitHub Actions `44655020163`: 749 testes executados,
+  com uma falha em asserção do próprio teste novo; o sino global mostrava
+  corretamente um alerta geral mesmo quando a tabela estava filtrada por outro
+  contrato;
+- o teste foi corrigido para validar diretamente as linhas autorizadas da
+  tabela, sem exigir que a notificação geral desapareça;
+- nova execução com PostgreSQL 17: pendente.
