@@ -72,4 +72,11 @@ Data: 20/11/2026.
 - o console público não apresentou erros ou alertas;
 - os painéis autenticados e as permissões dos perfis foram validados pela suíte
   automatizada de 749 testes. A senha do usuário não foi acessada durante a
-  validação pública.
+  validação pública;
+- GitHub Actions `44737418266` executou com sucesso, na `main` publicada, a
+  preparação idempotente da conta `admin@exemplo.com.br` e da carteira
+  fictícia: migrations aplicadas foram conferidas, os cinco perfis foram
+  habilitados somente para a conta controladora, os dados de demonstração
+  foram atualizados e as contas internas permaneceram sem login direto;
+- após a preparação, o endpoint público de saúde continuou respondendo HTTP
+  `200`, com aplicação e banco de dados em estado `ok`.
