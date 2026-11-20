@@ -44,3 +44,16 @@ banco de produção foi acessado.
 - o Preview externo da Vercel não foi criado porque o autor Git local não
   pertence à equipe Vercel. Esse bloqueio de conta não executou deploy e não
   representa falha da aplicação.
+
+## Publicação
+
+- PR `#55` integrado por squash no commit `5799365`;
+- GitHub Actions da `main` `44649529351` — aprovado em 2 minutos e 24 segundos;
+- deploy Vercel do commit `5799365` — concluído com sucesso;
+- tela pública de entrada — carregamento aprovado, com título, aviso permanente
+  de demonstração e redirecionamento de autenticação corretos;
+- validação autenticada dos cinco painéis — coberta pela suíte automatizada de
+  748 testes; conferência visual humana depende do login com a senha individual,
+  que não foi acessada pelo agente.
+
+URL de produção: `https://fiscalsema-demo.vercel.app/conta/entrar/`.
