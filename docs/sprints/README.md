@@ -167,3 +167,5 @@ documental das entregas anteriores.
   dados autorizados e objetivo visual independente.
 - `sprint-59-dashboards-gestao`: Auxiliar acompanha OS abertas e em atraso;
   Gestores selecionam múltiplos contratos, usam dashboards e emitem relatórios.
+- `sprint-60-arise-dados-por-perfil`: Arise entrega à Auxiliar somente os
+  dados do painel dela, sem finanças do contrato; valores em reais no `<dados>`.
