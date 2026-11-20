@@ -46,4 +46,12 @@ Nenhum banco real ou de produção foi acessado.
   contrato;
 - o teste foi corrigido para validar diretamente as linhas autorizadas da
   tabela, sem exigir que a notificação geral desapareça;
-- nova execução com PostgreSQL 17: pendente.
+- GitHub Actions `44655568401`, job `django-postgresql` — aprovado em
+  20/11/2026;
+- suíte Django integral com PostgreSQL 17 — **749 testes aprovados** em
+  108,609 segundos;
+- migrations, configuração Django, configuração Vercel sem banco, scanner de
+  segurança e 6 testes do adaptador MCP — aprovados na mesma execução;
+- Preview externo da Vercel bloqueado porque o autor Git não pertence à equipe
+  do projeto Vercel. O bloqueio não executou deploy e não representa falha da
+  aplicação.
