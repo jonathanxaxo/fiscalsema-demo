@@ -222,7 +222,25 @@ def build_notifications(user, *, contract_id=None):
                 }
             )
 
-    if user.profile not in ADMINISTRATOR_PROFILES:
+    if user.profile == UserProfile.AUXILIARY_ADMINISTRATIVE:
+        from .profile_dashboards import build_auxiliary_dashboard
+
+        dashboard = build_auxiliary_dashboard(user)
+        for row in dashboard["rows"]:
+            contract = row["contract"]
+            if contract_id is not None and contract.pk != contract_id:
+                continue
+            for issue in row["issues"]:
+                entries.append(
+                    {
+                        "level": "warning",
+                        "title": issue,
+                        "contract": f"Contrato {contract.number}",
+                        "url": reverse("home") + "#aux-cadastros",
+                        "hint": "Conferir metadados administrativos",
+                    }
+                )
+    elif user.profile not in ADMINISTRATOR_PROFILES:
         contracts = contracts_visible_to(user).filter(
             status__in=(ContractStatus.ACTIVE, ContractStatus.SUSPENDED)
         ).order_by("number", "pk")

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @require_GET
 @login_required
 def home(request):
-    from accounts.models import RegistrationRequest, RegistrationStatus
+    from accounts.models import RegistrationRequest, RegistrationStatus, UserProfile
     from contracts.dashboard import build_contract_dashboard
     from contracts.services import (
         actor_is_active_fiscal,
@@ -34,6 +34,40 @@ def home(request):
             {
                 "admin_dashboard": admin_dashboard,
                 "pending_registration_count": admin_dashboard["pending_count"],
+            },
+        )
+
+    from .profile_dashboards import (
+        build_administrative_manager_dashboard,
+        build_auxiliary_dashboard,
+        build_contract_manager_dashboard,
+    )
+
+    if request.user.profile == UserProfile.AUXILIARY_ADMINISTRATIVE:
+        return render(
+            request,
+            "core/auxiliary_home.html",
+            {"auxiliary_dashboard": build_auxiliary_dashboard(request.user)},
+        )
+    if request.user.profile == UserProfile.ADMINISTRATIVE_MANAGER:
+        return render(
+            request,
+            "core/administrative_manager_home.html",
+            {
+                "administrative_dashboard": (
+                    build_administrative_manager_dashboard(request.user)
+                )
+            },
+        )
+    if request.user.profile == UserProfile.CONTRACT_MANAGER:
+        return render(
+            request,
+            "core/contract_manager_home.html",
+            {
+                "contract_manager_dashboard": build_contract_manager_dashboard(
+                    request.user,
+                    request.GET.get("contract"),
+                )
             },
         )
 

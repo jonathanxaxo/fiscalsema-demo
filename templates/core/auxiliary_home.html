@@ -1,0 +1,41 @@
+{% extends "accounts/base.html" %}
+{% block title %}Painel da Auxiliar Administrativa — FiscalSema{% endblock %}
+{% block main_class %}dashboard-page{% endblock %}
+{% block content %}
+{% with d=auxiliary_dashboard %}
+  <header class="page-header">
+    <div><span class="eyebrow">Perfil Auxiliar Administrativa</span><h1>Painel de metadados administrativos</h1><p>Conferência cadastral e notificações dos contratos disponíveis. Arquivos privados e conteúdo operacional permanecem indisponíveis neste perfil.</p></div>
+    <span class="badge badge-success">Somente metadados</span>
+  </header>
+
+  <section class="surface" aria-labelledby="aux-resumo">
+    <div class="section-heading"><div><span class="eyebrow">Resumo administrativo</span><h2 id="aux-resumo">Situação da carteira disponível</h2></div><span class="section-hint">Sem contratos arquivados</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><small>Contratos disponíveis</small><strong>{{ d.contract_count }}</strong></div>
+      <div class="kpi-card"><small>Documentos catalogados</small><strong>{{ d.document_count }}</strong><span class="kpi-note">Contagem de metadados; arquivo privado não é aberto</span></div>
+      <div class="kpi-card {% if d.classification_pending_count %}kpi-card-highlight{% endif %}"><small>Classificações a confirmar</small><strong>{{ d.classification_pending_count }}</strong></div>
+      <div class="kpi-card {% if d.attention_count %}kpi-card-highlight{% endif %}"><small>Notificações administrativas</small><strong>{{ d.attention_count }}</strong></div>
+    </div>
+  </section>
+
+  <section class="surface" aria-labelledby="aux-cadastros">
+    <div class="section-heading"><div><span class="eyebrow">Dados autorizados</span><h2 id="aux-cadastros">Metadados dos contratos</h2></div><span class="section-hint">Conferência sem alteração operacional</span></div>
+    {% if d.rows %}
+      <div class="table-responsive"><table class="table-compact">
+        <thead><tr><th>Contrato</th><th>Processo</th><th>Contratante</th><th>Fornecedor</th><th>Fiscal</th><th>Vigência</th><th>Documentos</th><th>Classificação</th><th>Conferência</th></tr></thead>
+        <tbody>{% for row in d.rows %}<tr>
+          <td><strong>{{ row.contract.number }}</strong><small class="table-note">{{ row.contract.get_status_display }}</small></td>
+          <td>{{ row.contract.process_number }}</td>
+          <td>{{ row.contract.contracting_organization.name }}</td>
+          <td>{{ row.contract.supplier_name }}</td>
+          <td>{{ row.contract.responsible_fiscal.full_name }}</td>
+          <td>{{ row.contract.validity_start|date:"d/m/Y" }} a {{ row.contract.validity_end|date:"d/m/Y" }}</td>
+          <td>{{ row.document_count }} metadado(s)</td>
+          <td>{{ row.category_label }}</td>
+          <td>{% if row.issues %}{% for issue in row.issues %}<span class="status-pill status-warning">{{ issue }}</span>{% endfor %}{% else %}<span class="status-pill status-success">Cadastro conferido</span>{% endif %}</td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+    {% else %}<div class="empty-state"><span aria-hidden="true">▣</span><div><strong>Nenhum contrato ativo disponível.</strong><p>Contratos arquivados não são exibidos para a Auxiliar Administrativa.</p></div></div>{% endif %}
+  </section>
+{% endwith %}
+{% endblock %}
