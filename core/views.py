@@ -47,7 +47,13 @@ def home(request):
         return render(
             request,
             "core/auxiliary_home.html",
-            {"auxiliary_dashboard": build_auxiliary_dashboard(request.user)},
+            {
+                "auxiliary_dashboard": build_auxiliary_dashboard(
+                    request.user,
+                    request.GET.get("contract"),
+                    request.GET.get("status", ""),
+                )
+            },
         )
     if request.user.profile == UserProfile.ADMINISTRATIVE_MANAGER:
         return render(
@@ -55,7 +61,10 @@ def home(request):
             "core/administrative_manager_home.html",
             {
                 "administrative_dashboard": (
-                    build_administrative_manager_dashboard(request.user)
+                    build_administrative_manager_dashboard(
+                        request.user,
+                        request.GET.get("contract"),
+                    )
                 )
             },
         )

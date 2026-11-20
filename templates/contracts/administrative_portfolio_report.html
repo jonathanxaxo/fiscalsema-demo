@@ -1,0 +1,75 @@
+{% extends "accounts/base.html" %}
+{% load l10n static formatacao %}
+{% block title %}Relatório gerencial dos contratos — FiscalSema{% endblock %}
+{% block main_class %}report-page{% endblock %}
+{% block extra_head %}
+  <style>
+    @media print {
+      @page { size: landscape; margin: 10mm; }
+      .topbar, .sidebar, .sidebar-backdrop, .skip-link, .acting-banner, .no-print { display: none !important; }
+      .app-shell { display: block; }
+      body { background: #fff; font-size: 10pt; }
+      .content { width: auto; margin: 0; padding: 0; border: 0; box-shadow: none; }
+      .report-section { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+      table { break-inside: auto; }
+      tr { break-inside: avoid; }
+    }
+  </style>
+  {% if print_mode %}<script src="{% static 'contracts/report_print.js' %}" defer></script>{% endif %}
+{% endblock %}
+{% block content %}
+{% with d=administrative_dashboard p=administrative_dashboard.portfolio f=administrative_dashboard.financial_totals %}
+  {% if print_mode %}<span data-auto-print hidden></span>{% endif %}
+  <section class="report-section">
+    <h1>Relatório gerencial dos contratos</h1>
+    <p class="report-meta"><strong>Escopo:</strong> {{ d.scope_label }} · {{ p.contract_count }} contrato(s) · emitido em {% now "d/m/Y H:i" %}</p>
+    <p class="warning">Relatório de acompanhamento gerencial produzido com os dados fictícios cadastrados na demonstração. Não constitui atesto, homologação, liquidação, autorização nem recomendação de pagamento.</p>
+  </section>
+
+  {% if not print_mode %}<section class="report-section no-print">
+    <h2>Selecionar escopo</h2>
+    <form class="selector" method="get">
+      <div class="field-grow"><label for="report-contract">Contrato</label><select id="report-contract" name="contract"><option value="">Todos os contratos</option>{% for contract in d.contracts %}<option value="{{ contract.pk }}"{% if d.selected_contract and contract.pk == d.selected_contract.pk %} selected{% endif %}>{{ contract.number }} — {{ contract.object|truncatechars:80 }}</option>{% endfor %}</select></div>
+      <button type="submit">Gerar relatório</button>
+      <a class="button-link button-link-secondary" href="?{{ print_query }}" target="_blank" rel="noopener">Imprimir / Salvar PDF</a>
+      <a class="button-link button-link-quiet" href="{% url 'home' %}{% if d.selected_contract %}?contract={{ d.selected_contract.pk }}{% endif %}">Voltar ao dashboard</a>
+    </form>
+  </section>{% endif %}
+
+  <section class="report-section">
+    <h2>Resumo financeiro</h2>
+    <div class="metric-grid report-totals">
+      <div class="metric-card"><small>Valor atual</small><strong>R$&nbsp;{{ p.current_value|localize }}</strong></div>
+      <div class="metric-card"><small>Empenhado ativo</small><strong>R$&nbsp;{{ f.committed_budget|localize }}</strong></div>
+      <div class="metric-card"><small>Comprometido</small><strong>R$&nbsp;{{ f.committed|localize }}</strong></div>
+      <div class="metric-card"><small>Executado</small><strong>R$&nbsp;{{ f.executed|localize }}</strong></div>
+      <div class="metric-card"><small>Faturado</small><strong>R$&nbsp;{{ f.invoiced|localize }}</strong></div>
+      <div class="metric-card"><small>Pago</small><strong>R$&nbsp;{{ f.paid|localize }}</strong></div>
+      <div class="metric-card"><small>Saldo contratual</small><strong>R$&nbsp;{{ f.balance|localize }}</strong></div>
+      <div class="metric-card"><small>OS abertas / em atraso</small><strong>{{ d.open_count }} / {{ d.overdue_count }}</strong></div>
+    </div>
+  </section>
+
+  <section class="report-section">
+    <h2>Classificação gerencial</h2>
+    <table><thead><tr><th>Classificação</th><th>Contratos</th><th>Valor atual</th><th>Empenhado</th><th>Pago</th><th>Saldo</th><th>Conferência</th></tr></thead><tbody>
+      {% for row in p.categories %}<tr><td>{{ row.label }}</td><td>{{ row.contract_count }}</td><td>R$&nbsp;{{ row.current_value|localize }}</td><td>R$&nbsp;{{ row.committed_budget|localize }}</td><td>R$&nbsp;{{ row.paid_value|localize }}</td><td>R$&nbsp;{{ row.contract_balance|localize }}</td><td>{% if row.inconsistent_count %}{{ row.inconsistent_count }} a conferir{% else %}Consistente{% endif %}</td></tr>{% empty %}<tr><td colspan="7">Nenhum contrato no escopo.</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+
+  <section class="report-section">
+    <h2>Situação das Ordens de Serviço</h2>
+    <table><thead><tr><th>Situação</th><th>Quantidade</th><th>Participação</th></tr></thead><tbody>{% for row in d.status_rows %}<tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.percentage|localize }}%</td></tr>{% empty %}<tr><td colspan="3">Nenhuma OS no escopo.</td></tr>{% endfor %}</tbody></table>
+    {% if d.overdue_work_orders %}<h3>OS em atraso</h3><table><thead><tr><th>Contrato</th><th>OS</th><th>Abertura</th><th>Prazo contratual</th><th>Valor</th></tr></thead><tbody>{% for work_order in d.overdue_work_orders %}<tr><td>{{ work_order.contract.number }}</td><td>{{ work_order.number }}</td><td>{{ work_order.opening_date|date:"d/m/Y" }}</td><td>{{ work_order.deadline|date:"d/m/Y" }}</td><td>R$&nbsp;{{ work_order.total_value|localize }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+  </section>
+
+  <section class="report-section">
+    <h2>Contratos acompanhados</h2>
+    <table><thead><tr><th>Contrato</th><th>Classificação</th><th>Fiscal</th><th>Valor atual</th><th>Empenhado</th><th>Comprometido</th><th>Executado</th><th>Faturado</th><th>Pago</th><th>Saldo</th></tr></thead><tbody>
+      {% for row in d.rows %}<tr><td>{{ row.contract.number }}</td><td>{{ row.category_label }}</td><td>{{ row.contract.responsible_fiscal.full_name }}</td><td>R$&nbsp;{{ row.contract.current_value|localize }}</td><td>R$&nbsp;{{ row.financial.committed_budget|localize }}</td><td>R$&nbsp;{{ row.financial.committed|localize }}</td><td>R$&nbsp;{{ row.financial.executed|localize }}</td><td>R$&nbsp;{{ row.financial.invoiced|localize }}</td><td>R$&nbsp;{{ row.financial.paid|localize }}</td><td>R$&nbsp;{{ row.financial.balance|localize }}</td></tr>{% empty %}<tr><td colspan="10">Nenhum contrato no escopo.</td></tr>{% endfor %}
+    </tbody></table>
+    {% if not print_mode and d.selected_contract %}<p class="actions no-print"><a href="{% url 'contracts:report' d.selected_contract.pk %}">Abrir relatório detalhado do contrato</a><a href="{% url 'contracts:export_csv' d.selected_contract.pk %}">Exportar CSV individual</a></p>{% endif %}
+  </section>
+{% endwith %}
+{% endblock %}

@@ -165,3 +165,5 @@ documental das entregas anteriores.
   os cinco perfis, com contas internas sem senha e carteira fictícia idempotente.
 - `sprint-58-paineis-por-perfil`: cada perfil funcional recebe painel próprio,
   dados autorizados e objetivo visual independente.
+- `sprint-59-dashboards-gestao`: Auxiliar acompanha OS abertas e em atraso;
+  Gestores selecionam múltiplos contratos, usam dashboards e emitem relatórios.

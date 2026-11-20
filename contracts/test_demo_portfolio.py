@@ -135,5 +135,5 @@ class DemoPortfolioTests(TestCase):
         self.assertEqual(contracts_visible_to(administrative_manager).count(), total)
         self.assertEqual(contracts_visible_to(self.controller).count(), 4)
         self.assertEqual(contracts_visible_to(self.other_fiscal).count(), 1)
-        self.assertEqual(contracts_visible_to(internal_contract_manager).count(), 1)
-        self.assertEqual(contracts_visible_to(self.other_manager).count(), 1)
+        self.assertEqual(contracts_visible_to(internal_contract_manager).count(), 2)
+        self.assertEqual(contracts_visible_to(self.other_manager).count(), 2)

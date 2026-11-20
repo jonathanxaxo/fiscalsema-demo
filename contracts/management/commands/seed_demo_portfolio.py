@@ -197,19 +197,22 @@ class Command(BaseCommand):
             .order_by("pk")
         )
         for index, manager in enumerate(managers):
-            contract = contracts[index % len(contracts)]
-            existing = ContractAccess.objects.filter(
-                contract=contract,
-                user=manager,
-            ).first()
-            if existing and existing.status == ContractAccessStatus.ACTIVE:
-                continue
-            share_contract_read_only(
-                contract_id=contract.pk,
-                actor=contract.responsible_fiscal,
-                email=manager.email,
-                confirm_regrant=existing is not None,
-            )
+            # Dois vínculos demonstram o seletor sem transformar este perfil
+            # em uma visão geral irrestrita da carteira.
+            for offset in range(min(2, len(contracts))):
+                contract = contracts[(index + offset) % len(contracts)]
+                existing = ContractAccess.objects.filter(
+                    contract=contract,
+                    user=manager,
+                ).first()
+                if existing and existing.status == ContractAccessStatus.ACTIVE:
+                    continue
+                share_contract_read_only(
+                    contract_id=contract.pk,
+                    actor=contract.responsible_fiscal,
+                    email=manager.email,
+                    confirm_regrant=existing is not None,
+                )
         return len(managers)
 
     def _validate_visibility(self):

@@ -393,6 +393,43 @@ class ContractReportView(LoginRequiredMixin, DetailView):
         return context
 
 
+class AdministrativePortfolioReportView(LoginRequiredMixin, TemplateView):
+    """Relatório consolidado ou individual do Gestor Administrativo."""
+
+    template_name = "contracts/administrative_portfolio_report.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        from accounts.models import UserProfile
+
+        if (
+            request.user.is_authenticated
+            and request.user.profile != UserProfile.ADMINISTRATIVE_MANAGER
+        ):
+            raise PermissionDenied(
+                "Somente o Gestor Administrativo emite o relatório gerencial."
+            )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        from core.profile_dashboards import build_administrative_manager_dashboard
+
+        context = super().get_context_data(**kwargs)
+        dashboard = build_administrative_manager_dashboard(
+            self.request.user,
+            self.request.GET.get("contract"),
+        )
+        query = self.request.GET.copy()
+        query["print"] = "1"
+        context.update(
+            {
+                "administrative_dashboard": dashboard,
+                "print_mode": self.request.GET.get("print") == "1",
+                "print_query": query.urlencode(),
+            }
+        )
+        return context
+
+
 class ContractCsvExportView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         contract = get_object_or_404(

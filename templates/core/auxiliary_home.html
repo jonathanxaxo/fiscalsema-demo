@@ -1,41 +1,53 @@
 {% extends "accounts/base.html" %}
+{% load l10n formatacao %}
 {% block title %}Painel da Auxiliar Administrativa — FiscalSema{% endblock %}
 {% block main_class %}dashboard-page{% endblock %}
 {% block content %}
 {% with d=auxiliary_dashboard %}
   <header class="page-header">
-    <div><span class="eyebrow">Perfil Auxiliar Administrativa</span><h1>Painel de metadados administrativos</h1><p>Conferência cadastral e notificações dos contratos disponíveis. Arquivos privados e conteúdo operacional permanecem indisponíveis neste perfil.</p></div>
-    <span class="badge badge-success">Somente metadados</span>
+    <div><span class="eyebrow">Perfil Auxiliar Administrativa</span><h1>Acompanhamento administrativo das OS</h1><p>Visão das Ordens de Serviço abertas de todos os contratos disponíveis, limitada às horas ou quantidades contratadas, valores e prazos. Documentos privados e conteúdo contratual permanecem indisponíveis.</p></div>
+    <span class="badge badge-success">Somente leitura</span>
   </header>
 
-  <section class="surface" aria-labelledby="aux-resumo">
-    <div class="section-heading"><div><span class="eyebrow">Resumo administrativo</span><h2 id="aux-resumo">Situação da carteira disponível</h2></div><span class="section-hint">Sem contratos arquivados</span></div>
-    <div class="kpi-grid">
-      <div class="kpi-card"><small>Contratos disponíveis</small><strong>{{ d.contract_count }}</strong></div>
-      <div class="kpi-card"><small>Documentos catalogados</small><strong>{{ d.document_count }}</strong><span class="kpi-note">Contagem de metadados; arquivo privado não é aberto</span></div>
-      <div class="kpi-card {% if d.classification_pending_count %}kpi-card-highlight{% endif %}"><small>Classificações a confirmar</small><strong>{{ d.classification_pending_count }}</strong></div>
-      <div class="kpi-card {% if d.attention_count %}kpi-card-highlight{% endif %}"><small>Notificações administrativas</small><strong>{{ d.attention_count }}</strong></div>
-    </div>
+  <section class="surface" aria-labelledby="aux-filtros">
+    <div class="section-heading"><div><span class="eyebrow">Seleção</span><h2 id="aux-filtros">Escolha o contrato e a situação</h2></div><span class="section-hint">Contratos arquivados não são exibidos</span></div>
+    <form class="selector" method="get">
+      <div class="field-grow"><label for="aux-contract">Contrato</label><select id="aux-contract" name="contract"><option value="">Todos os contratos</option>{% for contract in d.contracts %}<option value="{{ contract.pk }}"{% if d.selected_contract and contract.pk == d.selected_contract.pk %} selected{% endif %}>{{ contract.number }} — {{ contract.object|truncatechars:70 }}</option>{% endfor %}</select></div>
+      <div class="field-grow"><label for="aux-status">Situação da OS</label><select id="aux-status" name="status"><option value="">Todas as OS abertas</option>{% for value, label in d.status_choices %}<option value="{{ value }}"{% if d.selected_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <button type="submit">Aplicar</button>
+      <a class="button-link button-link-quiet" href="{% url 'home' %}">Limpar</a>
+    </form>
   </section>
 
-  <section class="surface" aria-labelledby="aux-cadastros">
-    <div class="section-heading"><div><span class="eyebrow">Dados autorizados</span><h2 id="aux-cadastros">Metadados dos contratos</h2></div><span class="section-hint">Conferência sem alteração operacional</span></div>
-    {% if d.rows %}
+  <section class="surface" aria-labelledby="aux-resumo">
+    <div class="section-heading"><div><span class="eyebrow">Resumo operacional</span><h2 id="aux-resumo">OS abertas{% if d.selected_contract %} do contrato {{ d.selected_contract.number }}{% endif %}</h2></div><span class="section-hint">{{ d.contract_count }} contrato(s) disponível(is)</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><small>OS abertas</small><strong>{{ d.open_count }}</strong></div>
+      <div class="kpi-card {% if d.overdue_count %}kpi-card-highlight{% endif %}"><small>OS em atraso</small><strong>{{ d.overdue_count }}</strong><span class="kpi-note">Prazo contratual já ultrapassado</span></div>
+      <div class="kpi-card"><small>Horas contratadas nas OS</small><strong>{{ d.total_hours|quantidade }} h</strong>{% for row in d.quantity_summaries %}<span class="kpi-note">{{ row.quantity|quantidade }} {{ row.unit }}</span>{% endfor %}</div>
+      <div class="kpi-card"><small>Valor das OS abertas</small><strong>R$&nbsp;{{ d.total_value|localize }}</strong></div>
+    </div>
+    {% if d.no_deadline_count %}<p class="warning"><strong>Atenção:</strong> {{ d.no_deadline_count }} OS aberta(s) está(ão) sem prazo contratual informado.</p>{% endif %}
+  </section>
+
+  <section class="surface" aria-labelledby="aux-os">
+    <div class="section-heading"><div><span class="eyebrow">Dados autorizados</span><h2 id="aux-os">Ordens de Serviço abertas e em atraso</h2></div><span class="section-hint">Sem acesso ao conteúdo de documentos privados</span></div>
+    {% if d.work_order_rows %}
       <div class="table-responsive"><table class="table-compact">
-        <thead><tr><th>Contrato</th><th>Processo</th><th>Contratante</th><th>Fornecedor</th><th>Fiscal</th><th>Vigência</th><th>Documentos</th><th>Classificação</th><th>Conferência</th></tr></thead>
-        <tbody>{% for row in d.rows %}<tr>
-          <td><strong>{{ row.contract.number }}</strong><small class="table-note">{{ row.contract.get_status_display }}</small></td>
-          <td>{{ row.contract.process_number }}</td>
-          <td>{{ row.contract.contracting_organization.name }}</td>
-          <td>{{ row.contract.supplier_name }}</td>
-          <td>{{ row.contract.responsible_fiscal.full_name }}</td>
-          <td>{{ row.contract.validity_start|date:"d/m/Y" }} a {{ row.contract.validity_end|date:"d/m/Y" }}</td>
-          <td>{{ row.document_count }} metadado(s)</td>
-          <td>{{ row.category_label }}</td>
-          <td>{% if row.issues %}{% for issue in row.issues %}<span class="status-pill status-warning">{{ issue }}</span>{% endfor %}{% else %}<span class="status-pill status-success">Cadastro conferido</span>{% endif %}</td>
-        </tr>{% endfor %}</tbody>
+        <thead><tr><th>OS</th><th>Contrato</th><th>Situação</th><th>Abertura</th><th>Prazo</th><th>Horas / quantidade</th><th>Valor unitário</th><th>Valor da OS</th><th>Acompanhamento</th></tr></thead>
+        <tbody>{% for row in d.work_order_rows %}{% with wo=row.work_order situacao=row.situation %}<tr>
+          <td><strong>{{ wo.number }}</strong></td>
+          <td>{{ wo.contract.number }}</td>
+          <td><span class="status-pill {% if row.is_overdue %}status-danger{% else %}status-success{% endif %}">{{ wo.get_status_display }}</span></td>
+          <td>{{ wo.opening_date|date:"d/m/Y" }}</td>
+          <td>{{ wo.deadline|date:"d/m/Y"|default:"Não informado" }}</td>
+          <td>{% if wo.hours is not None %}{{ wo.hours|quantidade }} h{% else %}{{ wo.quantity|quantidade }} {{ wo.unit_name }}{% endif %}</td>
+          <td>R$&nbsp;{{ wo.unit_value|localize }}</td>
+          <td><strong>R$&nbsp;{{ wo.total_value|localize }}</strong></td>
+          <td><span class="status-pill status-{{ situacao.tone }}">{{ situacao.label }}</span></td>
+        </tr>{% endwith %}{% endfor %}</tbody>
       </table></div>
-    {% else %}<div class="empty-state"><span aria-hidden="true">▣</span><div><strong>Nenhum contrato ativo disponível.</strong><p>Contratos arquivados não são exibidos para a Auxiliar Administrativa.</p></div></div>{% endif %}
+    {% else %}<div class="empty-state"><span aria-hidden="true">✓</span><div><strong>Nenhuma OS aberta corresponde aos filtros.</strong><p>Altere o contrato ou a situação para consultar outra parte da carteira.</p></div></div>{% endif %}
   </section>
 {% endwith %}
 {% endblock %}

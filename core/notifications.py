@@ -226,6 +226,20 @@ def build_notifications(user, *, contract_id=None):
         from .profile_dashboards import build_auxiliary_dashboard
 
         dashboard = build_auxiliary_dashboard(user)
+        for row in dashboard["work_order_rows"]:
+            work_order = row["work_order"]
+            if contract_id is not None and work_order.contract_id != contract_id:
+                continue
+            if row["is_overdue"]:
+                entries.append(
+                    {
+                        "level": "danger",
+                        "title": f"OS {work_order.number} em atraso",
+                        "contract": f"Contrato {work_order.contract.number}",
+                        "url": reverse("home") + "#aux-os",
+                        "hint": "Acompanhar OS em atraso",
+                    }
+                )
         for row in dashboard["rows"]:
             contract = row["contract"]
             if contract_id is not None and contract.pk != contract_id:
@@ -236,7 +250,7 @@ def build_notifications(user, *, contract_id=None):
                         "level": "warning",
                         "title": issue,
                         "contract": f"Contrato {contract.number}",
-                        "url": reverse("home") + "#aux-cadastros",
+                        "url": reverse("home") + "#aux-resumo",
                         "hint": "Conferir metadados administrativos",
                     }
                 )
