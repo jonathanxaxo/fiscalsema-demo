@@ -30,5 +30,17 @@ Data: 19/11/2026.
 - `python -m unittest scripts.test_mcp_server` — 6 testes aprovados;
 - `git diff --check` — aprovado.
 
-A suíte Django completa será executada pela CI com PostgreSQL temporário antes
-da revisão final do Pull Request. Nenhum banco de produção foi acessado.
+A suíte Django completa foi executada pela CI com PostgreSQL temporário. Nenhum
+banco de produção foi acessado.
+
+## CI do Pull Request
+
+- GitHub Actions `44648170660`, job `django-postgresql` — aprovado em
+  19/11/2026;
+- suíte Django integral — **748 testes aprovados** em 106,719 segundos;
+- adaptador MCP — **6 testes aprovados**;
+- migrations, configuração, scanner de segurança e configuração Vercel sem
+  banco — aprovados;
+- o Preview externo da Vercel não foi criado porque o autor Git local não
+  pertence à equipe Vercel. Esse bloqueio de conta não executou deploy e não
+  representa falha da aplicação.
