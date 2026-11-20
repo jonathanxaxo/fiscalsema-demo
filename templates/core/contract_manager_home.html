@@ -1,0 +1,44 @@
+{% extends "accounts/base.html" %}
+{% load l10n formatacao %}
+{% block title %}Painel do Gestor do Contrato — FiscalSema{% endblock %}
+{% block main_class %}dashboard-page{% endblock %}
+{% block content %}
+{% with d=contract_manager_dashboard contract=contract_manager_dashboard.selected_contract %}
+  <header class="page-header">
+    <div><span class="eyebrow">Perfil Gestor do Contrato</span><h1>Painel de acompanhamento individual</h1><p>Indicadores, gráficos e relatórios somente dos contratos vinculados à sua conta. Nenhuma alteração operacional é permitida.</p></div>
+    <span class="badge badge-success">Somente leitura</span>
+  </header>
+
+  {% if not contract %}
+    <section class="surface empty-state"><span aria-hidden="true">▣</span><div><h2>Nenhum contrato vinculado</h2><p>O painel será exibido quando um Fiscal conceder acesso individual em somente leitura.</p></div></section>
+  {% else %}
+    <section class="surface contract-context" aria-labelledby="gestor-contrato-atual">
+      {% if d.contracts|length > 1 %}<form class="selector" method="get"><div class="field-grow"><label id="gestor-contrato-atual" for="gestor-contract">Contrato vinculado</label><select id="gestor-contract" name="contract" data-autosubmit>{% for item in d.contracts %}<option value="{{ item.pk }}"{% if item.pk == contract.pk %} selected{% endif %}>{{ item.number }} — {{ item.object|truncatechars:70 }}</option>{% endfor %}</select></div><button type="submit">Ver painel</button></form>{% else %}<h2 id="gestor-contrato-atual">Contrato {{ contract.number }}</h2>{% endif %}
+      <div class="context-summary">
+        <div><small>Classificação</small><strong>{{ d.category_label }}</strong></div>
+        <div><small>Fiscal responsável</small><strong>{{ contract.responsible_fiscal.full_name }}</strong></div>
+        <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</strong></div>
+        <div><small>Valor atual</small><strong>R$&nbsp;{{ contract.current_value|localize }}</strong></div>
+      </div>
+      <nav class="action-bar" aria-label="Consultas do Gestor do Contrato"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:executive_dashboard' %}?contract={{ contract.pk }}">Dashboard completo</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:detail' contract.pk %}">Abrir contrato</a>{% if d.can_export %}<a class="button-link button-link-small" href="{% url 'contracts:report' contract.pk %}">Emitir relatório</a>{% endif %}</nav>
+    </section>
+
+    {% with fp=d.dashboard.financial_position s=d.summary %}
+      <section class="surface" aria-labelledby="gestor-contrato-indicadores">
+        <div class="section-heading"><div><span class="eyebrow">Posição do contrato</span><h2 id="gestor-contrato-indicadores">Indicadores para acompanhamento</h2></div><span class="section-hint">Dados calculados em tempo real</span></div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><small>Valor atual</small><strong>R$&nbsp;{{ contract.current_value|localize }}</strong></div>
+          <div class="kpi-card"><small>Empenhado ativo</small><strong>R$&nbsp;{{ fp.total_committed_budget.value|localize }}</strong></div>
+          <div class="kpi-card"><small>Executado</small><strong>R$&nbsp;{{ fp.executed_value.value|localize }}</strong></div>
+          <div class="kpi-card kpi-card-highlight"><small>Saldo contratual</small><strong>R$&nbsp;{{ fp.contract_balance.value|localize }}</strong></div>
+        </div>
+      </section>
+
+      <div class="dashboard-columns">
+        <section class="surface" aria-labelledby="gestor-contrato-progresso"><div class="section-heading"><div><span class="eyebrow">Gráfico financeiro</span><h2 id="gestor-contrato-progresso">Vigência e execução</h2></div></div><div class="exec-bars"><div class="exec-bar-row exec-bar-time"><div><span>Vigência decorrida</span><strong>{{ d.validity.percentage|localize }}%</strong></div><span class="exec-track" role="img" aria-label="Vigência decorrida: {{ d.validity.percentage|localize }}%"><span style="width: {{ d.validity.percentage|barra }}%"></span></span></div>{% for progress in s.financial_progress %}<div class="exec-bar-row exec-bar-{{ progress.tone }}"><div><span>{{ progress.label }}</span><strong>{{ progress.percentage|localize }}%</strong></div><span class="exec-track" role="img" aria-label="{{ progress.label }}: {{ progress.percentage|localize }}%"><span style="width: {{ progress.percentage|barra }}%"></span></span><small>R$&nbsp;{{ progress.value|localize }}</small></div>{% endfor %}</div></section>
+        <section class="surface" aria-labelledby="gestor-contrato-os"><div class="section-heading"><div><span class="eyebrow">Ordens de Serviço</span><h2 id="gestor-contrato-os">Situação operacional</h2></div></div><div class="exec-mini-kpis"><div><small>Total</small><strong>{{ s.work_order_count }}</strong></div><div><small>Abertas</small><strong>{{ s.open_count }}</strong></div><div class="{% if d.dashboard.overdue_work_orders %}is-danger{% endif %}"><small>Vencidas</small><strong>{{ d.dashboard.overdue_work_orders|length }}</strong></div><div><small>Concluídas</small><strong>{{ s.completed_count }}</strong></div></div><p class="muted">Consulta para acompanhamento e emissão de relatórios; atesto, homologação e pagamento permanecem fora deste perfil.</p></section>
+      </div>
+    {% endwith %}
+  {% endif %}
+{% endwith %}
+{% endblock %}

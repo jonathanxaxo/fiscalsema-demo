@@ -163,3 +163,5 @@ documental das entregas anteriores.
 
 - `sprint-57-demo-multiperfil`: um único login de demonstração alterna entre
   os cinco perfis, com contas internas sem senha e carteira fictícia idempotente.
+- `sprint-58-paineis-por-perfil`: cada perfil funcional recebe painel próprio,
+  dados autorizados e objetivo visual independente.

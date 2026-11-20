@@ -1,0 +1,38 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Painel do Gestor Administrativo — FiscalSema{% endblock %}
+{% block main_class %}dashboard-page{% endblock %}
+{% block content %}
+{% with d=administrative_dashboard p=administrative_dashboard.portfolio %}
+  <header class="page-header">
+    <div><span class="eyebrow">Perfil Gestor Administrativo</span><h1>Painel executivo da carteira</h1><p>Visão institucional para Superintendente e Secretário, com contratos agrupados por classificação e acesso individual aos indicadores.</p></div>
+    <span class="badge badge-success">Visão consolidada</span>
+  </header>
+
+  <section class="surface" aria-labelledby="gestor-adm-totais">
+    <div class="section-heading"><div><span class="eyebrow">Carteira institucional</span><h2 id="gestor-adm-totais">Totais consolidados</h2></div><span class="section-hint">{{ p.contract_count }} contrato(s) ativo(s)</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><small>Valor atual</small><strong>R$&nbsp;{{ p.current_value|localize }}</strong></div>
+      <div class="kpi-card"><small>Empenhado ativo</small><strong>R$&nbsp;{{ p.committed_budget|localize }}</strong></div>
+      <div class="kpi-card"><small>Pago</small><strong>R$&nbsp;{{ p.paid_value|localize }}</strong></div>
+      <div class="kpi-card kpi-card-highlight"><small>Saldo contratual</small><strong>R$&nbsp;{{ p.contract_balance|localize }}</strong></div>
+    </div>
+  </section>
+
+  <section class="surface" aria-labelledby="gestor-adm-classificacoes">
+    <div class="section-heading"><div><span class="eyebrow">Agrupamento gerencial</span><h2 id="gestor-adm-classificacoes">Contratos por classificação</h2></div><span class="section-hint">{{ d.classification_pending_count }} classificação(ões) a confirmar</span></div>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Classificação</th><th>Contratos</th><th>Valor atual</th><th>Empenhado</th><th>Pago</th><th>Saldo</th><th>Conferência</th></tr></thead><tbody>
+      {% for row in p.categories %}<tr><td><strong>{{ row.label }}</strong></td><td>{{ row.contract_count }}</td><td>R$&nbsp;{{ row.current_value|localize }}</td><td>R$&nbsp;{{ row.committed_budget|localize }}</td><td>R$&nbsp;{{ row.paid_value|localize }}</td><td>R$&nbsp;{{ row.contract_balance|localize }}</td><td>{% if row.inconsistent_count %}<span class="status-pill status-warning">{{ row.inconsistent_count }} a conferir</span>{% else %}<span class="status-pill status-success">Consistente</span>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="7">Nenhum contrato ativo disponível.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+
+  <section class="surface" aria-labelledby="gestor-adm-contratos">
+    <div class="section-heading"><div><span class="eyebrow">Seleção individual</span><h2 id="gestor-adm-contratos">Acompanhar cada contrato</h2></div><span class="section-hint">Dashboard e relatório em somente leitura</span></div>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Contrato</th><th>Classificação</th><th>Contratante</th><th>Fiscal</th><th>Valor atual</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
+      {% for row in d.rows %}<tr><td><strong>{{ row.contract.number }}</strong><small class="table-note">{{ row.contract.object|truncatechars:70 }}</small></td><td>{{ row.category_label }}</td><td>{{ row.contract.contracting_organization.name }}</td><td>{{ row.contract.responsible_fiscal.full_name }}</td><td>R$&nbsp;{{ row.contract.current_value|localize }}</td><td><span class="status-pill status-success">{{ row.contract.get_status_display }}</span></td><td><a href="{% url 'contracts:executive_dashboard' %}?contract={{ row.contract.pk }}">Dashboard</a>{% if row.can_export %} · <a href="{% url 'contracts:report' row.contract.pk %}">Relatório</a>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="7">Nenhum contrato ativo disponível.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+{% endwith %}
+{% endblock %}
