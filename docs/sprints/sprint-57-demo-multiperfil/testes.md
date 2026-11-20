@@ -40,6 +40,14 @@ permanecem para a etapa de publicação autorizada.
 
 ## Publicação
 
-PENDENTE — esta Sprint está autorizada somente para implementação e abertura de
-PR. Preview, merge, migration, preparação do banco e produção exigem a etapa de
-publicação autorizada.
+- PR `#53` integrado no commit `8b40734`;
+- migration manual `44591221625` — aprovada em 55 segundos;
+- preparação multiperfil `44591477226` — aprovada em 6 minutos e 10 segundos;
+- uma conta controladora e cinco perfis confirmados;
+- 3 contas internas confirmadas sem login direto;
+- 5 contratos e 5 pacotes operacionais fictícios criados;
+- 1 Gestor do Contrato vinculado em somente leitura;
+- deploy Vercel do commit `8b40734` — aprovado;
+- tela de entrada de produção — carregamento aprovado.
+
+URL de produção: `https://fiscalsema-demo.vercel.app/conta/entrar/`.

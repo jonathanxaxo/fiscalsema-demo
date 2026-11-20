@@ -22,3 +22,6 @@
 9. Habilitação e carga só podem rodar no ambiente `demo`, por workflow manual,
    com a confirmação exata `PREPARAR DEMO`.
 10. Publicação, migration e execução no banco continuam como etapas separadas.
+11. Chaves Django geradas apenas para workflows são mascaradas antes de serem
+    gravadas no ambiente da execução; nenhuma chave efêmera deve aparecer nos
+    logs de futuras rotinas administrativas.
