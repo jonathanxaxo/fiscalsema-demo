@@ -55,3 +55,21 @@ Nenhum banco real ou de produção foi acessado.
 - Preview externo da Vercel bloqueado porque o autor Git não pertence à equipe
   do projeto Vercel. O bloqueio não executou deploy e não representa falha da
   aplicação.
+
+## Publicação e validação em produção
+
+Data: 20/11/2026.
+
+- Pull Request funcional `#57` incorporado à `main` por squash no commit
+  `82d5cb0`;
+- GitHub Actions da `main`, execução `44735351811`, job
+  `django-postgresql` — aprovado;
+- Vercel confirmou a conclusão do deploy associado ao commit publicado;
+- `https://fiscalsema-demo.vercel.app/healthz` respondeu HTTP `200` com
+  aplicação e banco de dados em estado `ok`;
+- a página pública de entrada foi validada no navegador com o aviso permanente
+  de ambiente demonstrativo, formulário de autenticação e identidade visual;
+- o console público não apresentou erros ou alertas;
+- os painéis autenticados e as permissões dos perfis foram validados pela suíte
+  automatizada de 749 testes. A senha do usuário não foi acessada durante a
+  validação pública.
