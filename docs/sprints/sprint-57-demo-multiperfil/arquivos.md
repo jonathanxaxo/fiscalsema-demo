@@ -9,7 +9,7 @@
 | `accounts/services.py`, `organizations/services.py` | Bloqueio de alterações administrativas diretas nas contas internas |
 | `contracts/management/commands/seed_demo_portfolio.py` | Carteira fictícia idempotente para as contas ativas |
 | `contracts/management/commands/seed_demo_presentation.py` | Reuso seguro do pacote operacional em mais de um contrato |
-| `.github/workflows/prepare-demo-multprofile.yml` | Fluxo manual com confirmação explícita |
+| `.github/workflows/*.yml` | Fluxo multiperfil e mascaramento das chaves Django efêmeras |
 | `accounts/test_demo_multprofile.py` | Exclusividade, senha, auditoria, troca e bloqueio do login interno |
 | `contracts/test_demo_portfolio.py` | Idempotência, classificações e visibilidade por perfil |
 | documentação e Metodologia | Operação, segurança, decisões e evidências |

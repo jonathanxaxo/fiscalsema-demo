@@ -50,7 +50,10 @@ jobs:
         run: test -n "$FISCALSEMA_DEMO_DATABASE_URL"
 
       - name: Gerar chave Django efemera
-        run: python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(64))" >> "$GITHUB_ENV"
+        run: |
+          key="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
+          echo "::add-mask::$key"
+          echo "DJANGO_SECRET_KEY=$key" >> "$GITHUB_ENV"
 
       - name: Instalar dependencias verificadas
         run: |
