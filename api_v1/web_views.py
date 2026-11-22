@@ -10,6 +10,7 @@ from django.views.generic import DetailView, ListView, View
 from .drafts import (
     confirm_assistant_draft, confirm_assistant_draft_batch, reject_assistant_draft,
 )
+from .leitura import fontes_legiveis, linhas_da_proposta, resultado_legivel
 from .execucao import BLOCKED_TYPES, ExecutionRefused, can_issue_code, issue_confirmation_code
 from .models import AssistantDraft
 
@@ -39,6 +40,10 @@ class AssistantDraftDetailView(DraftOwnerMixin, DetailView):
         context["consistency_json"] = json.dumps(
             self.object.consistency_result, ensure_ascii=False, indent=2,
         )
+        # Sprint 61: a mesma proposta escrita em português, para o fiscal conferir sem ler código.
+        context["linhas_proposta"] = linhas_da_proposta(self.object)
+        context["fontes"] = fontes_legiveis(self.object)
+        context["resultado"] = resultado_legivel(self.object)
         context["can_issue_code"] = can_issue_code(self.object)
         context["payment_blocked"] = (
             self.object.created_by_application_id is not None

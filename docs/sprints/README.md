@@ -169,3 +169,5 @@ documental das entregas anteriores.
   Gestores selecionam múltiplos contratos, usam dashboards e emitem relatórios.
 - `sprint-60-arise-dados-por-perfil`: Arise entrega à Auxiliar somente os
   dados do painel dela, sem finanças do contrato; valores em reais no `<dados>`.
+- `sprint-61-rascunho-legivel`: rascunho da IA externa (MCP) escrito em
+  português para o fiscal conferir; o JSON fica recolhido para auditoria.
