@@ -10,7 +10,7 @@
 
 ## Problema encontrado
 
-Durante a gravação do vídeo de demonstração (dados fictícios), no perfil
+Durante um teste manual na demonstração (dados fictícios), no perfil
 Auxiliar Administrativa, a pergunta "Qual é o saldo e o valor pago do contrato
 DEMO-0002-01/2026?" recebeu saldo contratual e valor pago. A função
 `assistant/ferramentas.py::authorized_data` enviava o
