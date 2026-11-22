@@ -299,6 +299,14 @@ dt, dd { margin: 0; padding: .62rem 0; border-bottom: 1px solid var(--line); }
 dt { color: var(--muted); font-weight: 700; }
 dd { font-weight: 600; }
 
+/* Sprint 61: rascunho da IA escrito em português */
+.draft-readable tbody th { text-transform: none; letter-spacing: 0; font-size: .95rem; white-space: normal; color: var(--ink, #12261d); background: #f9fbfa; }
+.draft-readable td { font-size: .95rem; }
+.draft-tag { display: inline-block; margin-left: .35rem; padding: .05rem .45rem; border-radius: 999px; background: #fff4d6; color: #6b4e00; font-size: .72rem; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.draft-section { margin-top: 1.75rem; }
+.draft-sources { margin: .5rem 0 1.25rem; padding-left: 1.2rem; line-height: 1.55; }
+.draft-technical { margin: 1rem 0 1.5rem; }
+.draft-technical summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 .code-block { margin: .5rem 0 1.25rem; padding: 1rem; max-height: 420px; overflow: auto; white-space: pre-wrap; overflow-wrap: break-word; background: #f7faf8; border: 1px solid var(--line); border-radius: 9px; font-size: .85rem; }
 .table-responsive { width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; border-radius: 9px; }
 .table-responsive:focus { outline: 3px solid rgba(28, 129, 79, .24); outline-offset: 2px; }
