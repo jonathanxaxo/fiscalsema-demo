@@ -39,3 +39,10 @@ na DEMO-OS-03 (20 horas, R$ 4.000,00, 18/11/2026). A tela mostrou a tabela em
 português (Quantidade executada, Valor executado, Data da execução — "Novo",
 "campo importante"), a fonte "Relatório fictício de execução — referência:
 DEMO-OS-03, semana 46" e o código recolhido em "Ver dados técnicos".
+
+## Publicação
+
+- PR #62: CI `django-postgresql` aprovada; merge em 22/11/2026.
+- Vercel: deploy de produção `READY` para o commit `c050752`.
+- Conferência em produção: `/healthz` com banco "ok" e folha de estilos com as classes
+  `draft-readable`, `draft-section` e `draft-technical`.

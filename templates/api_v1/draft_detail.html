@@ -5,7 +5,7 @@
     <div><span class="eyebrow">Rascunho da IA · Lote {{ draft.batch_id }}</span><h1>{{ draft.get_entity_type_display }} — {{ draft.get_operation_display }} — {{ draft.get_status_display }}</h1></div>
     <div class="page-header-actions"><a class="button-link button-link-secondary" href="{% url 'assistant_drafts:list' %}">Voltar aos rascunhos</a></div>
   </header>
-  {% for message in messages %}<p class="notice"><strong>{{ message }}</strong></p>{% endfor %}
+  {% for message in messages %}<p class="{% if message.tags == 'error' %}danger{% else %}notice{% endif %}" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}"><strong>{{ message }}</strong></p>{% endfor %}
   {% if draft.status == 'PENDENTE' %}
     <p class="warning"><strong>NÃO EXECUTADO:</strong> esta é apenas uma proposta da IA. Somente uma decisão humana autenticada pode autorizar a gravação.</p>
   {% elif draft.target_id %}
