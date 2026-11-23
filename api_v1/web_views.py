@@ -15,6 +15,13 @@ from .execucao import BLOCKED_TYPES, ExecutionRefused, can_issue_code, issue_con
 from .models import AssistantDraft
 
 
+def _texto(exc):
+    """Mensagem de erro limpa para a tela (Sprint 62): sem colchetes nem aspas de lista."""
+    if isinstance(exc, ValidationError):
+        return " ".join(str(m) for m in exc.messages)
+    return str(exc)
+
+
 class DraftOwnerMixin(LoginRequiredMixin):
     def get_queryset(self):
         return AssistantDraft.objects.select_related(
@@ -61,7 +68,7 @@ class AssistantDraftCodeView(DraftOwnerMixin, View):
         try:
             code, expires = issue_confirmation_code(draft_id=pk, actor=request.user)
         except (ExecutionRefused, PermissionDenied) as exc:
-            messages.error(request, str(exc))
+            messages.error(request, _texto(exc))
             return redirect("assistant_drafts:detail", pk=pk)
         view = AssistantDraftDetailView()
         view.setup(request, pk=pk)
@@ -80,7 +87,7 @@ class AssistantDraftConfirmView(DraftOwnerMixin, View):
         try:
             draft, target = confirm_assistant_draft(draft_id=pk, actor=request.user)
         except (ValidationError, PermissionDenied) as exc:
-            messages.error(request, f"Confirmação recusada: {exc}")
+            messages.error(request, f"Confirmação recusada: {_texto(exc)}")
             return redirect("assistant_drafts:detail", pk=pk)
         messages.success(
             request,
@@ -98,7 +105,7 @@ class AssistantDraftRejectView(DraftOwnerMixin, View):
                 draft_id=pk, actor=request.user, reason=request.POST.get("reason", ""),
             )
         except (ValidationError, PermissionDenied) as exc:
-            messages.error(request, f"Rejeição não registrada: {exc}")
+            messages.error(request, f"Rejeição não registrada: {_texto(exc)}")
         else:
             messages.success(request, "Rascunho rejeitado e preservado na auditoria.")
         return redirect("assistant_drafts:detail", pk=pk)
@@ -111,7 +118,7 @@ class AssistantDraftBatchConfirmView(DraftOwnerMixin, View):
         try:
             results = confirm_assistant_draft_batch(batch_id=batch_id, actor=request.user)
         except (ValidationError, PermissionDenied) as exc:
-            messages.error(request, f"Confirmação do lote recusada: {exc}")
+            messages.error(request, f"Confirmação do lote recusada: {_texto(exc)}")
         else:
             messages.success(
                 request,

@@ -171,3 +171,5 @@ documental das entregas anteriores.
   dados do painel dela, sem finanças do contrato; valores em reais no `<dados>`.
 - `sprint-61-rascunho-legivel`: rascunho da IA externa (MCP) escrito em
   português para o fiscal conferir; o JSON fica recolhido para auditoria.
+- `sprint-62-recusas-mcp`: recusas do MCP por permissão revogada comprovadas em
+  testes; mensagem de recusa sem colchetes e na cor de alerta.

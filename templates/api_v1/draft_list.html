@@ -9,7 +9,7 @@
     </div>
     <div class="page-header-actions"><a class="button-link button-link-secondary" href="{% url 'home' %}">Voltar ao painel</a></div>
   </header>
-  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  {% for message in messages %}<p class="{% if message.tags == 'error' %}danger{% else %}notice{% endif %}" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>{% endfor %}
   <p class="warning"><strong>Regra da demonstração:</strong> itens pendentes estão <strong>NÃO EXECUTADOS</strong> e exigem revisão do Fiscal.</p>
   <table>
     <thead><tr><th>Data</th><th>Lote</th><th>Operação</th><th>Tipo</th><th>Contrato</th><th>Status</th><th>Execução</th><th>Ação</th></tr></thead>
