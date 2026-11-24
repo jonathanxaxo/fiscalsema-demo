@@ -187,3 +187,6 @@ documental das entregas anteriores.
   obras, licenças e entrega única.
 - `sprint-69-acompanhamento-sistemas-oficiais`: controle manual de SIAG,
   SIGADOC, PNCP e outros sistemas, sem integração ou credencial externa.
+- `sprint-70-impressao-gestor-administrativo`: a impressão automática aguarda a
+  nova aba ficar visível e preserva os dados dos relatórios em PDF para todos
+  os perfis autorizados.

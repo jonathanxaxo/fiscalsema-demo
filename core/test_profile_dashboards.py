@@ -3,8 +3,10 @@
 import os
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 from unittest import mock
 
+from django.contrib.staticfiles import finders
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -316,9 +318,29 @@ class IndependentProfileDashboardTests(TestCase):
             report_url, {"contract": self.contract_a.pk, "print": "1"}
         )
         self.assertContains(printed, "data-auto-print")
+        self.assertContains(printed, self.contract_a.number)
+        self.assertContains(printed, "contracts/report_print.js")
+
+        print_script = Path(finders.find("contracts/report_print.js")).read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('classList.contains("fs-verificando")', print_script)
+        self.assertIn("MutationObserver", print_script)
+        self.assertIn("requestAnimationFrame", print_script)
 
         self.client.force_login(self.auxiliary)
         self.assertEqual(self.client.get(report_url).status_code, 403)
+
+    def test_shared_print_fix_preserves_standard_report_for_authorized_profiles(self):
+        report_url = reverse("contracts:report", args=[self.contract_a.pk])
+        for user in (self.fiscal, self.contract_manager):
+            with self.subTest(profile=user.profile):
+                self.client.force_login(user)
+                printed = self.client.get(report_url, {"print": "1"})
+                self.assertEqual(printed.status_code, 200)
+                self.assertContains(printed, self.contract_a.number)
+                self.assertContains(printed, "data-auto-print")
+                self.assertContains(printed, "contracts/report_print.js")
 
     def test_contract_manager_selects_among_linked_contracts_and_reports(self):
         self.client.force_login(self.contract_manager)
