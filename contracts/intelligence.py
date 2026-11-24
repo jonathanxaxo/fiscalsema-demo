@@ -1085,7 +1085,7 @@ def contract_intelligence_snapshot(contract):
             "processo": contract.process_number,
             "contratada": contract.supplier_name,
             "vigencia_inicio": contract.validity_start.isoformat(),
-            "vigencia_fim": contract.validity_end.isoformat(),
+            "vigencia_fim": contract.current_validity_end.isoformat(),
             "status": contract.status,
         },
         "classificacao": {

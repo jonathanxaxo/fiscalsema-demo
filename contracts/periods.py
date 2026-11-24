@@ -27,9 +27,10 @@ def contract_year_periods(contract):
     periods = []
     ordinal = 1
     start = contract.validity_start
-    while start <= contract.validity_end:
+    validity_end = getattr(contract, "current_validity_end", contract.validity_end)
+    while start <= validity_end:
         next_start = _anniversary(contract.validity_start, ordinal)
-        end = min(next_start - timedelta(days=1), contract.validity_end)
+        end = min(next_start - timedelta(days=1), validity_end)
         periods.append(
             AnnualPeriod(
                 kind="CONTRACT_YEAR",
@@ -47,8 +48,9 @@ def contract_year_periods(contract):
 def calendar_year_periods(contract):
     """Return full official calendar years touched by the contract."""
     periods = []
+    validity_end = getattr(contract, "current_validity_end", contract.validity_end)
     for ordinal, year in enumerate(
-        range(contract.validity_start.year, contract.validity_end.year + 1), start=1
+        range(contract.validity_start.year, validity_end.year + 1), start=1
     ):
         periods.append(
             AnnualPeriod(

@@ -21,12 +21,38 @@ from contracts.intelligence import (
     confirm_contract_classification,
     run_contract_intelligence,
 )
+from contracts.governance import (
+    apply_control_pack,
+    create_contract_change,
+    create_external_record,
+    create_obligation,
+    create_receipt,
+    create_risk,
+    update_alert_policy,
+)
 from contracts.models import (
     Contract,
     ContractAccess,
+    ContractAlertPolicy,
     ContractAccessStatus,
+    ContractChange,
+    ContractChangeStatus,
+    ContractChangeType,
+    ContractChecklistItem,
     ContractClassification,
+    ContractExternalRecord,
+    ContractExternalRecordStatus,
+    ContractExternalSystem,
     ContractManagementCategory,
+    ContractObligation,
+    ContractObligationCategory,
+    ContractObligationStatus,
+    ContractReceipt,
+    ContractReceiptResult,
+    ContractReceiptType,
+    ContractRisk,
+    ContractRiskLevel,
+    ContractRiskStatus,
     IntelligenceReviewStatus,
 )
 from contracts.services import (
@@ -38,6 +64,7 @@ from contracts.services import (
 from .seed_demo_presentation import MARKER, seed_contract_presentation
 
 PORTFOLIO_MARKER = "[DEMO-CARTEIRA]"
+GOVERNANCE_MARKER = "[DEMO-GOVERNANCA]"
 CATEGORIES = (
     (
         ContractManagementCategory.SYSTEM,
@@ -56,6 +83,167 @@ CATEGORIES = (
         "Entrega única de solução tecnológica",
     ),
 )
+
+CATEGORY_PACKS = {
+    ContractManagementCategory.SYSTEM: "TIC",
+    ContractManagementCategory.EQUIPMENT: "BENS_EQUIPAMENTOS",
+    ContractManagementCategory.CONTINUOUS_SERVICE: "SERVICOS_CONTINUADOS",
+    ContractManagementCategory.SINGLE_DELIVERY: "ENTREGA_UNICA",
+}
+
+
+def seed_contract_governance(*, contract, actor, category):
+    """Cria exemplos fictícios de governança sem duplicar registros em reexecuções."""
+    today = timezone.localdate()
+    created = 0
+
+    if not ContractAlertPolicy.objects.filter(contract=contract).exists():
+        update_alert_policy(
+            contract_id=contract.pk,
+            actor=actor,
+            days=[120, 90, 60, 30, 15],
+        )
+        created += 1
+
+    obligation_title = f"{GOVERNANCE_MARKER} Conferência documental mensal"
+    if not ContractObligation.objects.filter(
+        contract=contract, title=obligation_title,
+    ).exists():
+        create_obligation(
+            contract_id=contract.pk,
+            actor=actor,
+            data={
+                "title": obligation_title,
+                "category": ContractObligationCategory.DOCUMENTARY,
+                "due_date": today - timedelta(days=3),
+                "responsible": "Equipe fictícia de fiscalização",
+                "source_reference": f"{GOVERNANCE_MARKER} Fonte fictícia para demonstração.",
+                "evidence_reference": "",
+                "status": ContractObligationStatus.PENDING,
+                "notes": "Prazo fictício em atraso para demonstrar o painel de alertas.",
+            },
+        )
+        created += 1
+
+    if not ContractChange.objects.filter(
+        contract=contract,
+        change_type=ContractChangeType.APOSTILLE,
+        number="DEMO-AP-01",
+    ).exists():
+        create_contract_change(
+            contract_id=contract.pk,
+            actor=actor,
+            data={
+                "change_type": ContractChangeType.APOSTILLE,
+                "number": "DEMO-AP-01",
+                "official_date": today - timedelta(days=30),
+                "effective_date": today - timedelta(days=25),
+                "value_delta": Decimal("25000.00"),
+                "validity_end_after": contract.validity_end + timedelta(days=30),
+                "source_reference": f"{GOVERNANCE_MARKER} Instrumento exclusivamente fictício.",
+                "summary": "Exemplo fictício de atualização do valor e da vigência.",
+                "status": ContractChangeStatus.EFFECTIVE,
+                "void_reason": "",
+            },
+        )
+        created += 1
+
+    receipt_reference = f"{GOVERNANCE_MARKER} Termo provisório"
+    if not ContractReceipt.objects.filter(
+        contract=contract, term_reference=receipt_reference,
+    ).exists():
+        create_receipt(
+            contract_id=contract.pk,
+            actor=actor,
+            data={
+                "receipt_type": ContractReceiptType.PROVISIONAL,
+                "receipt_date": today - timedelta(days=10),
+                "result": ContractReceiptResult.ACCEPTED,
+                "object_reference": "Entrega fictícia da demonstração",
+                "term_reference": receipt_reference,
+                "reservations": "",
+            },
+        )
+        created += 1
+
+    risk_title = f"{GOVERNANCE_MARKER} Atraso na entrega demonstrativa"
+    if not ContractRisk.objects.filter(contract=contract, title=risk_title).exists():
+        create_risk(
+            contract_id=contract.pk,
+            actor=actor,
+            data={
+                "title": risk_title,
+                "probability": ContractRiskLevel.MEDIUM,
+                "impact": ContractRiskLevel.HIGH,
+                "response": "Acompanhar o cronograma fictício e registrar a cobrança demonstrativa.",
+                "owner": "Fiscal fictício responsável",
+                "source_reference": f"{GOVERNANCE_MARKER} Mapa de riscos fictício.",
+                "review_date": today + timedelta(days=10),
+                "status": ContractRiskStatus.MONITORING,
+            },
+        )
+        created += 1
+
+    pack_code = CATEGORY_PACKS[category]
+    if not ContractChecklistItem.objects.filter(
+        contract=contract, pack_code=pack_code,
+    ).exists():
+        _, pack_created = apply_control_pack(
+            contract_id=contract.pk,
+            actor=actor,
+            pack_code=pack_code,
+        )
+        created += pack_created
+
+    external_specs = (
+        (
+            ContractExternalSystem.SIAG,
+            "Atualização cadastral da execução contratual",
+            "",
+            True,
+            today + timedelta(days=5),
+            ContractExternalRecordStatus.PENDING,
+        ),
+        (
+            ContractExternalSystem.SIGADOC,
+            "Tramitação do processo de fiscalização",
+            f"DEMO-SIGADOC-{contract.pk}",
+            True,
+            None,
+            ContractExternalRecordStatus.REGISTERED,
+        ),
+        (
+            ContractExternalSystem.PNCP,
+            "Publicação ou atualização contratual a confirmar",
+            "",
+            False,
+            None,
+            ContractExternalRecordStatus.PENDING,
+        ),
+    )
+    for system, label, reference, required, due_date, status in external_specs:
+        if ContractExternalRecord.objects.filter(
+            contract=contract, system=system, label=label,
+        ).exists():
+            continue
+        create_external_record(
+            contract_id=contract.pk,
+            actor=actor,
+            data={
+                "system": system,
+                "label": label,
+                "reference": reference,
+                "required": required,
+                "due_date": due_date,
+                "status": status,
+                "source_reference": (
+                    f"{GOVERNANCE_MARKER} Controle fictício; confirmar aplicabilidade na fonte oficial."
+                ),
+                "notes": "Registro exclusivamente demonstrativo, sem integração externa.",
+            },
+        )
+        created += 1
+    return created
 
 
 def _eligible_users():
@@ -119,7 +307,7 @@ class Command(BaseCommand):
             )
 
         with transaction.atomic():
-            contracts, created_contracts, seeded_contracts = self._seed_contracts(
+            contracts, created_contracts, seeded_contracts, governance_records = self._seed_contracts(
                 fiscals=fiscals,
                 primary_fiscal_id=fiscal_target.user_id,
             )
@@ -131,6 +319,7 @@ class Command(BaseCommand):
                 "Carteira fictícia pronta: "
                 f"{len(contracts)} contrato(s), {created_contracts} novo(s), "
                 f"{seeded_contracts} pacote(s) operacional(is) criado(s) e "
+                f"{governance_records} registro(s) de governança criado(s); "
                 f"{linked_managers} Gestor(es) do Contrato vinculado(s)."
             )
         )
@@ -140,6 +329,7 @@ class Command(BaseCommand):
         contracts = []
         created_contracts = 0
         seeded_contracts = 0
+        governance_records = 0
         for fiscal in fiscals:
             slots = len(CATEGORIES) if fiscal.pk == primary_fiscal_id else 1
             for index in range(slots):
@@ -187,8 +377,13 @@ class Command(BaseCommand):
                         modality=result.modality,
                         management_category=category,
                     )
+                governance_records += seed_contract_governance(
+                    contract=contract,
+                    actor=fiscal,
+                    category=category,
+                )
                 contracts.append(contract)
-        return contracts, created_contracts, seeded_contracts
+        return contracts, created_contracts, seeded_contracts, governance_records
 
     def _link_contract_managers(self, contracts):
         managers = list(

@@ -8,7 +8,13 @@ from .models import (
     BudgetCommitment,
     CommitmentMovement,
     Contract,
+    ContractChange,
+    ContractChecklistItem,
+    ContractExternalRecord,
     ContractItem,
+    ContractObligation,
+    ContractReceipt,
+    ContractRisk,
     ContractStatus,
     Invoice,
     Payment,
@@ -343,7 +349,7 @@ class ContractForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 4}),
         }
         help_texts = {
-            "original_value": "O valor atual será igual ao original até a implementação de aditivos.",
+            "original_value": "Valor inicial do instrumento. Alterações formais compõem o valor atual sem apagar este dado.",
         }
 
     def __init__(self, *args, **kwargs):
@@ -448,6 +454,146 @@ class ContractRestoreForm(forms.Form):
         if not reason:
             raise forms.ValidationError("Informe a justificativa da restauração.")
         return reason
+
+
+class ContractAlertPolicyForm(forms.Form):
+    validity_warning_days = forms.CharField(
+        label="Avisar sobre a vigência com antecedência de",
+        required=False,
+        help_text="Informe dias separados por vírgula, por exemplo: 120, 90, 60, 30, 15. Vazio desativa o aviso antecipado.",
+    )
+
+    def __init__(self, *args, policy=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound and policy:
+            self.initial["validity_warning_days"] = ", ".join(
+                str(day) for day in policy.validity_warning_days
+            )
+
+    def clean_validity_warning_days(self):
+        raw = self.cleaned_data["validity_warning_days"].strip()
+        if not raw:
+            return []
+        values = []
+        for part in raw.split(","):
+            try:
+                value = int(part.strip())
+            except ValueError as exc:
+                raise forms.ValidationError("Use somente números inteiros separados por vírgula.") from exc
+            if value < 1 or value > 730:
+                raise forms.ValidationError("Cada antecedência deve estar entre 1 e 730 dias.")
+            values.append(value)
+        return sorted(set(values), reverse=True)
+
+
+class ContractObligationForm(forms.ModelForm):
+    class Meta:
+        model = ContractObligation
+        fields = (
+            "title", "category", "due_date", "responsible", "source_reference",
+            "evidence_reference", "status", "notes",
+        )
+        widgets = {
+            "due_date": _html_date_input(),
+            "source_reference": forms.Textarea(attrs={"rows": 3}),
+            "evidence_reference": forms.Textarea(attrs={"rows": 2}),
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class ContractChangeForm(forms.ModelForm):
+    confirmed = forms.BooleanField(
+        label="Confirmo que os dados foram conferidos no instrumento oficial",
+    )
+
+    class Meta:
+        model = ContractChange
+        fields = (
+            "change_type", "number", "official_date", "effective_date",
+            "value_delta", "validity_end_after", "source_reference", "summary",
+        )
+        widgets = {
+            "official_date": _html_date_input(),
+            "effective_date": _html_date_input(),
+            "validity_end_after": _html_date_input(),
+            "source_reference": forms.Textarea(attrs={"rows": 3}),
+            "summary": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _localize_decimal_fields(self, "value_delta")
+
+
+class ContractChangeVoidForm(forms.Form):
+    reason = forms.CharField(
+        label="Justificativa formal da anulação",
+        widget=forms.Textarea(attrs={"rows": 5}),
+    )
+    confirmed = forms.BooleanField(
+        label="Confirmo que esta anulação deve deixar de compor o valor e a vigência atuais",
+    )
+
+    def clean_reason(self):
+        reason = " ".join(self.cleaned_data["reason"].split())
+        if not reason:
+            raise forms.ValidationError("Informe a justificativa da anulação.")
+        return reason
+
+
+class ContractReceiptForm(forms.ModelForm):
+    class Meta:
+        model = ContractReceipt
+        fields = (
+            "receipt_type", "receipt_date", "result", "object_reference",
+            "term_reference", "reservations",
+        )
+        widgets = {
+            "receipt_date": _html_date_input(),
+            "term_reference": forms.Textarea(attrs={"rows": 3}),
+            "reservations": forms.Textarea(attrs={"rows": 4}),
+        }
+
+
+class ContractRiskForm(forms.ModelForm):
+    class Meta:
+        model = ContractRisk
+        fields = (
+            "title", "probability", "impact", "response", "owner",
+            "source_reference", "review_date", "status",
+        )
+        widgets = {
+            "response": forms.Textarea(attrs={"rows": 4}),
+            "source_reference": forms.Textarea(attrs={"rows": 3}),
+            "review_date": _html_date_input(),
+        }
+
+
+class ContractChecklistItemForm(forms.ModelForm):
+    class Meta:
+        model = ContractChecklistItem
+        fields = (
+            "applicability", "status", "due_date", "evidence_reference", "notes",
+        )
+        widgets = {
+            "due_date": _html_date_input(),
+            "evidence_reference": forms.Textarea(attrs={"rows": 3}),
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class ContractExternalRecordForm(forms.ModelForm):
+    class Meta:
+        model = ContractExternalRecord
+        fields = (
+            "system", "label", "reference", "required", "due_date", "status",
+            "source_reference", "notes",
+        )
+        widgets = {
+            "due_date": _html_date_input(),
+            "source_reference": forms.Textarea(attrs={"rows": 3}),
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
 
 
 class ContractItemForm(forms.ModelForm):

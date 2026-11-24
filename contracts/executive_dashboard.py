@@ -181,7 +181,8 @@ def build_portfolio_summary(contracts):
 
 def build_validity_progress(contract, *, today=None):
     today = today or date.today()
-    total_days = (contract.validity_end - contract.validity_start).days + 1
+    validity_end = contract.current_validity_end
+    total_days = (validity_end - contract.validity_start).days + 1
     elapsed = min(max((today - contract.validity_start).days + 1, 0), max(total_days, 0))
     return ValidityProgress(
         total_days=total_days,
@@ -189,7 +190,7 @@ def build_validity_progress(contract, *, today=None):
         remaining_days=max(total_days - elapsed, 0),
         percentage=_percentage(elapsed, total_days),
         has_started=today >= contract.validity_start,
-        has_ended=today > contract.validity_end,
+        has_ended=today > validity_end,
     )
 
 
@@ -202,7 +203,8 @@ def build_monthly_evolution(contract, *, today=None, months=MONTHLY_EVOLUTION_MO
     """Executado (data da execução), faturado (emissão da NF) e pago (data do pagamento) por mês."""
     today = today or date.today()
     zero = Decimal("0")
-    end = min(today, contract.validity_end)
+    validity_end = contract.current_validity_end
+    end = min(today, validity_end)
     if end < contract.validity_start:
         return MonthlyEvolution((), zero, zero, zero, zero)
     first = _add_months(end.year, end.month, -(months - 1))

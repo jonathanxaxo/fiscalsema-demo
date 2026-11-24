@@ -4,7 +4,8 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import DateField, OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
@@ -47,9 +48,12 @@ from .executive_dashboard import (
 )
 from .exports import build_contract_csv, filters_for_audit
 from .reports import build_contract_report
+from .timeline import build_contract_timeline
 from .models import (
     BudgetCommitment,
     Contract,
+    ContractChange,
+    ContractChangeStatus,
     CsvExportEvent,
     ContractAccess,
     ContractClause,
@@ -220,9 +224,20 @@ class ContractListView(LoginRequiredMixin, ListView):
                 queryset = queryset.filter(**{lookup: value})
         year = (self.request.GET.get("exercicio") or "").strip()
         if year.isdecimal() and len(year) == 4:
-            queryset = queryset.filter(
+            latest_validity_end = ContractChange.objects.filter(
+                contract_id=OuterRef("pk"),
+                status=ContractChangeStatus.EFFECTIVE,
+                effective_date__lte=timezone.localdate(),
+                validity_end_after__isnull=False,
+            ).order_by("-effective_date", "-pk").values("validity_end_after")[:1]
+            queryset = queryset.annotate(
+                effective_validity_end=Coalesce(
+                    Subquery(latest_validity_end, output_field=DateField()),
+                    "validity_end",
+                )
+            ).filter(
                 validity_start__year__lte=int(year),
-                validity_end__year__gte=int(year),
+                effective_validity_end__year__gte=int(year),
             )
         return queryset.distinct()
 
@@ -300,6 +315,13 @@ class ContractDetailView(LoginRequiredMixin, DetailView):
         context["structural_fields_locked"] = bool(
             contract_operational_blockers(self.object)
         )
+        context["timeline"] = build_contract_timeline(self.object)
+        context["overview_counts"] = {
+            "items": self.object.items.count(),
+            "commitments": self.object.commitments.count(),
+            "work_orders": self.object.work_orders.count(),
+            "invoices": Invoice.objects.filter(work_order__contract=self.object).count(),
+        }
         return context
 
 

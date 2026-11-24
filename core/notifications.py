@@ -14,6 +14,7 @@ Não cria regra nova: cada aviso vem dos mesmos cálculos de
 """
 
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.formats import number_format
 
 from accounts.models import (
@@ -68,7 +69,7 @@ def _contract_notifications(contract, dashboard, *, can_fix):
     if dashboard.contract_is_expired:
         add(
             "danger",
-            f"A vigência do contrato terminou em {_date(contract.validity_end)}",
+            f"A vigência do contrato terminou em {_date(contract.current_validity_end)}",
             reverse("contracts:detail", args=[pk]),
             "Abrir contrato",
         )
@@ -195,6 +196,74 @@ def _contract_notifications(contract, dashboard, *, can_fix):
     return entries
 
 
+def _governance_notifications(contract, *, can_fix, auxiliary=False):
+    from contracts.models import (
+        ContractExternalRecordStatus,
+        ContractObligationStatus,
+        ContractRiskStatus,
+    )
+
+    today = timezone.localdate()
+    url = reverse("contracts:governance", args=[contract.pk])
+    label = f"Contrato {contract.number}"
+    entries = []
+
+    def add(level, title, hint):
+        entries.append(
+            {
+                "level": level,
+                "title": title,
+                "contract": label,
+                "url": url,
+                "hint": hint if can_fix else "Acompanhar governança",
+            }
+        )
+
+    policy = getattr(contract, "alert_policy", None)
+    remaining = (contract.current_validity_end - today).days
+    if policy and remaining >= 0:
+        reached = [day for day in policy.validity_warning_days if remaining <= day]
+        if reached:
+            threshold = min(reached)
+            add(
+                "danger" if remaining <= min(policy.validity_warning_days) else "warning",
+                f"Vigência termina em {remaining} dias ({_date(contract.current_validity_end)}); "
+                f"alerta confirmado de {threshold} dias",
+                "Abrir política de alertas",
+            )
+
+    obligations = contract.obligations.exclude(
+        status__in=(ContractObligationStatus.COMPLETED, ContractObligationStatus.WAIVED)
+    ).filter(due_date__lte=today)
+    if auxiliary:
+        obligations = obligations.filter(category__in=("ADMINISTRATIVA", "DOCUMENTAL"))
+    for obligation in obligations.order_by("due_date", "pk"):
+        overdue = obligation.due_date < today
+        add(
+            "danger" if overdue else "warning",
+            f"Obrigação {'em atraso' if overdue else 'vence hoje'}: {obligation.title}",
+            "Atualizar obrigação",
+        )
+
+    if not auxiliary:
+        for risk in contract.risks.exclude(status=ContractRiskStatus.CLOSED).filter(
+            review_date__lt=today
+        ).order_by("review_date", "pk"):
+            add("warning", f"Revisão de risco em atraso: {risk.title}", "Atualizar risco")
+
+    for record in contract.external_records.filter(
+        required=True,
+        status=ContractExternalRecordStatus.PENDING,
+        due_date__lte=today,
+    ).order_by("due_date", "pk"):
+        add(
+            "danger" if record.due_date < today else "warning",
+            f"{record.get_system_display()}: {record.label} ainda pendente",
+            "Atualizar acompanhamento oficial",
+        )
+    return entries
+
+
 def build_notifications(user, *, contract_id=None):
     from contracts.dashboard import build_contract_dashboard
     from contracts.models import (
@@ -254,6 +323,15 @@ def build_notifications(user, *, contract_id=None):
                         "hint": "Conferir metadados administrativos",
                     }
                 )
+        contracts = contracts_visible_to(user).filter(
+            status__in=(ContractStatus.ACTIVE, ContractStatus.SUSPENDED)
+        )
+        if contract_id is not None:
+            contracts = contracts.filter(pk=contract_id)
+        for contract in contracts:
+            entries.extend(
+                _governance_notifications(contract, can_fix=False, auxiliary=True)
+            )
     elif user.profile not in ADMINISTRATOR_PROFILES:
         contracts = contracts_visible_to(user).filter(
             status__in=(ContractStatus.ACTIVE, ContractStatus.SUSPENDED)
@@ -267,6 +345,11 @@ def build_notifications(user, *, contract_id=None):
                     contract,
                     build_contract_dashboard(contract),
                     can_fix=contract.pk in writable_ids,
+                )
+            )
+            entries.extend(
+                _governance_notifications(
+                    contract, can_fix=contract.pk in writable_ids, auxiliary=False
                 )
             )
             for finding in contract.intelligence_findings.filter(
