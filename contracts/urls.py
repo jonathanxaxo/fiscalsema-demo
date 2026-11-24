@@ -64,6 +64,21 @@ from .views import (
     WorkOrderExecutionCreateView,
     WorkOrderExecutionUpdateView,
 )
+from .governance_views import (
+    ContractAlertPolicyUpdateView,
+    ContractChangeCreateView,
+    ContractChangeVoidView,
+    ContractChecklistItemUpdateView,
+    ContractControlPackApplyView,
+    ContractExternalRecordCreateView,
+    ContractExternalRecordUpdateView,
+    ContractGovernanceView,
+    ContractObligationCreateView,
+    ContractObligationUpdateView,
+    ContractReceiptCreateView,
+    ContractRiskCreateView,
+    ContractRiskUpdateView,
+)
 
 
 app_name = "contracts"
@@ -94,6 +109,19 @@ urlpatterns = [
     path("<int:contract_pk>/tabela/", ContractTableModeView.as_view(), name="table_mode"),
     path("<int:contract_pk>/acessos/", ContractAccessListView.as_view(), name="access_list"),
     path("<int:contract_pk>/inteligencia/", ContractIntelligenceView.as_view(), name="intelligence"),
+    path("<int:contract_pk>/governanca/", ContractGovernanceView.as_view(), name="governance"),
+    path("<int:contract_pk>/governanca/alertas/", ContractAlertPolicyUpdateView.as_view(), name="alert_policy"),
+    path("<int:contract_pk>/governanca/obrigacoes/nova/", ContractObligationCreateView.as_view(), name="obligation_create"),
+    path("<int:contract_pk>/governanca/obrigacoes/<int:pk>/editar/", ContractObligationUpdateView.as_view(), name="obligation_update"),
+    path("<int:contract_pk>/governanca/alteracoes/nova/", ContractChangeCreateView.as_view(), name="change_create"),
+    path("<int:contract_pk>/governanca/alteracoes/<int:pk>/anular/", ContractChangeVoidView.as_view(), name="change_void"),
+    path("<int:contract_pk>/governanca/recebimentos/novo/", ContractReceiptCreateView.as_view(), name="receipt_create"),
+    path("<int:contract_pk>/governanca/riscos/novo/", ContractRiskCreateView.as_view(), name="risk_create"),
+    path("<int:contract_pk>/governanca/riscos/<int:pk>/editar/", ContractRiskUpdateView.as_view(), name="risk_update"),
+    path("<int:contract_pk>/governanca/pacotes/<str:pack_code>/aplicar/", ContractControlPackApplyView.as_view(), name="control_pack_apply"),
+    path("<int:contract_pk>/governanca/checklist/<int:pk>/editar/", ContractChecklistItemUpdateView.as_view(), name="checklist_update"),
+    path("<int:contract_pk>/governanca/sistemas/novo/", ContractExternalRecordCreateView.as_view(), name="external_record_create"),
+    path("<int:contract_pk>/governanca/sistemas/<int:pk>/editar/", ContractExternalRecordUpdateView.as_view(), name="external_record_update"),
     path("<int:contract_pk>/inteligencia/executar/", ContractIntelligenceRunView.as_view(), name="intelligence_run"),
     path("<int:contract_pk>/inteligencia/classificacao/confirmar/", ContractClassificationConfirmView.as_view(), name="classification_confirm"),
     path("<int:contract_pk>/inteligencia/itens/<int:item_pk>/classificacao/confirmar/", ContractItemClassificationConfirmView.as_view(), name="item_classification_confirm"),

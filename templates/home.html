@@ -27,7 +27,7 @@
         <div><small>Contrato atual</small><strong>Contrato {{ selected_contract.number }}</strong></div>
         <div><small>Fornecedor</small><strong>{{ selected_contract.supplier_name|truncatechars:42 }}</strong></div>
         <div><small>Status</small><strong>{{ selected_contract.get_status_display }}</strong></div>
-        <div><small>Vigência</small><strong>até {{ selected_contract.validity_end|date:"d/m/Y" }}</strong></div>
+        <div><small>Vigência</small><strong>até {{ selected_contract.current_validity_end|date:"d/m/Y" }}</strong></div>
         {% if is_read_only_access %}<span class="badge badge-neutral">Somente leitura</span>{% elif is_substitute_access %}<span class="badge badge-neutral">Fiscal substituto</span>{% endif %}
       </div>
       <nav class="action-bar" aria-labelledby="modulos-titulo">
@@ -59,7 +59,7 @@
     <section class="surface attention-section" aria-labelledby="central-titulo">
       <div class="section-heading"><div><span class="eyebrow">Prioridades</span><h2 id="central-titulo">Central de trabalho {% if dashboard.attention_count %}<span class="count-badge">{{ dashboard.attention_count }}</span>{% endif %}</h2></div><span class="section-hint">O que precisa da sua atenção</span></div>
       <ul class="attention-list">
-        {% if dashboard.contract_is_expired %}<li class="attention-danger"><span>A vigência do contrato terminou em {{ selected_contract.validity_end|date:"d/m/Y" }}.</span><a href="{% url 'contracts:detail' selected_contract.pk %}">Abrir contrato</a></li>{% endif %}
+        {% if dashboard.contract_is_expired %}<li class="attention-danger"><span>A vigência do contrato terminou em {{ selected_contract.current_validity_end|date:"d/m/Y" }}.</span><a href="{% url 'contracts:detail' selected_contract.pk %}">Abrir contrato</a></li>{% endif %}
         {% for work_order in dashboard.overdue_work_orders %}<li class="attention-danger"><span><strong>OS {{ work_order.number }}</strong> venceu em {{ work_order.deadline|date:"d/m/Y" }} (prazo contratual, {{ work_order.deadline_situation.contract_countdown.text }}) e está {{ work_order.get_status_display }}.</span><a href="{% url 'contracts:work_order_detail' selected_contract.pk work_order.pk %}">Abrir OS</a></li>{% endfor %}
         {% for alert in dashboard.factory_deadline_alerts %}<li class="{% if alert.is_overdue %}attention-danger{% else %}attention-warning{% endif %}"><span><strong>Cobrar a fábrica:</strong> OS <strong>{{ alert.work_order.number }}</strong> — prazo da fábrica {{ alert.deadline|date:"d/m/Y" }} ({{ alert.work_order.deadline_situation.factory_countdown.text }}).</span><a href="{% url 'contracts:work_order_detail' selected_contract.pk alert.work_order.pk %}">Abrir OS</a></li>{% endfor %}
         {% for attention in dashboard.divergent_invoices %}<li class="attention-danger"><span><strong>NF {{ attention.invoice.number }}/{{ attention.invoice.series }}</strong> — {{ attention.status_label }}.</span><a href="{% url 'contracts:invoice_detail' selected_contract.pk attention.invoice.work_order_id attention.invoice.pk %}">Conferir NF</a></li>{% endfor %}
@@ -72,7 +72,7 @@
         {% if pending_registration_count %}<li class="attention-warning"><span>{{ pending_registration_count }} solicitação(ões) de cadastro pendente(s).</span><a href="{% url 'accounts_admin:registration_list' %}">Analisar</a></li>{% endif %}
       </ul>
       {% if not dashboard.attention_count %}<div class="attention-ok"><strong>Tudo em dia.</strong> Nenhuma pendência automática identificada nos dados cadastrados.</div>{% endif %}
-      {% if not dashboard.contract_is_expired %}<p class="muted attention-footnote">Próximo prazo contratual cadastrado: fim da vigência em {{ selected_contract.validity_end|date:"d/m/Y" }}. Não foi presumida uma janela de “vencimento próximo”.</p>{% endif %}
+      {% if not dashboard.contract_is_expired %}<p class="muted attention-footnote">Fim da vigência atual em {{ selected_contract.current_validity_end|date:"d/m/Y" }}. Não foi presumida uma janela de “vencimento próximo”: avisos antecipados só aparecem quando a política do contrato é confirmada.</p>{% endif %}
     </section>
 
     {% if dashboard.monthly_work_order_attentions %}

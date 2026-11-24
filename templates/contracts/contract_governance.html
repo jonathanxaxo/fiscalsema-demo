@@ -1,0 +1,78 @@
+{% extends "accounts/base.html" %}
+{% load l10n %}
+{% block title %}Governança — Contrato {{ contract.number }}{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div><span class="eyebrow">Governança contratual</span><h1>Contrato {{ contract.number }}</h1><p>Obrigações, alterações formais, recebimentos, riscos, checklists e sistemas oficiais.</p></div>
+    <div class="page-header-actions"><a class="button-link button-link-secondary" href="{% url 'contracts:detail' contract.pk %}">Ficha 360º</a>{% if can_edit %}<a class="button-link" href="{% url 'contracts:obligation_create' contract.pk %}">Nova obrigação</a>{% endif %}</div>
+  </header>
+  {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
+  {% if limited_auxiliary %}<p class="notice"><strong>Visão administrativa:</strong> este perfil recebe somente obrigações administrativas/documentais e metadados de sistemas oficiais. Riscos técnicos, alterações, recebimentos e checklists privados não são exibidos.</p>{% endif %}
+  {% if not can_edit and not limited_auxiliary %}<p class="notice"><strong>Somente leitura:</strong> você pode acompanhar os registros, mas não alterá-los.</p>{% endif %}
+
+  <div class="summary-strip" aria-label="Indicadores de governança">
+    <div><small>Valor original</small><strong>R$&nbsp;{{ contract.original_value|localize }}</strong></div>
+    <div><small>Valor atual</small><strong>R$&nbsp;{{ governance_counts.current_value|localize }}</strong></div>
+    <div><small>Vigência atual</small><strong>{{ governance_counts.current_validity_end|date:"d/m/Y" }}</strong></div>
+    <div><small>Obrigações abertas / atrasadas</small><strong>{{ governance_counts.open_obligations }} / {{ governance_counts.overdue_obligations }}</strong></div>
+    {% if not limited_auxiliary %}<div><small>Riscos abertos</small><strong>{{ governance_counts.open_risks }}</strong></div>
+    <div><small>Checklist pendente</small><strong>{{ governance_counts.pending_checklist }}</strong></div>{% endif %}
+  </div>
+
+  <nav class="table-tabs" aria-label="Seções da governança">
+    <a href="#alertas">Alertas</a><a href="#obrigacoes">Obrigações</a>{% if not limited_auxiliary %}<a href="#alteracoes">Alterações</a><a href="#recebimentos">Recebimentos</a><a href="#riscos">Riscos</a><a href="#checklists">Checklists</a>{% endif %}<a href="#sistemas">Sistemas oficiais</a>
+  </nav>
+
+  <section class="surface" id="alertas">
+    <div class="section-heading"><div><span class="eyebrow">Vigência</span><h2>Política de alertas</h2></div>{% if can_edit %}<a class="button-link button-link-small" href="{% url 'contracts:alert_policy' contract.pk %}">Configurar</a>{% endif %}</div>
+    {% if policy and policy.validity_warning_days %}<p>Avisar com antecedência de <strong>{{ policy.validity_warning_days|join:", " }} dias</strong>. A política foi cadastrada por uma pessoa; o sistema não presume renovação.</p>{% else %}<p class="muted">Nenhum aviso antecipado foi confirmado. O sistema continuará alertando quando a vigência já estiver encerrada.</p>{% endif %}
+  </section>
+
+  <section class="surface" id="obrigacoes">
+    <div class="section-heading"><div><span class="eyebrow">Calendário</span><h2>Obrigações contratuais</h2></div>{% if can_edit %}<a class="button-link button-link-small" href="{% url 'contracts:obligation_create' contract.pk %}">Cadastrar</a>{% endif %}</div>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Prazo</th><th>Obrigação</th><th>Categoria</th><th>Responsável</th><th>Situação</th><th>Fonte</th>{% if can_edit %}<th>Ação</th>{% endif %}</tr></thead><tbody>
+      {% for item in obligations %}<tr><td>{{ item.due_date|date:"d/m/Y" }}</td><td>{{ item.title }}</td><td>{{ item.get_category_display }}</td><td>{{ item.responsible }}</td><td>{{ item.get_status_display }}</td><td>{{ item.source_reference|truncatechars:90 }}</td>{% if can_edit %}<td><a href="{% url 'contracts:obligation_update' contract.pk item.pk %}">Atualizar</a></td>{% endif %}</tr>{% empty %}<tr><td colspan="7">Nenhuma obrigação cadastrada nas categorias autorizadas.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+
+  {% if not limited_auxiliary %}
+  <section class="surface" id="alteracoes">
+    <div class="section-heading"><div><span class="eyebrow">Instrumentos formais</span><h2>Aditivos, apostilamentos e ajustes</h2></div>{% if can_edit %}<a class="button-link button-link-small" href="{% url 'contracts:change_create' contract.pk %}">Registrar</a>{% endif %}</div>
+    <p class="muted">Somente instrumentos registrados como vigentes e cuja data de início dos efeitos já chegou compõem o valor e a vigência atuais.</p>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Instrumento</th><th>Efeitos</th><th>Tipo</th><th>Número</th><th>Impacto</th><th>Nova vigência</th><th>Situação</th>{% if can_edit %}<th>Ação</th>{% endif %}</tr></thead><tbody>
+      {% for item in changes %}<tr><td>{{ item.official_date|date:"d/m/Y" }}</td><td>{{ item.effective_date|date:"d/m/Y" }}</td><td>{{ item.get_change_type_display }}</td><td>{{ item.number }}</td><td>R$&nbsp;{{ item.value_delta|localize }}</td><td>{{ item.validity_end_after|date:"d/m/Y"|default:"—" }}</td><td>{{ item.get_status_display }}</td>{% if can_edit %}<td>{% if item.status == "VIGENTE" %}<a href="{% url 'contracts:change_void' contract.pk item.pk %}">Anular</a>{% else %}Histórico preservado{% endif %}</td>{% endif %}</tr>{% empty %}<tr><td colspan="8">Nenhuma alteração formal registrada.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+
+  <section class="surface" id="recebimentos">
+    <div class="section-heading"><div><span class="eyebrow">Aceite formal</span><h2>Recebimentos</h2></div>{% if can_edit %}<a class="button-link button-link-small" href="{% url 'contracts:receipt_create' contract.pk %}">Registrar</a>{% endif %}</div>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Data</th><th>Tipo</th><th>Objeto/entrega</th><th>Resultado</th><th>Termo</th></tr></thead><tbody>
+      {% for item in receipts %}<tr><td>{{ item.receipt_date|date:"d/m/Y" }}</td><td>{{ item.get_receipt_type_display }}</td><td>{{ item.object_reference }}</td><td>{{ item.get_result_display }}</td><td>{{ item.term_reference|truncatechars:100 }}</td></tr>{% empty %}<tr><td colspan="5">Nenhum recebimento registrado.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+
+  <section class="surface" id="riscos">
+    <div class="section-heading"><div><span class="eyebrow">Controle preventivo</span><h2>Riscos</h2></div>{% if can_edit %}<a class="button-link button-link-small" href="{% url 'contracts:risk_create' contract.pk %}">Cadastrar</a>{% endif %}</div>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Risco</th><th>Probabilidade</th><th>Impacto</th><th>Responsável</th><th>Revisão</th><th>Situação</th>{% if can_edit %}<th>Ação</th>{% endif %}</tr></thead><tbody>
+      {% for item in risks %}<tr><td>{{ item.title }}</td><td>{{ item.get_probability_display }}</td><td>{{ item.get_impact_display }}</td><td>{{ item.owner }}</td><td>{{ item.review_date|date:"d/m/Y"|default:"—" }}</td><td>{{ item.get_status_display }}</td>{% if can_edit %}<td><a href="{% url 'contracts:risk_update' contract.pk item.pk %}">Atualizar</a></td>{% endif %}</tr>{% empty %}<tr><td colspan="7">Nenhum risco cadastrado.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+
+  <section class="surface" id="checklists">
+    <div class="section-heading"><div><span class="eyebrow">Por tipo de contrato</span><h2>Pacotes de controle</h2></div><span class="section-hint">Aplicação sempre humana</span></div>
+    {% if can_edit %}<div class="control-pack-grid">{% for pack in packs %}<article class="action-cluster"><h3>{{ pack.title }}{% if recommended_pack == pack.code %} <span class="status-pill status-warning">Sugerido</span>{% endif %}</h3><p>{{ pack.description }}</p><form method="post" action="{% url 'contracts:control_pack_apply' contract.pk pack.code %}">{% csrf_token %}<input type="hidden" name="confirm" value="APLICAR"><button type="submit">Aplicar sem presumir obrigatoriedade</button></form></article>{% endfor %}</div>{% endif %}
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Pacote</th><th>Verificação</th><th>Aplicabilidade</th><th>Situação</th><th>Fonte</th>{% if can_edit %}<th>Ação</th>{% endif %}</tr></thead><tbody>
+      {% for item in checklist_items %}<tr><td>{{ item.pack_code }}</td><td><strong>{{ item.title }}</strong><br><small>{{ item.guidance }}</small></td><td>{{ item.get_applicability_display }}</td><td>{{ item.get_status_display }}</td><td>{{ item.source_reference|truncatechars:100 }}</td>{% if can_edit %}<td><a href="{% url 'contracts:checklist_update' contract.pk item.pk %}">Atualizar</a></td>{% endif %}</tr>{% empty %}<tr><td colspan="6">Nenhum pacote aplicado. A classificação não cria obrigações automaticamente.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+  {% endif %}
+
+  <section class="surface" id="sistemas">
+    <div class="section-heading"><div><span class="eyebrow">Rastreabilidade externa</span><h2>SIAG, SIGADOC e PNCP</h2></div>{% if can_edit %}<a class="button-link button-link-small" href="{% url 'contracts:external_record_create' contract.pk %}">Cadastrar acompanhamento</a>{% endif %}</div>
+    <p class="muted">Controle manual e auditável. Esta versão não acessa nem altera sistemas externos.</p>
+    <div class="table-responsive"><table class="table-compact"><thead><tr><th>Sistema</th><th>Registro</th><th>Referência</th><th>Prazo</th><th>Situação</th><th>Fonte</th>{% if can_edit %}<th>Ação</th>{% endif %}</tr></thead><tbody>
+      {% for item in external_records %}<tr><td>{{ item.get_system_display }}</td><td>{{ item.label }}</td><td>{{ item.reference|default:"—" }}</td><td>{{ item.due_date|date:"d/m/Y"|default:"—" }}</td><td>{{ item.get_status_display }}</td><td>{{ item.source_reference|truncatechars:90 }}</td>{% if can_edit %}<td><a href="{% url 'contracts:external_record_update' contract.pk item.pk %}">Atualizar</a></td>{% endif %}</tr>{% empty %}<tr><td colspan="7">Nenhum acompanhamento externo cadastrado.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+  <p class="actions"><a href="{% url 'contracts:detail' contract.pk %}">Voltar à ficha 360º</a></p>
+{% endblock %}

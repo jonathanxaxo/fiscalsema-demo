@@ -17,7 +17,7 @@
       <div class="context-summary">
         <div><small>Classificação</small><strong>{{ d.category_label }}</strong></div>
         <div><small>Fiscal responsável</small><strong>{{ contract.responsible_fiscal.full_name }}</strong></div>
-        <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</strong></div>
+        <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.current_validity_end|date:"d/m/Y" }}</strong></div>
         <div><small>Valor atual</small><strong>R$&nbsp;{{ contract.current_value|localize }}</strong></div>
       </div>
       <nav class="action-bar" aria-label="Consultas do Gestor do Contrato"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:executive_dashboard' %}?contract={{ contract.pk }}">Dashboard completo</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:detail' contract.pk %}">Abrir contrato</a>{% if d.can_export %}<a class="button-link button-link-small" href="{% url 'contracts:report' contract.pk %}">Emitir relatório</a>{% endif %}</nav>

@@ -53,7 +53,7 @@ def presentation_timeline(contract, today):
 
     Nenhuma data de execução, Nota Fiscal ou pagamento fica depois de hoje.
     """
-    end = contract.validity_end
+    end = contract.current_validity_end
     window_start = max(contract.validity_start, today - timedelta(days=75))
     last_day = min(today, end)
     span = max((last_day - window_start).days, 0)

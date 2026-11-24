@@ -122,8 +122,25 @@ class Contract(models.Model):
 
     @property
     def current_value(self):
-        # Até a etapa de aditivos, a regra aprovada define valor atual = original.
-        return self.original_value
+        if not self.pk:
+            return self.original_value
+        delta = self.changes.filter(
+            status="VIGENTE", effective_date__lte=timezone.localdate()
+        ).aggregate(
+            total=models.Sum("value_delta")
+        )["total"] or Decimal("0.00")
+        return self.original_value + delta
+
+    @property
+    def current_validity_end(self):
+        if not self.pk:
+            return self.validity_end
+        change = self.changes.filter(
+            status="VIGENTE",
+            effective_date__lte=timezone.localdate(),
+            validity_end_after__isnull=False,
+        ).order_by("-effective_date", "-pk").first()
+        return change.validity_end_after if change else self.validity_end
 
     @property
     def calendar_year_periods(self):
@@ -536,6 +553,18 @@ class ContractEvent(models.Model):
         RESTORED = "CONTRATO_RESTAURADO", "Contrato restaurado"
         CATALOG_SERVICE_CREATED = "CATALOGO_SERVICO_CRIADO", "Serviço do catálogo cadastrado"
         CATALOG_SERVICE_UPDATED = "CATALOGO_SERVICO_ALTERADO", "Serviço do catálogo alterado"
+        ALERT_POLICY_UPDATED = "ALERTA_ATUALIZADO", "Política de alertas atualizada"
+        OBLIGATION_CREATED = "OBRIGACAO_CRIADA", "Obrigação cadastrada"
+        OBLIGATION_UPDATED = "OBRIGACAO_ALTERADA", "Obrigação atualizada"
+        CHANGE_CREATED = "ALTERACAO_CRIADA", "Alteração contratual registrada"
+        CHANGE_VOIDED = "ALTERACAO_ANULADA", "Alteração contratual anulada"
+        RECEIPT_CREATED = "RECEBIMENTO_CRIADO", "Recebimento registrado"
+        RISK_CREATED = "RISCO_CRIADO", "Risco cadastrado"
+        RISK_UPDATED = "RISCO_ALTERADO", "Risco atualizado"
+        CHECKLIST_UPDATED = "CHECKLIST_ALTERADO", "Checklist atualizado"
+        PACK_APPLIED = "PACOTE_APLICADO", "Pacote de controle aplicado"
+        EXTERNAL_RECORD_CREATED = "REGISTRO_EXTERNO_CRIADO", "Registro externo cadastrado"
+        EXTERNAL_RECORD_UPDATED = "REGISTRO_EXTERNO_ALTERADO", "Registro externo atualizado"
 
     event_type = models.CharField("evento", max_length=30, choices=EventType.choices)
     contract = models.ForeignKey(
@@ -2640,3 +2669,491 @@ class ContractIntelligenceEvent(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Evento do motor não pode ser excluído.")
+
+
+class ContractAlertPolicy(models.Model):
+    contract = models.OneToOneField(
+        Contract, on_delete=models.PROTECT, related_name="alert_policy",
+        verbose_name="contrato",
+    )
+    validity_warning_days = models.JSONField(
+        "dias de aviso da vigência", default=list, blank=True,
+        help_text="Lista de antecedências confirmadas, por exemplo: 120, 90, 60, 30 e 15 dias.",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="contract_alert_policies_updated", verbose_name="atualizado por",
+    )
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        verbose_name = "política de alertas do contrato"
+        verbose_name_plural = "políticas de alertas dos contratos"
+
+    def clean(self):
+        super().clean()
+        days = self.validity_warning_days
+        if not isinstance(days, list):
+            raise ValidationError({"validity_warning_days": "Informe uma lista de dias."})
+        normalized = []
+        for value in days:
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1 or value > 730:
+                raise ValidationError(
+                    {"validity_warning_days": "Cada antecedência deve estar entre 1 e 730 dias."}
+                )
+            normalized.append(value)
+        self.validity_warning_days = sorted(set(normalized), reverse=True)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Política de alertas não pode ser excluída; atualize a lista de dias.")
+
+
+class ContractObligationStatus(models.TextChoices):
+    PENDING = "PENDENTE", "Pendente"
+    IN_PROGRESS = "EM_ANDAMENTO", "Em andamento"
+    COMPLETED = "CONCLUIDA", "Concluída"
+    WAIVED = "DISPENSADA", "Dispensada com justificativa"
+
+
+class ContractObligationCategory(models.TextChoices):
+    ADMINISTRATIVE = "ADMINISTRATIVA", "Administrativa"
+    TECHNICAL = "TECNICA", "Técnica"
+    FINANCIAL = "FINANCEIRA", "Financeira"
+    DOCUMENTARY = "DOCUMENTAL", "Documental"
+    LEGAL = "LEGAL", "Legal ou regulatória"
+    OTHER = "OUTRA", "Outra"
+
+
+class ContractObligation(models.Model):
+    contract = models.ForeignKey(
+        Contract, on_delete=models.PROTECT, related_name="obligations",
+        verbose_name="contrato",
+    )
+    title = models.CharField("obrigação", max_length=200)
+    category = models.CharField(
+        "categoria", max_length=20, choices=ContractObligationCategory.choices,
+    )
+    due_date = models.DateField("prazo", db_index=True)
+    responsible = models.CharField("responsável indicado na fonte", max_length=200)
+    source_reference = models.TextField("fonte ou referência oficial")
+    evidence_reference = models.TextField("referência da evidência", blank=True)
+    status = models.CharField(
+        "situação", max_length=20, choices=ContractObligationStatus.choices,
+        default=ContractObligationStatus.PENDING, db_index=True,
+    )
+    notes = models.TextField("observações", blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="contract_obligations_created", verbose_name="cadastrado por",
+    )
+    created_at = models.DateTimeField("cadastrado em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        ordering = ("due_date", "pk")
+        verbose_name = "obrigação contratual"
+        verbose_name_plural = "obrigações contratuais"
+
+    def clean(self):
+        super().clean()
+        self.title = normalized_text(self.title)
+        self.responsible = normalized_text(self.responsible)
+        self.source_reference = (self.source_reference or "").strip()
+        self.evidence_reference = (self.evidence_reference or "").strip()
+        self.notes = (self.notes or "").strip()
+        errors = {}
+        if not self.title:
+            errors["title"] = "Informe a obrigação."
+        if not self.responsible:
+            errors["responsible"] = "Informe o responsável conforme a fonte."
+        if not self.source_reference:
+            errors["source_reference"] = "Informe a fonte que comprova a obrigação."
+        if self.status == ContractObligationStatus.COMPLETED and not self.evidence_reference:
+            errors["evidence_reference"] = "Obrigação concluída exige referência da evidência."
+        if self.status == ContractObligationStatus.WAIVED and not self.notes:
+            errors["notes"] = "Dispensa exige justificativa."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Obrigação contratual não pode ser excluída.")
+
+
+class ContractChangeType(models.TextChoices):
+    ADDENDUM = "ADITIVO", "Termo aditivo"
+    APOSTILLE = "APOSTILAMENTO", "Apostilamento"
+    PRICE_ADJUSTMENT = "REAJUSTE", "Reajuste"
+    REPACTUATION = "REPACTUACAO", "Repactuação"
+    REBALANCING = "REEQUILIBRIO", "Reequilíbrio econômico-financeiro"
+    EXTENSION = "PRORROGACAO", "Prorrogação de vigência"
+    SUPPRESSION = "SUPRESSAO", "Supressão"
+    OTHER = "OUTRA", "Outra alteração formal"
+
+
+class ContractChangeStatus(models.TextChoices):
+    EFFECTIVE = "VIGENTE", "Vigente"
+    VOIDED = "ANULADA", "Anulada com justificativa"
+
+
+class ContractChange(models.Model):
+    contract = models.ForeignKey(
+        Contract, on_delete=models.PROTECT, related_name="changes", verbose_name="contrato",
+    )
+    change_type = models.CharField(
+        "tipo", max_length=20, choices=ContractChangeType.choices,
+    )
+    number = models.CharField("número ou identificação", max_length=100)
+    official_date = models.DateField("data do instrumento")
+    effective_date = models.DateField("início dos efeitos", db_index=True)
+    value_delta = models.DecimalField(
+        "impacto no valor", max_digits=20, decimal_places=2, default=Decimal("0.00"),
+        help_text="Use valor negativo somente para redução formalmente comprovada.",
+    )
+    validity_end_after = models.DateField("nova data final da vigência", null=True, blank=True)
+    source_reference = models.TextField("referência do instrumento oficial")
+    summary = models.TextField("resumo da alteração")
+    status = models.CharField(
+        "situação", max_length=10, choices=ContractChangeStatus.choices,
+        default=ContractChangeStatus.EFFECTIVE, db_index=True,
+    )
+    void_reason = models.TextField("justificativa da anulação", blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="contract_changes_created", verbose_name="registrado por",
+    )
+    voided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="contract_changes_voided", verbose_name="anulado por",
+    )
+    created_at = models.DateTimeField("registrado em", auto_now_add=True)
+    voided_at = models.DateTimeField("anulado em", null=True, blank=True)
+
+    class Meta:
+        ordering = ("official_date", "pk")
+        verbose_name = "alteração contratual"
+        verbose_name_plural = "alterações contratuais"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("contract", "change_type", "number"),
+                name="contracts_change_unique_number_per_type",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        self.number = normalized_text(self.number)
+        self.source_reference = (self.source_reference or "").strip()
+        self.summary = (self.summary or "").strip()
+        self.void_reason = (self.void_reason or "").strip()
+        errors = {}
+        if not self.number:
+            errors["number"] = "Informe o número ou identificação."
+        if not self.source_reference:
+            errors["source_reference"] = "Informe a referência do instrumento oficial."
+        if not self.summary:
+            errors["summary"] = "Resuma o que foi formalmente alterado."
+        if self.validity_end_after and self.validity_end_after < self.contract.validity_start:
+            errors["validity_end_after"] = "A nova vigência não pode terminar antes do início do contrato."
+        if self.status == ContractChangeStatus.VOIDED and not self.void_reason:
+            errors["void_reason"] = "A anulação exige justificativa."
+        if self.contract_id and self.status == ContractChangeStatus.EFFECTIVE:
+            prior = self.contract.changes.filter(status=ContractChangeStatus.EFFECTIVE)
+            if self.pk:
+                prior = prior.exclude(pk=self.pk)
+            total = prior.aggregate(total=models.Sum("value_delta"))["total"] or Decimal("0.00")
+            if self.contract.original_value + total + self.value_delta < Decimal("0.00"):
+                errors["value_delta"] = "A alteração deixaria o valor atual negativo."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Alteração contratual não pode ser excluída; use a anulação auditada.")
+
+
+class ContractReceiptType(models.TextChoices):
+    PROVISIONAL = "PROVISORIO", "Recebimento provisório"
+    DEFINITIVE = "DEFINITIVO", "Recebimento definitivo"
+
+
+class ContractReceiptResult(models.TextChoices):
+    ACCEPTED = "ACEITO", "Aceito"
+    ACCEPTED_WITH_RESERVATIONS = "COM_RESSALVAS", "Aceito com ressalvas"
+    REJECTED = "REJEITADO", "Rejeitado"
+
+
+class ContractReceipt(models.Model):
+    contract = models.ForeignKey(
+        Contract, on_delete=models.PROTECT, related_name="receipts", verbose_name="contrato",
+    )
+    receipt_type = models.CharField(
+        "tipo", max_length=15, choices=ContractReceiptType.choices,
+    )
+    receipt_date = models.DateField("data do recebimento", db_index=True)
+    result = models.CharField(
+        "resultado", max_length=20, choices=ContractReceiptResult.choices,
+    )
+    object_reference = models.CharField("objeto, entrega ou medição", max_length=200)
+    term_reference = models.TextField("referência do termo detalhado")
+    reservations = models.TextField("ressalvas ou motivo da rejeição", blank=True)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="contract_receipts_recorded", verbose_name="registrado por",
+    )
+    created_at = models.DateTimeField("registrado em", auto_now_add=True)
+
+    class Meta:
+        ordering = ("-receipt_date", "-pk")
+        verbose_name = "recebimento contratual"
+        verbose_name_plural = "recebimentos contratuais"
+
+    def clean(self):
+        super().clean()
+        self.object_reference = normalized_text(self.object_reference)
+        self.term_reference = (self.term_reference or "").strip()
+        self.reservations = (self.reservations or "").strip()
+        errors = {}
+        if not self.object_reference:
+            errors["object_reference"] = "Identifique o objeto, entrega ou medição."
+        if not self.term_reference:
+            errors["term_reference"] = "Informe a referência do termo detalhado."
+        if self.result != ContractReceiptResult.ACCEPTED and not self.reservations:
+            errors["reservations"] = "Ressalva ou rejeição exige justificativa."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Recebimento contratual não pode ser excluído.")
+
+
+class ContractRiskLevel(models.TextChoices):
+    LOW = "BAIXO", "Baixo"
+    MEDIUM = "MEDIO", "Médio"
+    HIGH = "ALTO", "Alto"
+    CRITICAL = "CRITICO", "Crítico"
+
+
+class ContractRiskStatus(models.TextChoices):
+    OPEN = "ABERTO", "Aberto"
+    MONITORING = "MONITORAMENTO", "Em monitoramento"
+    MITIGATED = "MITIGADO", "Mitigado"
+    CLOSED = "ENCERRADO", "Encerrado"
+
+
+class ContractRisk(models.Model):
+    contract = models.ForeignKey(
+        Contract, on_delete=models.PROTECT, related_name="risks", verbose_name="contrato",
+    )
+    title = models.CharField("risco", max_length=200)
+    probability = models.CharField("probabilidade", max_length=10, choices=ContractRiskLevel.choices)
+    impact = models.CharField("impacto", max_length=10, choices=ContractRiskLevel.choices)
+    response = models.TextField("resposta ou mitigação")
+    owner = models.CharField("responsável pelo acompanhamento", max_length=200)
+    source_reference = models.TextField("fonte ou evidência")
+    review_date = models.DateField("próxima revisão", null=True, blank=True, db_index=True)
+    status = models.CharField(
+        "situação", max_length=20, choices=ContractRiskStatus.choices,
+        default=ContractRiskStatus.OPEN, db_index=True,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="contract_risks_created", verbose_name="cadastrado por",
+    )
+    created_at = models.DateTimeField("cadastrado em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        ordering = ("status", "review_date", "pk")
+        verbose_name = "risco contratual"
+        verbose_name_plural = "riscos contratuais"
+
+    def clean(self):
+        super().clean()
+        self.title = normalized_text(self.title)
+        self.owner = normalized_text(self.owner)
+        self.response = (self.response or "").strip()
+        self.source_reference = (self.source_reference or "").strip()
+        errors = {}
+        for field, value, message in (
+            ("title", self.title, "Informe o risco."),
+            ("owner", self.owner, "Informe o responsável pelo acompanhamento."),
+            ("response", self.response, "Informe a resposta ou mitigação."),
+            ("source_reference", self.source_reference, "Informe a fonte ou evidência."),
+        ):
+            if not value:
+                errors[field] = message
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Risco contratual não pode ser excluído.")
+
+
+class ChecklistApplicability(models.TextChoices):
+    TO_CONFIRM = "A_CONFIRMAR", "A confirmar na fonte oficial"
+    APPLICABLE = "APLICAVEL", "Aplicável"
+    NOT_APPLICABLE = "NAO_APLICAVEL", "Não aplicável com justificativa"
+
+
+class ChecklistStatus(models.TextChoices):
+    PENDING = "PENDENTE", "Pendente"
+    IN_PROGRESS = "EM_ANDAMENTO", "Em andamento"
+    COMPLETED = "CONCLUIDO", "Concluído"
+
+
+class ContractChecklistItem(models.Model):
+    contract = models.ForeignKey(
+        Contract, on_delete=models.PROTECT, related_name="checklist_items",
+        verbose_name="contrato",
+    )
+    pack_code = models.CharField("pacote de controle", max_length=40, db_index=True)
+    code = models.CharField("código", max_length=80)
+    title = models.CharField("verificação", max_length=220)
+    guidance = models.TextField("orientação")
+    source_reference = models.TextField(
+        "fonte", help_text="A referência do pacote não substitui o Contrato, TR ou norma aplicável.",
+    )
+    applicability = models.CharField(
+        "aplicabilidade", max_length=20, choices=ChecklistApplicability.choices,
+        default=ChecklistApplicability.TO_CONFIRM, db_index=True,
+    )
+    status = models.CharField(
+        "situação", max_length=20, choices=ChecklistStatus.choices,
+        default=ChecklistStatus.PENDING, db_index=True,
+    )
+    due_date = models.DateField("prazo", null=True, blank=True)
+    evidence_reference = models.TextField("evidência", blank=True)
+    notes = models.TextField("justificativa ou observação", blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="contract_checklist_items_created", verbose_name="criado por",
+    )
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        ordering = ("pack_code", "code", "pk")
+        verbose_name = "item de checklist contratual"
+        verbose_name_plural = "itens de checklist contratual"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("contract", "pack_code", "code"),
+                name="contracts_checklist_unique_pack_item",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        self.pack_code = normalized_text(self.pack_code).upper()
+        self.code = normalized_text(self.code).upper()
+        self.title = normalized_text(self.title)
+        self.guidance = (self.guidance or "").strip()
+        self.source_reference = (self.source_reference or "").strip()
+        self.evidence_reference = (self.evidence_reference or "").strip()
+        self.notes = (self.notes or "").strip()
+        errors = {}
+        if self.status == ChecklistStatus.COMPLETED and not self.evidence_reference:
+            errors["evidence_reference"] = "Conclusão exige referência da evidência."
+        if self.applicability == ChecklistApplicability.NOT_APPLICABLE and not self.notes:
+            errors["notes"] = "A não aplicabilidade exige justificativa."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Item de checklist não pode ser excluído.")
+
+
+class ContractExternalSystem(models.TextChoices):
+    SIAG = "SIAG", "SIAG"
+    SIGADOC = "SIGADOC", "SIGADOC"
+    PNCP = "PNCP", "PNCP"
+    OTHER = "OUTRO", "Outro sistema oficial"
+
+
+class ContractExternalRecordStatus(models.TextChoices):
+    PENDING = "PENDENTE", "Pendente"
+    REGISTERED = "REGISTRADO", "Registrado"
+    UPDATED = "ATUALIZADO", "Atualizado"
+    NOT_APPLICABLE = "NAO_APLICAVEL", "Não aplicável com justificativa"
+
+
+class ContractExternalRecord(models.Model):
+    contract = models.ForeignKey(
+        Contract, on_delete=models.PROTECT, related_name="external_records",
+        verbose_name="contrato",
+    )
+    system = models.CharField(
+        "sistema", max_length=15, choices=ContractExternalSystem.choices,
+    )
+    label = models.CharField("registro acompanhado", max_length=200)
+    reference = models.CharField("número ou referência", max_length=200, blank=True)
+    required = models.BooleanField("controle necessário conforme fonte", default=False)
+    due_date = models.DateField("prazo", null=True, blank=True, db_index=True)
+    status = models.CharField(
+        "situação", max_length=20, choices=ContractExternalRecordStatus.choices,
+        default=ContractExternalRecordStatus.PENDING, db_index=True,
+    )
+    source_reference = models.TextField("fonte que determina o controle")
+    notes = models.TextField("observações", blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="contract_external_records_updated", verbose_name="atualizado por",
+    )
+    created_at = models.DateTimeField("criado em", auto_now_add=True)
+    updated_at = models.DateTimeField("atualizado em", auto_now=True)
+
+    class Meta:
+        ordering = ("system", "label", "pk")
+        verbose_name = "acompanhamento em sistema oficial"
+        verbose_name_plural = "acompanhamentos em sistemas oficiais"
+
+    def clean(self):
+        super().clean()
+        self.label = normalized_text(self.label)
+        self.reference = normalized_text(self.reference)
+        self.source_reference = (self.source_reference or "").strip()
+        self.notes = (self.notes or "").strip()
+        errors = {}
+        if not self.label:
+            errors["label"] = "Informe qual registro será acompanhado."
+        if not self.source_reference:
+            errors["source_reference"] = "Informe a fonte que determina ou justifica o controle."
+        if self.status in (
+            ContractExternalRecordStatus.REGISTERED,
+            ContractExternalRecordStatus.UPDATED,
+        ) and not self.reference:
+            errors["reference"] = "Registro concluído exige número ou referência."
+        if self.status == ContractExternalRecordStatus.NOT_APPLICABLE and not self.notes:
+            errors["notes"] = "A não aplicabilidade exige justificativa."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Acompanhamento oficial não pode ser excluído.")

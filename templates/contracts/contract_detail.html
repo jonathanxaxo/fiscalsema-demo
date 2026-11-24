@@ -12,15 +12,31 @@
   {% for message in messages %}<p class="notice">{{ message }}</p>{% endfor %}
   <div class="summary-strip" aria-label="Resumo do contrato">
     <div><small>Fiscal responsável</small><strong>{{ contract.responsible_fiscal.full_name }}</strong></div>
-    <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</strong></div>
+    <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.current_validity_end|date:"d/m/Y" }}</strong></div>
     <div><small>Valor atual</small><strong>R$&nbsp;{{ contract.current_value|localize }}</strong></div>
     <div><small>Saldo contratual</small><strong>R$&nbsp;{{ financial_position.contract_balance.value|localize }}</strong></div>
   </div>
-  <nav class="action-groups" aria-label="Ações do contrato">
+  <nav class="table-tabs" aria-label="Seções da ficha 360">
+    <a href="#visao-geral" aria-current="page">Visão geral</a>
+    <a href="#operacao">Operação</a>
+    <a href="#financeiro">Financeiro</a>
+    <a href="#historico">Linha do tempo</a>
+  </nav>
+  <section class="surface" id="visao-geral">
+    <div class="section-heading"><div><span class="eyebrow">Ficha 360º</span><h2>Visão consolidada</h2></div><span class="section-hint">Somente dados autorizados</span></div>
+    <div class="metrics-grid">
+      <div class="metric-card"><small>Itens</small><strong>{{ overview_counts.items }}</strong></div>
+      <div class="metric-card"><small>Empenhos</small><strong>{{ overview_counts.commitments }}</strong></div>
+      <div class="metric-card"><small>Ordens de serviço</small><strong>{{ overview_counts.work_orders }}</strong></div>
+      <div class="metric-card"><small>Notas fiscais</small><strong>{{ overview_counts.invoices }}</strong></div>
+    </div>
+  </section>
+  <nav class="action-groups" id="operacao" aria-label="Ações do contrato">
     <section class="action-cluster"><h2>Operação</h2><p>Cadastros e acompanhamento da execução contratual.</p><div class="action-list"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:item_list' contract.pk %}">Itens</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:commitment_list' contract.pk %}">Empenhos</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:work_order_list' contract.pk %}">Ordens de serviço</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:service_catalog' contract.pk %}">Catálogo de serviços</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:table_mode' contract.pk %}">Modo tabela</a>{% if file_features_enabled %}<a class="button-link button-link-secondary button-link-small" href="{% url 'documents:list' contract.pk %}">Documentos</a>{% if can_edit %}<a class="button-link button-link-secondary button-link-small" href="{% url 'data_imports:upload' contract.pk %}">Importar planilha</a>{% endif %}{% endif %}</div></section>
-    <section class="action-cluster"><h2>Análise e controle</h2><p>Consultas consolidadas, evidências e prestação de contas.</p><div class="action-list"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:dashboard' contract.pk %}">Dashboard</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:intelligence' contract.pk %}">Inteligência contratual</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:accountability' contract.pk %}">Prestação de contas</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:report' contract.pk %}">Relatório</a>{% if can_export %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:export_csv' contract.pk %}">Exportar CSV</a>{% endif %}{% if can_manage_access %}<a class="button-link button-link-secondary button-link-small" href="{% url 'audit:contract' contract.pk %}">Auditoria</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:access_list' contract.pk %}">Acessos</a>{% endif %}</div></section>
+    <section class="action-cluster"><h2>Análise e controle</h2><p>Consultas consolidadas, evidências e prestação de contas.</p><div class="action-list"><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:dashboard' contract.pk %}">Dashboard</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:governance' contract.pk %}">Governança</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:intelligence' contract.pk %}">Inteligência contratual</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:accountability' contract.pk %}">Prestação de contas</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:report' contract.pk %}">Relatório</a>{% if can_export %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:export_csv' contract.pk %}">Exportar CSV</a>{% endif %}{% if can_manage_access %}<a class="button-link button-link-secondary button-link-small" href="{% url 'audit:contract' contract.pk %}">Auditoria</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:access_list' contract.pk %}">Acessos</a>{% endif %}</div></section>
     {% if can_edit or can_manage_lifecycle %}<section class="action-cluster"><h2>Gestão do contrato</h2><p>Alterações administrativas e ações de ciclo de vida.</p><div class="action-list">{% if can_edit %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:update' contract.pk %}">Editar</a>{% endif %}{% if can_manage_lifecycle %}<a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:transfer' contract.pk %}">Transferir Fiscal responsável</a><a class="button-link button-link-secondary button-link-small" href="{% url 'contracts:close' contract.pk %}">Encerrar contrato</a><a class="button-link button-link-danger button-link-small" href="{% url 'contracts:archive' contract.pk %}">Excluir/arquivar cadastro incorreto</a>{% endif %}</div></section>{% endif %}
   </nav>
+  <h2 id="financeiro">Dados cadastrais e financeiros</h2>
   <dl>
     <dt>Processo</dt><dd>{{ contract.process_number }}</dd>
     <dt>Objeto</dt><dd>{{ contract.object }}</dd>
@@ -28,7 +44,8 @@
     <dt>Fornecedor</dt><dd>{{ contract.supplier_name }}</dd>
     <dt>CNPJ/CPF</dt><dd>{{ contract.supplier_tax_id|cnpj_cpf }}</dd>
     <dt>Assinatura</dt><dd>{{ contract.signature_date|date:"d/m/Y" }}</dd>
-    <dt>Vigência</dt><dd>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</dd>
+    <dt>Vigência original</dt><dd>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</dd>
+    <dt>Vigência atual</dt><dd>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.current_validity_end|date:"d/m/Y" }}</dd>
     <dt>Valor original</dt><dd>R$&nbsp;{{ contract.original_value|localize }}</dd>
     <dt>Valor atual</dt><dd>R$&nbsp;{{ contract.current_value|localize }}</dd>
     <dt>Total empenhado ativo</dt><dd>R$&nbsp;{{ financial_position.total_committed_budget.value|localize }}</dd>
@@ -80,5 +97,16 @@
     {% empty %}<li>Nenhuma OS em estado financeiro confirmado compõe o comprometido.</li>{% endfor %}
   </ul>
   <p class="helptext">O comprometimento por empenho é calculado a partir dos rateios das OS. Estados de OS ainda sem decisão financeira não são presumidos.</p>
+  <section class="surface" id="historico">
+    <div class="section-heading"><div><span class="eyebrow">Rastreabilidade</span><h2>Linha do tempo do contrato</h2></div><span class="section-hint">Até 80 eventos recentes</span></div>
+    <div class="contract-timeline">
+      {% for entry in timeline %}
+        <article>
+          <time datetime="{{ entry.occurred_at|date:'c' }}">{{ entry.occurred_at|date:"d/m/Y H:i" }}</time>
+          <div><strong>{{ entry.title }}</strong><span>{{ entry.category }}{% if entry.reference %} · {{ entry.reference }}{% endif %}</span><small>Registrado por {{ entry.actor }}</small></div>
+        </article>
+      {% empty %}<p class="muted">Nenhum evento auditável foi registrado para este contrato.</p>{% endfor %}
+    </div>
+  </section>
   <p class="actions"><a href="{% url 'contracts:list' %}">Voltar aos contratos</a></p>
 {% endblock %}

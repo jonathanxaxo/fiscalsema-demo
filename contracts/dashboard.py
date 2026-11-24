@@ -563,7 +563,7 @@ def build_contract_dashboard(contract, *, today=None):
             contract_percentage is not None
             and contract_percentage < LOW_BALANCE_PERCENT
         ),
-        contract_is_expired=contract.validity_end < today,
+        contract_is_expired=contract.current_validity_end < today,
         closing_rule="ANO CIVIL — fechamento oficial em 31 de dezembro",
         calendar_periods=_activity_summaries(
             calendar_periods,
