@@ -18,6 +18,7 @@ def home(request):
     from contracts.services import (
         actor_is_active_fiscal,
         contracts_visible_to,
+        contracts_with_access_management_visible_to,
         contracts_writable_by,
         contract_is_read_only_for,
     )
@@ -127,6 +128,13 @@ def home(request):
                 .exists()
             ),
             "contract_dashboard_mode": False,
+            # Sprint 73: mesmo critério da tela de auditoria do contrato.
+            "can_view_contract_audit": (
+                bool(selected_contract)
+                and contracts_with_access_management_visible_to(request.user)
+                .filter(pk=selected_contract.pk)
+                .exists()
+            ),
         },
     )
 

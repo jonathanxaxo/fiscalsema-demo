@@ -236,6 +236,25 @@ class DashboardSnapshot:
             + len(self.divergent_invoices)
         )
 
+    @property
+    def urgent_count(self):
+        """Pendências já exibidas em vermelho na Central de trabalho (Sprint 73).
+
+        Usa somente os critérios existentes: vigência encerrada, OS vencida,
+        prazo da fábrica vencido e NF divergente. Nenhuma regra nova é criada.
+        """
+        return (
+            int(self.contract_is_expired)
+            + len(self.overdue_work_orders)
+            + sum(1 for alert in self.factory_deadline_alerts if alert.is_overdue)
+            + len(self.divergent_invoices)
+        )
+
+    @property
+    def warning_count(self):
+        """Demais pendências da Central de trabalho, exibidas em amarelo."""
+        return self.attention_count - self.urgent_count
+
 
 def _percentage(available, total):
     if total <= Decimal("0.00"):

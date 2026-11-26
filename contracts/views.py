@@ -353,6 +353,10 @@ class ContractDashboardView(LoginRequiredMixin, DetailView):
                     and self.object.responsible_fiscal_id != self.request.user.pk
                 ),
                 "contract_dashboard_mode": True,
+                # Sprint 73: mesmo critério da tela de auditoria do contrato.
+                "can_view_contract_audit": contracts_with_access_management_visible_to(
+                    self.request.user
+                ).filter(pk=self.object.pk).exists(),
             }
         )
         return context

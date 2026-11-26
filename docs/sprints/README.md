@@ -195,3 +195,6 @@ documental das entregas anteriores.
 - `sprint-72-identidade-azul`: identidade azul e branco, logotipo com documento,
   lupa e verificação, e imagem institucional SEMA/Governo de MT no login e no
   rodapé; aviso de dados fictícios passa à apresentação e ao vídeo.
+- `sprint-73-painel-central`: indicadores financeiros explicados com as
+  definições do motor, urgência escrita na Central de trabalho e atalhos para
+  Notas e pagamentos, Arise e Auditoria.
