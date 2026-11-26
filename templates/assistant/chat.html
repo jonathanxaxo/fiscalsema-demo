@@ -15,9 +15,12 @@
   {% if not enabled %}
     <section class="surface"><p class="muted">O Assistente Arise está desativado neste ambiente.</p></section>
   {% else %}
-  <div class="assistant-layout" data-assistant data-conversation-base="{% url 'assistant:chat' %}conversas/">
+  {% with active_contract=assistant_contract %}
+  <div class="assistant-layout" data-assistant data-conversation-base="{% url 'assistant:chat' %}conversas/"
+       data-contract-context="{% if active_contract %}{{ active_contract.pk }}{% else %}geral{% endif %}"
+       data-contract-id="{% if active_contract %}{{ active_contract.pk }}{% endif %}">
     <aside class="assistant-history surface" aria-label="Conversas anteriores">
-      <a class="button-link button-link-small assistant-new" href="{% url 'assistant:chat' %}">+ Nova conversa</a>
+      <a class="button-link button-link-small assistant-new" href="{% url 'assistant:chat' %}{% if active_contract %}?contract={{ active_contract.pk }}{% endif %}">+ Nova conversa</a>
       <h2 class="assistant-history-title">Conversas anteriores</h2>
       {% if conversations %}
         <ul>
@@ -33,6 +36,7 @@
 
     <section class="assistant-chat surface" aria-label="Conversa">
       <p class="assistant-notice" role="note">O Assistente Arise usa um serviço de IA externo (Google Gemini). Ambiente de demonstração: use somente dados fictícios. As respostas podem conter erros — confira antes de usar.</p>
+      {% include "assistant/_contexto_contrato.html" with active_contract=active_contract context_state=assistant_contract_state only %}
       {% if current %}
         <div class="assistant-chat-head">
           <strong>{{ current.title }}</strong>
@@ -54,7 +58,7 @@
       <form class="assistant-form" method="post" action="{% url 'assistant:ask' %}" data-assistant-form data-no-submit-lock>
         {% csrf_token %}
         <input type="hidden" name="conversa" value="{{ current.pk|default:'' }}">
-        <input type="hidden" name="contrato" value="{{ assistant_contract_id|default:'' }}">
+        <input type="hidden" name="contrato" value="{% if active_contract %}{{ active_contract.pk }}{% endif %}">
         {% include "assistant/_anexo.html" with prefix="assistant" %}
         <label class="visually-hidden" for="assistant-question">Sua pergunta</label>
         <textarea id="assistant-question" name="pergunta" rows="1" maxlength="{{ max_question|stringformat:'d' }}" placeholder="Pergunte qualquer coisa…" aria-describedby="assistant-hint" required></textarea>
@@ -63,5 +67,6 @@
       <p class="assistant-hint" id="assistant-hint">Enter envia · Shift+Enter quebra a linha</p>
     </section>
   </div>
+  {% endwith %}
   {% endif %}
 {% endblock %}

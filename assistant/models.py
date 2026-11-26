@@ -2,7 +2,8 @@
 
 Cada conversa pertence a um único usuário e só ele a vê. Conversas ficam
 guardadas por ``ASSISTANT_RETENTION_DAYS`` dias e podem ser excluídas pelo
-próprio usuário. Nenhum dado de contrato é gravado aqui.
+próprio usuário. O vínculo opcional com o contrato guarda apenas o contexto
+autorizado da conversa, sem copiar valores ou documentos contratuais.
 """
 
 from django.conf import settings
@@ -17,6 +18,14 @@ class AssistantConversation(models.Model):
         verbose_name="usuário",
     )
     title = models.CharField("título", max_length=120)
+    contract_context = models.ForeignKey(
+        "contracts.Contract",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name="contrato do contexto",
+    )
     created_at = models.DateTimeField("criada em", auto_now_add=True)
     updated_at = models.DateTimeField("atualizada em", auto_now=True, db_index=True)
 
