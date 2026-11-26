@@ -40,3 +40,12 @@ orquestração do comando combinado, não de defeito do sistema.
 
 Nenhum dado real, senha, serviço de IA externo ou banco institucional foi
 acessado.
+
+## Publicação
+
+- PR #70: CI `django-postgresql` aprovada; merge em 26/11/2026 (commit `1334ed1`).
+- Migração manual do banco da demo (fluxo "Migracao manual do FiscalSema Demo",
+  execução 14) concluída com sucesso, aplicando `assistant.0002`.
+- Vercel: deploy de produção `READY` para o commit `1334ed1`.
+- Conferência em produção: `/healthz` com banco "ok" e nenhum erro de execução
+  nos 30 minutos seguintes.

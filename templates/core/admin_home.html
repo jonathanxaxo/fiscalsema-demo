@@ -9,7 +9,7 @@
       <h1>Controle de acessos</h1>
       <p>Olá, {{ request.user.get_short_name }}. Gerencie quem acessa o sistema, os cadastros pendentes e a segurança das contas.</p>
     </div>
-    <span class="badge badge-success">{{ request.user.get_profile_display }}</span>
+    <span class="badge badge-profile">{{ request.user.get_profile_display }}</span>
   </header>
 
   <section class="surface" aria-labelledby="pendencias-titulo">

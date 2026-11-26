@@ -37,7 +37,7 @@ class InterfaceUpgradeTests(TestCase):
         self.client.force_login(self.owner)
         response = self.client.get(reverse("contracts:list"))
         self.assertContains(response, 'class="page-header"')
-        self.assertContains(response, "Gestão contratual")
+        self.assertContains(response, "Fiscalização de contratos")
         self.assertContains(response, "status-pill status-success")
         self.assertContains(response, 'class="row-actions"')
         self.assertContains(response, "Dashboard")

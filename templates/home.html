@@ -9,7 +9,7 @@
       <h1>Painel do contrato</h1>
       <p>Olá, {{ request.user.get_short_name }}. Acompanhe saldos, execução e pendências em um só lugar.</p>
     </div>
-    <span class="badge badge-success">{{ request.user.get_profile_display }}</span>
+    <span class="badge badge-profile">{{ request.user.get_profile_display }}</span>
   </header>
 
   {% if selected_contract %}

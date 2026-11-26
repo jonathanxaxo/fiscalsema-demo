@@ -7,7 +7,7 @@
       <h1>Minha conta</h1>
       <p>{{ request.user.full_name }} · {{ request.user.email }}</p>
     </div>
-    <span class="badge badge-success">{{ request.user.get_profile_display }}</span>
+    <span class="badge badge-profile">{{ request.user.get_profile_display }}</span>
   </header>
 
   {% for message in messages %}<p class="{% if message.tags == 'error' %}danger{% else %}notice{% endif %}" role="status">{{ message }}</p>{% endfor %}
