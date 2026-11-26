@@ -43,3 +43,13 @@ sem problemas
 Servidor local com banco fictício, versão anterior (`main`) e nova, em
 1440 × 900, 1366 × 768 e 390 × 844: login, painel do contrato (Fiscal
 Titular) e lista de contratos. Capturas em `capturas/`.
+
+## Publicação
+
+- PR #71: CI `django-postgresql` aprovada; Preview conferido; merge em
+  26/11/2026 (commit `e2aced7`) após aprovação do responsável.
+- Sem migration; nenhuma execução do fluxo de migração foi necessária.
+- Vercel: deploy de produção `READY` para o commit `e2aced7`.
+- Conferência em produção: `/healthz` com banco "ok", nenhum erro de execução
+  em 15 minutos e login com identidade azul, logotipo novo e imagem
+  institucional, sem a faixa de demonstração.
