@@ -1,0 +1,13 @@
+<div class="assistant-contract-context{% if active_contract %} is-selected{% elif context_state == 'unavailable' %} is-unavailable{% endif %}"
+     data-assistant-contract-context role="status">
+  {% if active_contract %}
+    <strong>Contrato ativo: {{ active_contract.number }}</strong>
+    <span>{{ active_contract.object|truncatechars:96 }}</span>
+  {% elif context_state == "unavailable" %}
+    <strong>Contrato ativo indisponível</strong>
+    <span>O Arise não consultará dados fora do seu escopo autorizado.</span>
+  {% else %}
+    <strong>Nenhum contrato selecionado</strong>
+    <span>Selecione um contrato para fazer consultas específicas.</span>
+  {% endif %}
+</div>

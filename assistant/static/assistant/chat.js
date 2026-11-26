@@ -22,6 +22,19 @@ function init(root) {
     get() { try { return sessionStorage.getItem(storageKey) || ""; } catch (e) { return ""; } },
     set(v) { try { v ? sessionStorage.setItem(storageKey, v) : sessionStorage.removeItem(storageKey); } catch (e) { /* sem armazenamento */ } },
   };
+  const contextKey = root.dataset.contractContext || "geral";
+  const contractId = root.dataset.contractId || "";
+  const contextStorageKey = `${storageKey}-contexto`;
+  const contextStore = {
+    get() { try { return sessionStorage.getItem(contextStorageKey) || ""; } catch (e) { return ""; } },
+    set(v) { try { sessionStorage.setItem(contextStorageKey, v); } catch (e) { /* sem armazenamento */ } },
+  };
+  const withContract = url => contractId ? `${url}?contract=${encodeURIComponent(contractId)}` : url;
+  if (floating) {
+    const previousContext = contextStore.get();
+    if (previousContext && previousContext !== contextKey) store.set("");
+    contextStore.set(contextKey);
+  }
   const form = root.querySelector("[data-assistant-form]");
   const list = root.querySelector("[data-assistant-messages]");
   const input = form ? form.querySelector("textarea") : null;
@@ -131,7 +144,7 @@ function init(root) {
     if (!question || sendButton.disabled) return;
     if (welcome) welcome.hidden = true;
     const fileName = attachedName();
-    addMessage("user", fileName ? `${question}\n\n📎 documento anexado: ${fileName} (lido e descartado)` : question);
+    const userBody = addMessage("user", fileName ? `${question}\n\n📎 documento anexado: ${fileName} (lido e descartado)` : question);
     const body = addMessage("assistant", "");
     body.innerHTML = `<span class="assistant-typing">${fileName ? "Lendo o documento…" : "Assistente está digitando…"}</span>`;
     sendButton.disabled = true;
@@ -147,13 +160,23 @@ function init(root) {
         const payload = await response.json().catch(() => ({}));
         throw new Error(payload.erro || (response.status === 403 ? "Sua sessão expirou. Recarregue a página e entre de novo." : `Erro ${response.status}.`));
       }
+      if (response.headers.get("X-Contexto-Alterado") === "1") {
+        const keep = new Set([userBody.closest(".assistant-msg"), body.closest(".assistant-msg")]);
+        list.querySelectorAll(".assistant-msg").forEach(item => { if (!keep.has(item)) item.remove(); });
+        list.querySelectorAll(".assistant-context-transition").forEach(item => item.remove());
+        const transition = document.createElement("p");
+        transition.className = "assistant-context-transition";
+        transition.textContent = "O contrato ativo mudou. O Arise iniciou uma nova conversa para não misturar informações.";
+        list.insertBefore(transition, userBody.closest(".assistant-msg"));
+      }
       const id = response.headers.get("X-Conversa-Id");
       if (id && conversationInput && conversationInput.value !== id) {
         conversationInput.value = id;
         if (floating) {
           store.set(id);
+          contextStore.set(contextKey);
           const full = root.querySelector("[data-assistant-full]");
-          if (full) full.href = `${root.dataset.historyUrl}${id}/`;
+          if (full) full.href = withContract(`${root.dataset.historyUrl}${id}/`);
         } else {
           try { history.replaceState(null, "", `${root.dataset.conversationBase}${id}/`); } catch (e) { /* sem histórico */ }
         }
@@ -202,9 +225,10 @@ function init(root) {
       store.set("");
       conversationInput.value = "";
       list.querySelectorAll(".assistant-msg").forEach(el => el.remove());
+      list.querySelectorAll(".assistant-context-transition").forEach(el => el.remove());
       if (welcome) welcome.hidden = false;
       const full = root.querySelector("[data-assistant-full]");
-      if (full) full.href = root.dataset.historyUrl.replace(/conversas\/$/, "");
+      if (full) full.href = withContract(root.dataset.historyUrl.replace(/conversas\/$/, ""));
     };
     if (newButton) newButton.addEventListener("click", () => { reset(); input.focus(); });
     root.resetConversation = reset;
@@ -216,11 +240,13 @@ function init(root) {
         const response = await fetch(`${root.dataset.historyUrl}${id}/mensagens/`, { credentials: "same-origin" });
         if (!response.ok) { reset(); return; }
         const data = await response.json();
+        const loadedContext = data.contrato_contexto ? String(data.contrato_contexto) : "geral";
+        if (loadedContext !== contextKey) { reset(); return; }
         conversationInput.value = String(data.id);
         if (welcome && data.mensagens.length) welcome.hidden = true;
         data.mensagens.forEach(m => addMessage(m.role, m.content));
         const full = root.querySelector("[data-assistant-full]");
-        if (full) full.href = `${root.dataset.historyUrl}${data.id}/`;
+        if (full) full.href = withContract(`${root.dataset.historyUrl}${data.id}/`);
       } catch (e) { /* sem rede: começa vazia */ }
     };
   }

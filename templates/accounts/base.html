@@ -106,7 +106,19 @@
   {% if request.user.is_authenticated %}
       </main>
     </div>
-    {% if assistant_widget %}{% include "assistant/flutuante.html" %}{% endif %}
+    {% if assistant_widget %}
+      {% if selected_contract %}
+        {% include "assistant/flutuante.html" with active_contract=selected_contract %}
+      {% elif auxiliary_dashboard.selected_contract %}
+        {% include "assistant/flutuante.html" with active_contract=auxiliary_dashboard.selected_contract %}
+      {% elif administrative_dashboard.selected_contract %}
+        {% include "assistant/flutuante.html" with active_contract=administrative_dashboard.selected_contract %}
+      {% elif contract_manager_dashboard.selected_contract %}
+        {% include "assistant/flutuante.html" with active_contract=contract_manager_dashboard.selected_contract %}
+      {% else %}
+        {% include "assistant/flutuante.html" with active_contract=assistant_contract %}
+      {% endif %}
+    {% endif %}
   {% else %}
       </section>
       <p class="auth-footer">{% if is_demo %}Ambiente de demonstração · dados fictícios{% else %}Ambiente institucional · acesso restrito{% endif %}</p>

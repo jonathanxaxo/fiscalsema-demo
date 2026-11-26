@@ -190,3 +190,5 @@ documental das entregas anteriores.
 - `sprint-70-impressao-gestor-administrativo`: a impressão automática aguarda a
   nova aba ficar visível e preserva os dados dos relatórios em PDF para todos
   os perfis autorizados.
+- `sprint-71-contexto-contratual-arise`: o contrato ativo do painel acompanha
+  o Arise, é revalidado no backend e mantém conversas isoladas por contrato.
