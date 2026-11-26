@@ -1,0 +1,12 @@
+Olá, {{ user.get_short_name|default:user.email }}.
+
+Sua conta no FiscalSema foi criada ({{ user.email }}).
+
+Para criar a sua senha e entrar no sistema, abra o link abaixo:
+{{ link }}
+
+O link pode ser usado uma única vez e expira automaticamente.
+Se você não fez este cadastro, ignore esta mensagem: ninguém consegue entrar sem criar a senha por este link.
+
+Equipe FiscalSema.
+Este é um e-mail automático; não responda.
