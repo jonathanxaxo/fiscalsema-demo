@@ -225,6 +225,9 @@ SPREADSHEET_MAX_UPLOAD_SIZE = env_int(
 )
 FILE_FEATURES_ENABLED = env_bool("FILE_FEATURES_ENABLED", True)
 PUBLIC_REGISTRATION_ENABLED = env_bool("PUBLIC_REGISTRATION_ENABLED", True)
+# Sprint 75: autocadastro com senha criada pelo link enviado ao e-mail.
+SELF_SIGNUP_ENABLED = env_bool("SELF_SIGNUP_ENABLED", False)
+SELF_SIGNUP_LIMIT_PER_HOUR = env_int("SELF_SIGNUP_LIMIT_PER_HOUR", 5)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

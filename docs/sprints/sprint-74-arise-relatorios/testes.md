@@ -47,3 +47,12 @@ sem problemas
   perguntas sobre o contrato.
 - Varredura automática em 14 telas (Fiscal Titular, 1440 e 390 px): 66 links
   internos verificados, nenhum quebrado; nenhuma rolagem horizontal.
+
+## Publicação
+
+- PR #73: CI `django-postgresql` aprovada; merge em 26/11/2026 (commit
+  `3428af9`) após aprovação do responsável.
+- Sem migration.
+- Vercel: deploy de produção `READY` para o commit `3428af9`.
+- Conferência em produção: `/healthz` com banco "ok" e nenhum erro de execução
+  em 15 minutos.

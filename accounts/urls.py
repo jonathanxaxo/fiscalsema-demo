@@ -5,6 +5,9 @@ from django.urls import path
 from . import google_views
 from .profile_switch import SwitchProfileView
 from .views import (
+    CreatePasswordView,
+    SelfSignupSentView,
+    SelfSignupView,
     SessionKeepAliveView,
     SessionTabClosedView,
     AccountLoginView,
@@ -56,6 +59,10 @@ urlpatterns = [
         AccountPasswordResetCompleteView.as_view(),
         name="password_reset_complete",
     ),
+    # Sprint 75: autocadastro (a própria view devolve 404 quando desativado).
+    path("criar-conta/", SelfSignupView.as_view(), name="self_signup"),
+    path("criar-conta/enviado/", SelfSignupSentView.as_view(), name="self_signup_sent"),
+    path("criar-senha/<uidb64>/<token>/", CreatePasswordView.as_view(), name="create_password"),
 ]
 
 if settings.PUBLIC_REGISTRATION_ENABLED:

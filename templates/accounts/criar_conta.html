@@ -1,0 +1,26 @@
+{% extends "accounts/base.html" %}
+{% block title %}Criar conta — FiscalSema{% endblock %}
+{% block content %}
+  <h1>Criar conta</h1>
+  <p>Preencha seus dados. Você receberá um link no e-mail para criar a sua senha.</p>
+  <form method="post" novalidate class="signup-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.website }}
+    {{ form.full_name.label_tag }}{{ form.full_name }}{{ form.full_name.errors }}
+    {{ form.email.label_tag }}{{ form.email }}{{ form.email.errors }}
+    <fieldset class="signup-choice">
+      <legend>Órgão</legend>
+      {{ form.organization.label_tag }}{{ form.organization }}{{ form.organization.errors }}
+      {{ form.new_organization.label_tag }}{{ form.new_organization }}{{ form.new_organization.errors }}
+    </fieldset>
+    <fieldset class="signup-choice">
+      <legend>Setor</legend>
+      {{ form.sector.label_tag }}{{ form.sector }}{{ form.sector.errors }}
+      {{ form.new_sector.label_tag }}{{ form.new_sector }}{{ form.new_sector.errors }}
+      <p class="helptext">Se o seu órgão ou setor ainda não está na lista, digite o nome. Ele passa a aparecer para os próximos cadastros.</p>
+    </fieldset>
+    <div class="login-actions"><button type="submit">Criar conta</button></div>
+  </form>
+  <p class="actions"><a href="{% url 'accounts:login' %}">Já tenho conta</a></p>
+{% endblock %}

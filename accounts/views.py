@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -12,6 +13,7 @@ from django.contrib.auth.views import (
 )
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views import View
@@ -446,3 +448,73 @@ class SessionTabClosedView(View):
             logout(request)
             messages.info(request, "Por segurança, o sistema foi fechado. Entre novamente com a sua senha.")
         return JsonResponse({"ok": True, "login": reverse("accounts:login")})
+
+
+# Sprint 75 — autocadastro com senha criada pelo link enviado ao e-mail.
+class SelfSignupView(FormView):
+    template_name = "accounts/criar_conta.html"
+    success_url = reverse_lazy("accounts:self_signup_sent")
+
+    def get_form_class(self):
+        from .autocadastro import SelfSignupForm
+
+        return SelfSignupForm
+
+    def dispatch(self, request, *args, **kwargs):
+        if not settings.SELF_SIGNUP_ENABLED:
+            raise Http404("Autocadastro desativado.")
+        if request.user.is_authenticated:
+            return redirect("home")
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        from .autocadastro import create_self_signup, send_create_password_email, signup_limit_reached
+
+        if signup_limit_reached(self.request):
+            form.add_error(None, "Muitos cadastros a partir desta conexão. Tente novamente em 1 hora.")
+            return self.form_invalid(form)
+        user = form.resend_user
+        if user is None:
+            try:
+                user = create_self_signup(form, self.request)
+            except ValidationError as error:
+                form.add_error(None, error)
+                return self.form_invalid(form)
+            except IntegrityError:
+                form.add_error("email", "Já existe uma conta com este e-mail.")
+                return self.form_invalid(form)
+        self.request.session["autocadastro_email_enviado"] = send_create_password_email(user, self.request)
+        return super().form_valid(form)
+
+
+class SelfSignupSentView(TemplateView):
+    template_name = "accounts/criar_conta_enviado.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not settings.SELF_SIGNUP_ENABLED:
+            raise Http404("Autocadastro desativado.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["email_enviado"] = self.request.session.pop("autocadastro_email_enviado", True)
+        return context
+
+
+class CreatePasswordView(AccountPasswordResetConfirmView):
+    """Primeira senha da conta de autocadastro (mesmo token seguro da recuperação)."""
+
+    template_name = "accounts/criar_senha.html"
+    success_url = reverse_lazy("accounts:login")
+
+    def form_valid(self, form):
+        response = super(AccountPasswordResetConfirmView, self).form_valid(form)
+        record_authentication_event(
+            AuthenticationEvent.EventType.PASSWORD_CHANGED,
+            request=self.request,
+            user=form.user,
+            email=form.user.email,
+            details={"origem": "autocadastro"},
+        )
+        messages.success(self.request, "Senha criada. Agora entre com o seu e-mail e a nova senha.")
+        return response

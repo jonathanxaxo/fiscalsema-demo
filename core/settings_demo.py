@@ -84,6 +84,9 @@ STORAGES = {
 
 FILE_FEATURES_ENABLED = False
 PUBLIC_REGISTRATION_ENABLED = False
+# Sprint 75: na demonstração, qualquer pessoa cria a própria conta (Fiscal com
+# consulta aos contratos fictícios) e define a senha pelo link enviado ao e-mail.
+SELF_SIGNUP_ENABLED = env_bool("SELF_SIGNUP_ENABLED", True)
 DOCUMENT_MAX_UPLOAD_SIZE = 4 * 1024 * 1024
 SPREADSHEET_MAX_UPLOAD_SIZE = 4 * 1024 * 1024
 # E-mail (Sprint 26): SMTP só quando usuário e senha do servidor estiverem

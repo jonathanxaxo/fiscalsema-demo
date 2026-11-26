@@ -1,0 +1,13 @@
+{% extends "accounts/base.html" %}
+{% block title %}Confira seu e-mail — FiscalSema{% endblock %}
+{% block content %}
+  <h1>Confira seu e-mail</h1>
+  {% if email_enviado %}
+    <p class="notice">Enviamos um link para você criar a sua senha. Abra o e-mail e siga as instruções.</p>
+    <p>O link pode ser usado uma única vez. Se não encontrar a mensagem, veja também a caixa de spam.</p>
+  {% else %}
+    <p class="warning">Sua conta foi registrada, mas o e-mail não pôde ser enviado agora.</p>
+    <p>Volte à tela “Criar conta” e preencha o mesmo e-mail para receber o link novamente.</p>
+  {% endif %}
+  <p class="actions"><a href="{% url 'accounts:self_signup' %}">Não recebi: enviar de novo</a><a href="{% url 'accounts:login' %}">Voltar para entrar</a></p>
+{% endblock %}
