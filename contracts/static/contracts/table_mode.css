@@ -11,7 +11,7 @@ main.table-mode-page { max-width: min(1280px, calc(100% - 2rem)); margin: 2rem a
 .data-grid thead th { position: sticky; top: 0; z-index: 2; background: #e8f0eb; white-space: nowrap; user-select: none; }
 .data-grid tbody tr:nth-child(even) { background: #f8faf8; }
 .data-grid td:focus { outline: 3px solid #2678c9; outline-offset: -3px; background: #eef6ff; }
-.data-grid .calculated { background: #edf0ee; color: #405248; }
+.data-grid .calculated { background: #edf1f6; color: #43526a; }
 .column-resizer { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; touch-action: none; }
 .pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; }
 @media (max-width: 720px) { .table-filters { grid-template-columns: 1fr; } main.table-mode-page { width: auto; margin: 0; } }

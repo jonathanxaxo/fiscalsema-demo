@@ -192,3 +192,6 @@ documental das entregas anteriores.
   os perfis autorizados.
 - `sprint-71-contexto-contratual-arise`: o contrato ativo do painel acompanha
   o Arise, é revalidado no backend e mantém conversas isoladas por contrato.
+- `sprint-72-identidade-azul`: identidade azul e branco, logotipo com documento,
+  lupa e verificação, e imagem institucional SEMA/Governo de MT no login e no
+  rodapé; aviso de dados fictícios passa à apresentação e ao vídeo.

@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <meta name="theme-color" content="#0b5d3b">
+  <meta name="theme-color" content="#083b8a">
   <title>{% block title %}FiscalSema{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'core/img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
@@ -16,14 +16,14 @@
 </head>
 <body class="{% if request.user.is_authenticated %}app-page{% else %}auth-page{% endif %}"{% if request.user.is_authenticated and session_idle_timeout %} data-idle-timeout="{{ session_idle_timeout|stringformat:'d' }}" data-keepalive-url="{% url 'accounts:session_keepalive' %}"{% endif %}{% if request.user.is_authenticated %} data-tab-closed-url="{% url 'accounts:session_tab_closed' %}"{% endif %}>
   <a class="skip-link" href="#conteudo-principal">Ir para o conteúdo principal</a>
-  {% if is_demo %}<div class="environment-banner demo-banner" role="status"><strong>AMBIENTE DE DEMONSTRAÇÃO</strong> — DADOS EXCLUSIVAMENTE FICTÍCIOS</div>{% elif is_homologation %}<div class="environment-banner" role="status">AMBIENTE DE HOMOLOGAÇÃO — não utilizar para operação real</div>{% endif %}
+  {% if is_homologation %}<div class="environment-banner" role="status">AMBIENTE DE HOMOLOGAÇÃO — não utilizar para operação real</div>{% endif %}
   {% if request.user.is_authenticated %}
     <header class="topbar">
       <div class="topbar-start">
         <button class="menu-toggle" type="button" aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menu">☰</button>
         <a class="brand" href="{% url 'home' %}" aria-label="FiscalSema — Painel">
           <picture class="brand-picture"><img data-still-src="{% static 'core/img/logo-estatico.svg' %}" class="brand-mark" src="{% static 'core/img/logo.svg' %}" alt="" width="38" height="38"></picture>
-          <span><strong>FiscalSema</strong><small>Gestão contratual</small></span>
+          <span><strong>FiscalSema</strong><small>Fiscalização de contratos</small></span>
         </a>
       </div>
       <div class="user-menu">
@@ -87,7 +87,7 @@
             {% if perms.accounts.view_authenticationevent %}<a href="{% url 'audit:global' %}"{% if request.resolver_match.app_name == 'audit' %} aria-current="page"{% endif %}>{% include "core/icone_menu.html" with nome="auditoria" %}Auditoria</a>{% endif %}
           {% endif %}
         </nav>
-        <div class="sidebar-note">{% if is_demo %}<strong>Demonstração</strong><span>Não inserir dados ou documentos reais</span>{% else %}<strong>Ambiente interno</strong><span>Acesso restrito à rede local</span>{% endif %}
+        <div class="sidebar-note">{% if not is_demo %}<strong>Ambiente interno</strong><span>Acesso restrito à rede local</span>{% endif %}
           <span class="motion-control-label" id="movimento-titulo">Movimento</span>
           <div class="motion-control" role="group" aria-labelledby="movimento-titulo"><button type="button" data-motion-choice="vivo" aria-pressed="true">Vivo</button><button type="button" data-motion-choice="calmo" aria-pressed="false">Calmo</button><button type="button" data-motion-choice="sem" aria-pressed="false">Sem</button></div>
         </div>
@@ -98,12 +98,16 @@
     <main id="conteudo-principal" class="auth-shell" tabindex="-1">
       <div class="auth-brand" aria-label="FiscalSema">
         <picture class="brand-picture"><img data-still-src="{% static 'core/img/logo-estatico.svg' %}" class="brand-mark" src="{% static 'core/img/logo.svg' %}" alt="" width="48" height="48"></picture>
-        <span><strong>FiscalSema</strong><small>Gestão contratual simples e segura</small></span>
+        <span><strong>FiscalSema</strong><small>Fiscalização de contratos</small></span>
       </div>
       <section class="auth-card">
   {% endif %}
         {% block content %}{% endblock %}
   {% if request.user.is_authenticated %}
+        <footer class="app-footer" aria-label="Identificação institucional">
+          {% include "core/marca_institucional.html" %}
+          <p><strong>FiscalSema</strong> · Fiscalização de contratos{% if not is_demo %}<br><span>Ambiente institucional · acesso restrito.</span>{% endif %}</p>
+        </footer>
       </main>
     </div>
     {% if assistant_widget %}
@@ -121,7 +125,8 @@
     {% endif %}
   {% else %}
       </section>
-      <p class="auth-footer">{% if is_demo %}Ambiente de demonstração · dados fictícios{% else %}Ambiente institucional · acesso restrito{% endif %}</p>
+      {% if not is_demo %}<p class="auth-footer">Ambiente institucional · acesso restrito</p>{% endif %}
+      <div class="auth-institutional">{% include "core/marca_institucional.html" %}</div>
     </main>
   {% endif %}
   <script src="{% static 'core/js/app.js' %}" defer></script>

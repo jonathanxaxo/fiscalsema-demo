@@ -42,7 +42,9 @@ REVISAR → REGISTRAR.
 - nunca acessar banco, arquivos ou serviços do ambiente real;
 - usar somente dados fictícios;
 - preservar `DEBUG=False`, autenticação, autorização, CSRF, rate limiting,
-  auditoria e o aviso permanente de ambiente de demonstração;
+  auditoria e o uso exclusivo de dados fictícios; desde a Sprint 72, por
+  decisão do responsável, o aviso de dados fictícios é feito na apresentação
+  e no vídeo, não em faixa nas telas;
 - agentes e adaptadores MCP nunca acessam o banco diretamente;
 - uma proposta da IA permanece não executada até confirmação humana;
 - ferramentas MCP não confirmam, rejeitam, homologam nem autorizam pagamentos.

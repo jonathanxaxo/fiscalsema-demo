@@ -31,5 +31,5 @@ class IdentidadeVisualTests(TestCase):
         self.client.force_login(user)
         response = self.client.get(reverse("home"))
         self.assertContains(response, 'class="nav-icon"')
-        self.assertContains(response, "Gestão contratual")
+        self.assertContains(response, "Fiscalização de contratos")
         self.assertNotContains(response, '<span aria-hidden="true">⌂</span>', html=False)

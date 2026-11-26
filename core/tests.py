@@ -24,14 +24,15 @@ class BaseTecnicaTests(TestCase):
         self.assertContains(response, "Fiscal de Teste")
         self.assertContains(response, 'id="menu-principal"')
         self.assertContains(response, "Rascunhos da IA")
-        self.assertContains(response, "AMBIENTE DE DEMONSTRAÇÃO")
-        self.assertContains(response, "DADOS EXCLUSIVAMENTE FICTÍCIOS")
+        # Sprint 72: por decisão do responsável, o aviso é feito na apresentação e no vídeo.
+        self.assertNotContains(response, "AMBIENTE DE DEMONSTRAÇÃO")
+        self.assertNotContains(response, "DADOS EXCLUSIVAMENTE FICTÍCIOS")
         self.assertNotContains(response, "Ambiente interno")
 
     def test_layout_publico_tem_identidade_e_acessibilidade(self):
         response = Client().get("/conta/entrar/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Gestão contratual simples e segura")
+        self.assertContains(response, "Fiscalização de contratos")
         self.assertContains(response, 'class="skip-link"')
         self.assertContains(response, "/static/core/css/app.css")
         self.assertContains(response, "/static/core/js/app.js")
