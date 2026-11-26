@@ -884,3 +884,12 @@ html.fs-verificando body.app-page { visibility: hidden; }
 .content .definition-list > div:hover { background: #fff; }
 .attention-list li > .urgency + span { flex: 1 1 auto; text-align: left; }
 @media (max-width: 480px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+/* Sprint 74 — relatórios em PDF: tabelas largas inteiras, sem dica de rolagem */
+@media print {
+  main.report-page .table-scroll-hint, main.report-page .table-scroll-hint.is-visible { display: none; }
+  main.report-page .table-responsive { overflow: visible; max-width: none; }
+  main.report-page table { width: 100%; table-layout: auto; font-size: 8pt; }
+  main.report-page table th, main.report-page table td { white-space: normal; padding: 3px 5px; }
+  main.report-page thead { display: table-header-group; }
+}

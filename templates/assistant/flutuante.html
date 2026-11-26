@@ -23,7 +23,7 @@
       <div class="assistant-welcome" data-assistant-welcome>
         <p><strong>Olá, {{ request.user.get_short_name }}!</strong> Sou o Assistente Arise. Pergunte o que quiser sobre o FiscalSema ou o seu trabalho.</p>
         <div class="assistant-suggestions">
-          {% for suggestion in assistant_suggestions %}<button type="button" class="button-link-small" data-suggestion="{{ suggestion }}">{{ suggestion }}</button>{% endfor %}
+          {% if active_contract %}{% for suggestion in assistant_contract_suggestions %}<button type="button" class="button-link-small" data-suggestion="{{ suggestion }}">{{ suggestion }}</button>{% endfor %}{% else %}{% for suggestion in assistant_suggestions %}<button type="button" class="button-link-small" data-suggestion="{{ suggestion }}">{{ suggestion }}</button>{% endfor %}{% endif %}
         </div>
       </div>
     </div>
