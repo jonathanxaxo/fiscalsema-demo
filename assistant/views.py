@@ -103,7 +103,9 @@ def chat(request, pk=None):
             "conversations": _own_conversations(request.user)[:30],
             "current": current,
             "chat_messages": current.messages.all() if current else (),
-            "suggestions": suggestions_for(request.user.profile),
+            "suggestions": suggestions_for(
+                request.user.profile, contract=contract_context.contract
+            ),
             "profile_label": PROFILE_LABELS.get(request.user.profile, request.user.profile),
             "retention_days": settings.ASSISTANT_RETENTION_DAYS,
             "max_question": MAX_QUESTION_CHARS,

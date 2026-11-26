@@ -42,3 +42,12 @@ sem problemas
 Servidor local com banco fictício, versão anterior (`main`) e nova, em 1440,
 1366 e 390 px, perfil Fiscal Titular: atalhos, indicadores e Central de
 trabalho. Capturas em `capturas/`.
+
+## Publicação
+
+- PR #72: CI `django-postgresql` aprovada; Preview conferido; merge em
+  26/11/2026 (commit `ef0074c`) após aprovação do responsável.
+- Sem migration.
+- Vercel: deploy de produção `READY` para o commit `ef0074c`.
+- Conferência em produção: `/healthz` com banco "ok" e nenhum erro de execução
+  em 15 minutos.

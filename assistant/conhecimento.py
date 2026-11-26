@@ -157,5 +157,34 @@ SUGGESTIONS = {
 }
 
 
-def suggestions_for(profile):
+# Sprint 74: perguntas sobre o contrato ativo. Só aparecem quando há contrato
+# validado no backend; a Auxiliar não vê valores, então recebe perguntas de prazo.
+_CONTRATO_FINANCEIRO = (
+    "Qual é o saldo deste contrato?",
+    "Quais ordens de serviço estão abertas ou vencidas?",
+    "Existem notas fiscais pendentes?",
+    "Quais empenhos estão associados?",
+)
+CONTRACT_SUGGESTIONS = {
+    "FISCAL_TITULAR": _CONTRATO_FINANCEIRO,
+    "FISCAL": _CONTRATO_FINANCEIRO,
+    "GESTOR_DO_CONTRATO": _CONTRATO_FINANCEIRO,
+    "GESTOR_ADMINISTRATIVO": _CONTRATO_FINANCEIRO,
+    "USUARIO_CONSULTA": _CONTRATO_FINANCEIRO,
+    "AUXILIAR_ADMINISTRATIVA": (
+        "Quais ordens de serviço deste contrato estão abertas?",
+        "Existem OS vencidas neste contrato?",
+        "Quais prazos deste contrato exigem atenção?",
+    ),
+}
+
+
+def suggestions_for(profile, *, contract=None):
+    if contract is not None and profile in CONTRACT_SUGGESTIONS:
+        return CONTRACT_SUGGESTIONS[profile]
     return SUGGESTIONS.get(profile, SUGGESTIONS["FISCAL_TITULAR"])
+
+
+def contract_suggestions_for(profile):
+    """Sugestões usadas quando o painel já tem um contrato ativo validado."""
+    return CONTRACT_SUGGESTIONS.get(profile, suggestions_for(profile))

@@ -1,4 +1,4 @@
-from .conhecimento import suggestions_for
+from .conhecimento import contract_suggestions_for, suggestions_for
 from .contexto_contrato import ContractContext, resolve_request_contract
 from .provedor import is_configured
 
@@ -22,5 +22,8 @@ def assistant_menu(request):
         "assistant_enabled": enabled,
         "assistant_widget": show_widget,
         "assistant_suggestions": suggestions_for(user.profile) if show_widget else (),
+        "assistant_contract_suggestions": (
+            contract_suggestions_for(user.profile) if show_widget else ()
+        ),
         **contract_context.template_values(),
     }

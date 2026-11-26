@@ -198,3 +198,5 @@ documental das entregas anteriores.
 - `sprint-73-painel-central`: indicadores financeiros explicados com as
   definições do motor, urgência escrita na Central de trabalho e atalhos para
   Notas e pagamentos, Arise e Auditoria.
+- `sprint-74-arise-relatorios`: perguntas do Arise sobre o contrato ativo,
+  contrato ativo em destaque e relatórios em PDF com tabelas inteiras.
