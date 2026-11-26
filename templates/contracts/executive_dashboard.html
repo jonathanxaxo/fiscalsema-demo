@@ -49,7 +49,7 @@
     <div class="context-summary">
       <div><small>Fornecedor</small><strong>{{ contract.supplier_name }}</strong></div>
       <div><small>Fiscal responsável</small><strong>{{ contract.responsible_fiscal.full_name }}</strong></div>
-      <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</strong></div>
+      <div><small>Vigência</small><strong>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.current_validity_end|date:"d/m/Y" }}</strong></div>
       <div><small>Valor atual</small><strong>R$&nbsp;{{ contract.current_value|localize }}</strong></div>
     </div>
     <nav class="action-bar" aria-label="Ações do dashboard">
@@ -75,7 +75,7 @@
       <div class="section-heading"><div><span class="eyebrow">Financeiro e vigência</span><h2 id="exec-vigencia">Tempo decorrido x execução</h2></div></div>
       <p class="muted">Compare o tempo de vigência já decorrido com o que foi comprometido, executado, faturado e pago, em relação ao valor atual do contrato.</p>
       <div class="exec-bars">
-        <div class="exec-bar-row exec-bar-time"><div><span>Vigência decorrida</span><strong>{{ validity.percentage|localize }}%</strong></div><span class="exec-track" role="img" aria-label="Vigência decorrida: {{ validity.percentage|localize }}%"><span style="width: {{ validity.percentage|barra }}%"></span></span><small>{% if validity.has_ended %}Vigência encerrada em {{ contract.validity_end|date:"d/m/Y" }}{% elif not validity.has_started %}Vigência ainda não iniciada{% else %}{{ validity.elapsed_days }} de {{ validity.total_days }} dias · faltam {{ validity.remaining_days }} dias{% endif %}</small></div>
+        <div class="exec-bar-row exec-bar-time"><div><span>Vigência decorrida</span><strong>{{ validity.percentage|localize }}%</strong></div><span class="exec-track" role="img" aria-label="Vigência decorrida: {{ validity.percentage|localize }}%"><span style="width: {{ validity.percentage|barra }}%"></span></span><small>{% if validity.has_ended %}Vigência encerrada em {{ contract.current_validity_end|date:"d/m/Y" }}{% elif not validity.has_started %}Vigência ainda não iniciada{% else %}{{ validity.elapsed_days }} de {{ validity.total_days }} dias · faltam {{ validity.remaining_days }} dias{% endif %}</small></div>
         {% for p in s.financial_progress %}<div class="exec-bar-row exec-bar-{{ p.tone }}"><div><span>{{ p.label }}</span><strong>{{ p.percentage|localize }}%</strong></div><span class="exec-track" role="img" aria-label="{{ p.label }}: {{ p.percentage|localize }}% do contrato"><span style="width: {{ p.percentage|barra }}%"></span></span><small>R$&nbsp;{{ p.value|localize }}</small></div>{% endfor %}
       </div>
     </section>

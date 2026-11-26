@@ -5,17 +5,20 @@
     <span class="visually-hidden">Abrir o Assistente Arise</span>
   </button>
   <section class="arise-panel" id="arise-painel" role="dialog" aria-label="Assistente Arise" hidden
-           data-assistant data-floating data-history-url="{% url 'assistant:chat' %}conversas/" data-user="{{ request.user.pk }}">
+           data-assistant data-floating data-history-url="{% url 'assistant:chat' %}conversas/" data-user="{{ request.user.pk }}"
+           data-contract-context="{% if active_contract %}{{ active_contract.pk }}{% else %}geral{% endif %}"
+           data-contract-id="{% if active_contract %}{{ active_contract.pk }}{% endif %}">
     <header class="arise-panel-head" title="Arraste para mover">
       <div><strong>Assistente Arise</strong><small>IA do FiscalSema</small></div>
       <div class="arise-panel-actions">
         <button type="button" class="arise-icon-button" data-assistant-new title="Nova conversa"><span aria-hidden="true">+</span><span class="visually-hidden">Nova conversa</span></button>
-        <a class="arise-icon-button" href="{% url 'assistant:chat' %}" data-assistant-full title="Abrir em tela cheia"><span aria-hidden="true">⤢</span><span class="visually-hidden">Abrir em tela cheia</span></a>
+        <a class="arise-icon-button" href="{% url 'assistant:chat' %}{% if active_contract %}?contract={{ active_contract.pk }}{% endif %}" data-assistant-full title="Abrir em tela cheia"><span aria-hidden="true">⤢</span><span class="visually-hidden">Abrir em tela cheia</span></a>
         <button type="button" class="arise-icon-button" data-arise-minimize title="Minimizar (a conversa continua)"><span aria-hidden="true">–</span><span class="visually-hidden">Minimizar (a conversa continua)</span></button>
         <button type="button" class="arise-icon-button" data-arise-close title="Fechar e encerrar o chat"><span aria-hidden="true">×</span><span class="visually-hidden">Fechar e encerrar o chat</span></button>
       </div>
     </header>
     <p class="assistant-notice arise-panel-notice" role="note" data-arise-notice>IA externa (Google Gemini). Use somente dados fictícios. Confira as respostas.</p>
+    {% include "assistant/_contexto_contrato.html" with active_contract=active_contract context_state=assistant_contract_state only %}
     <div class="assistant-messages arise-panel-messages" data-assistant-messages aria-live="polite">
       <div class="assistant-welcome" data-assistant-welcome>
         <p><strong>Olá, {{ request.user.get_short_name }}!</strong> Sou o Assistente Arise. Pergunte o que quiser sobre o FiscalSema ou o seu trabalho.</p>
@@ -27,7 +30,7 @@
     <form class="assistant-form" method="post" action="{% url 'assistant:ask' %}" data-assistant-form data-no-submit-lock>
       {% csrf_token %}
       <input type="hidden" name="conversa" value="">
-      <input type="hidden" name="contrato" value="{{ assistant_contract_id|default:'' }}">
+      <input type="hidden" name="contrato" value="{% if active_contract %}{{ active_contract.pk }}{% endif %}">
       {% include "assistant/_anexo.html" with prefix="arise" %}
       <label class="visually-hidden" for="arise-pergunta">Sua pergunta</label>
       <textarea id="arise-pergunta" name="pergunta" rows="1" maxlength="2000" placeholder="Pergunte qualquer coisa…" required></textarea>

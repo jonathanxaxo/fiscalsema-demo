@@ -615,7 +615,7 @@ def create_fiscal_substitution(*, contract_id, actor, email, starts_on, ends_on)
         raise ValidationError("O fim da substituição não pode anteceder o início.")
     if ends_on < timezone.localdate():
         raise ValidationError("O fim da substituição não pode estar no passado.")
-    if starts_on < contract.validity_start or ends_on > contract.validity_end:
+    if starts_on < contract.validity_start or ends_on > contract.current_validity_end:
         raise ValidationError(
             "O período da substituição deve estar dentro da vigência do contrato."
         )
@@ -772,7 +772,7 @@ def contract_snapshot(contract):
         "cnpj_cpf": contract.supplier_tax_id,
         "assinatura": contract.signature_date.isoformat(),
         "vigencia_inicio": contract.validity_start.isoformat(),
-        "vigencia_fim": contract.validity_end.isoformat(),
+        "vigencia_fim": contract.current_validity_end.isoformat(),
         "valor_original": str(contract.original_value),
         "valor_atual": str(contract.current_value),
         "status": contract.status,

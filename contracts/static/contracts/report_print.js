@@ -7,11 +7,34 @@
     return;
   }
 
+  const openPrintDialog = () => {
+    // Aguarda o navegador pintar o conteudo liberado antes de gerar a previa.
+    window.requestAnimationFrame(() => window.print());
+  };
+
+  const printWhenPageIsVisible = () => {
+    const root = document.documentElement;
+    if (!root.classList.contains("fs-verificando")) {
+      openPrintDialog();
+      return;
+    }
+
+    // Uma nova aba pode ficar invisivel por alguns milissegundos enquanto o
+    // sistema confirma que a aba de origem continua aberta. Imprimir durante
+    // essa verificacao gera paginas em branco no Chrome/Edge.
+    const observer = new MutationObserver(() => {
+      if (root.classList.contains("fs-verificando")) {
+        return;
+      }
+      observer.disconnect();
+      openPrintDialog();
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+  };
+
   window.addEventListener(
     "load",
-    () => {
-      window.print();
-    },
+    printWhenPageIsVisible,
     { once: true },
   );
 })();

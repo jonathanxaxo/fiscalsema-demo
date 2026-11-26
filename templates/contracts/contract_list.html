@@ -30,7 +30,7 @@
           <td>{{ contract.number }}<br><small>{{ contract.process_number }}</small></td>
           <td>{{ contract.supplier_name }}</td>
           <td>{{ contract.responsible_fiscal.full_name }}</td>
-          <td>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.validity_end|date:"d/m/Y" }}</td>
+          <td>{{ contract.validity_start|date:"d/m/Y" }} a {{ contract.current_validity_end|date:"d/m/Y" }}</td>
           <td>{% if contract.intelligence_classification %}{{ contract.intelligence_classification.get_modality_display|default:"Pendente" }}{% else %}Não classificado{% endif %}</td>
           <td>{% if contract.intelligence_classification %}{{ contract.intelligence_classification.get_management_category_display|default:"Pendente" }}{% else %}Não classificado{% endif %}</td>
           <td>R$&nbsp;{{ contract.current_value|localize }}</td>

@@ -173,3 +173,22 @@ documental das entregas anteriores.
   português para o fiscal conferir; o JSON fica recolhido para auditoria.
 - `sprint-62-recusas-mcp`: recusas do MCP por permissão revogada comprovadas em
   testes; mensagem de recusa sem colchetes e na cor de alerta.
+- `sprint-63-contrato-360`: resumo atual e linha do tempo unificada de cada
+  contrato dentro do escopo autorizado.
+- `sprint-64-alertas-obrigacoes`: política de alertas, calendário de obrigações,
+  responsáveis, fontes e evidências.
+- `sprint-65-alteracoes-contratuais`: aditivos, apostilamentos e demais
+  alterações formam valor e vigência atuais sem apagar o cadastro original.
+- `sprint-66-recebimentos-riscos`: recebimentos, riscos e verificações com
+  decisão humana, evidência e rastreabilidade.
+- `sprint-67-pacote-tic`: roteiro profissional para contratos de TIC, sempre a
+  confirmar nas fontes oficiais.
+- `sprint-68-pacotes-por-objeto`: roteiros para bens, serviços continuados,
+  obras, licenças e entrega única.
+- `sprint-69-acompanhamento-sistemas-oficiais`: controle manual de SIAG,
+  SIGADOC, PNCP e outros sistemas, sem integração ou credencial externa.
+- `sprint-70-impressao-gestor-administrativo`: a impressão automática aguarda a
+  nova aba ficar visível e preserva os dados dos relatórios em PDF para todos
+  os perfis autorizados.
+- `sprint-71-contexto-contratual-arise`: o contrato ativo do painel acompanha
+  o Arise, é revalidado no backend e mantém conversas isoladas por contrato.

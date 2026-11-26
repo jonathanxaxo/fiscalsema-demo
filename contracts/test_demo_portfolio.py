@@ -17,9 +17,16 @@ from .management.commands.seed_demo_portfolio import PORTFOLIO_MARKER
 from .models import (
     Contract,
     ContractAccess,
+    ContractAlertPolicy,
+    ContractChange,
+    ContractChecklistItem,
     ContractClassification,
+    ContractExternalRecord,
     ContractItem,
     ContractManagementCategory,
+    ContractObligation,
+    ContractReceipt,
+    ContractRisk,
     WorkOrder,
 )
 from .services import contracts_visible_to
@@ -87,6 +94,13 @@ class DemoPortfolioTests(TestCase):
         )
         self.assertEqual(ContractItem.objects.count(), 15)
         self.assertEqual(WorkOrder.objects.count(), 25)
+        self.assertEqual(ContractAlertPolicy.objects.count(), 5)
+        self.assertEqual(ContractObligation.objects.count(), 5)
+        self.assertEqual(ContractChange.objects.count(), 5)
+        self.assertEqual(ContractReceipt.objects.count(), 5)
+        self.assertEqual(ContractRisk.objects.count(), 5)
+        self.assertEqual(ContractExternalRecord.objects.count(), 15)
+        self.assertGreaterEqual(ContractChecklistItem.objects.count(), 28)
         primary_contracts = Contract.objects.filter(
             responsible_fiscal=self.controller,
             notes__contains=PORTFOLIO_MARKER,
@@ -111,6 +125,13 @@ class DemoPortfolioTests(TestCase):
             ContractItem.objects.count(),
             WorkOrder.objects.count(),
             ContractAccess.objects.count(),
+            ContractAlertPolicy.objects.count(),
+            ContractObligation.objects.count(),
+            ContractChange.objects.count(),
+            ContractReceipt.objects.count(),
+            ContractRisk.objects.count(),
+            ContractChecklistItem.objects.count(),
+            ContractExternalRecord.objects.count(),
         )
         prepare_demo()
         self.assertEqual(
@@ -120,6 +141,13 @@ class DemoPortfolioTests(TestCase):
                 ContractItem.objects.count(),
                 WorkOrder.objects.count(),
                 ContractAccess.objects.count(),
+                ContractAlertPolicy.objects.count(),
+                ContractObligation.objects.count(),
+                ContractChange.objects.count(),
+                ContractReceipt.objects.count(),
+                ContractRisk.objects.count(),
+                ContractChecklistItem.objects.count(),
+                ContractExternalRecord.objects.count(),
             ),
         )
 

@@ -1,4 +1,5 @@
 from .conhecimento import suggestions_for
+from .contexto_contrato import ContractContext, resolve_request_contract
 from .provedor import is_configured
 
 
@@ -12,15 +13,14 @@ def assistant_menu(request):
         and user.is_authenticated
         and getattr(getattr(request, "resolver_match", None), "app_name", "") != "assistant"
     )
-    resolver = getattr(request, "resolver_match", None)
-    contract_id = ""
-    if resolver and resolver.app_name == "contracts":
-        candidate = resolver.kwargs.get("contract_pk") or resolver.kwargs.get("pk")
-        if isinstance(candidate, int):
-            contract_id = candidate
+    contract_context = (
+        resolve_request_contract(request)
+        if enabled and user is not None and user.is_authenticated
+        else ContractContext()
+    )
     return {
         "assistant_enabled": enabled,
         "assistant_widget": show_widget,
         "assistant_suggestions": suggestions_for(user.profile) if show_widget else (),
-        "assistant_contract_id": contract_id,
+        **contract_context.template_values(),
     }

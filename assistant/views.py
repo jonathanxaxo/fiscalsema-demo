@@ -16,7 +16,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, StreamingHttpResponse
+from django.http import Http404, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
@@ -25,6 +25,12 @@ from django.views.decorators.http import require_GET, require_POST
 from .anexos import MAX_REQUEST_BYTES, AttachmentError, InMemoryOnlyUploadHandler, read_attachment
 
 from .conhecimento import suggestions_for
+from .contexto_contrato import (
+    InvalidContractContext,
+    UnavailableContractContext,
+    resolve_contract_context,
+    resolve_request_contract,
+)
 from .ferramentas import authorized_data
 from .limites import limit_message, record
 from .models import AssistantConversation, AssistantMessage
@@ -48,10 +54,16 @@ def _own_conversations(user):
 def conversation_messages(request, pk):
     """Mensagens de uma conversa do próprio usuário (usado pelo painel flutuante)."""
     conversation = get_object_or_404(_own_conversations(request.user), pk=pk)
+    if conversation.contract_context_id is not None:
+        try:
+            resolve_contract_context(request.user, conversation.contract_context_id)
+        except UnavailableContractContext as error:
+            raise Http404(str(error)) from error
     return JsonResponse(
         {
             "id": conversation.pk,
             "titulo": conversation.title,
+            "contrato_contexto": conversation.contract_context_id,
             "mensagens": list(conversation.messages.values("role", "content")),
         }
     )
@@ -62,6 +74,27 @@ def conversation_messages(request, pk):
 def chat(request, pk=None):
     purge_expired()
     current = get_object_or_404(_own_conversations(request.user), pk=pk) if pk else None
+    try:
+        contract_context = resolve_request_contract(request, strict=True)
+    except (InvalidContractContext, UnavailableContractContext) as error:
+        raise Http404(str(error)) from error
+    if (
+        current is not None
+        and contract_context.requested
+        and current.contract_context_id != contract_context.contract_id
+    ):
+        # A troca explícita de contrato começa com uma tela limpa. A conversa
+        # anterior permanece preservada e vinculada somente ao contexto antigo.
+        current = None
+    if current is not None and not contract_context.requested:
+        try:
+            contract_context = resolve_contract_context(
+                request.user,
+                current.contract_context_id,
+                requested=current.contract_context_id is not None,
+            )
+        except UnavailableContractContext as error:
+            raise Http404(str(error)) from error
     return render(
         request,
         "assistant/chat.html",
@@ -74,6 +107,7 @@ def chat(request, pk=None):
             "profile_label": PROFILE_LABELS.get(request.user.profile, request.user.profile),
             "retention_days": settings.ASSISTANT_RETENTION_DAYS,
             "max_question": MAX_QUESTION_CHARS,
+            **contract_context.template_values(),
         },
     )
 
@@ -122,6 +156,26 @@ def _ask(request):
         conversation = _own_conversations(user).filter(pk=int(conversation_id)).first()
         if conversation is None:
             return _error("Conversa não encontrada.", 404)
+    raw_contract_id = (request.POST.get("contrato") or "").strip()
+    try:
+        contract_context = resolve_contract_context(
+            user, raw_contract_id, requested=bool(raw_contract_id)
+        )
+    except InvalidContractContext:
+        return _error("Contrato ativo inválido.", 400)
+    except UnavailableContractContext:
+        return _error(
+            "O contrato ativo está indisponível ou fora do seu escopo autorizado.",
+            404,
+        )
+
+    context_changed = False
+    if (
+        conversation is not None
+        and conversation.contract_context_id != contract_context.contract_id
+    ):
+        conversation = None
+        context_changed = True
     history = list(conversation.messages.values("role", "content")) if conversation else []
 
     attachment = None
@@ -137,13 +191,16 @@ def _ask(request):
     audit_attachment = attachment.audit() if attachment else None
 
     started = time.monotonic()
-    contract_id = (request.POST.get("contrato") or "").strip()
-    contract_id = int(contract_id) if contract_id.isdecimal() else None
     try:
         stream = stream_chat(
             build_messages(
                 question, profile=profile, route=ROUTE, history=history,
-                data=authorized_data(user, route=ROUTE, contract_id=contract_id),
+                data=authorized_data(
+                    user,
+                    route=ROUTE,
+                    contract_id=contract_context.contract_id,
+                ),
+                contract_context=contract_context.prompt_text,
                 document=attachment,
             )
         )
@@ -157,7 +214,11 @@ def _ask(request):
     attachment = None  # o texto do documento não é guardado em lugar nenhum
 
     if conversation is None:
-        conversation = AssistantConversation.objects.create(user=user, title=question[:80])
+        conversation = AssistantConversation.objects.create(
+            user=user,
+            title=question[:80],
+            contract_context=contract_context.contract,
+        )
     AssistantMessage.objects.create(conversation=conversation, role=AssistantMessage.Role.USER, content=stored_question)
 
     def generate():
@@ -192,6 +253,8 @@ def _ask(request):
     response["Cache-Control"] = "no-store"
     response["X-Accel-Buffering"] = "no"
     response["X-Conversa-Id"] = str(conversation.pk)
+    if context_changed:
+        response["X-Contexto-Alterado"] = "1"
     return response
 
 
