@@ -893,3 +893,8 @@ html.fs-verificando body.app-page { visibility: hidden; }
   main.report-page table th, main.report-page table td { white-space: normal; padding: 3px 5px; }
   main.report-page thead { display: table-header-group; }
 }
+
+/* Sprint 75 — criar conta: grupos de órgão e setor */
+.signup-choice { margin: 1.1rem 0 0; padding: .4rem 1rem 1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--green-50); }
+.signup-choice legend { padding: 0 .4rem; color: var(--green-950); font-weight: 800; }
+.signup-choice label { margin-top: .6rem; }

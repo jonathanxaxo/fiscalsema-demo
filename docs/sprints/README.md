@@ -200,3 +200,5 @@ documental das entregas anteriores.
   Notas e pagamentos, Arise e Auditoria.
 - `sprint-74-arise-relatorios`: perguntas do Arise sobre o contrato ativo,
   contrato ativo em destaque e relatórios em PDF com tabelas inteiras.
+- `sprint-75-autocadastro`: "Criar conta" com órgão e setor escolhidos ou
+  digitados, senha criada pelo link do e-mail e consulta aos contratos fictícios.

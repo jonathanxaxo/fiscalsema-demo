@@ -42,7 +42,7 @@ class SelfSignupForm(forms.Form):
     full_name = forms.CharField(label="Nome completo", max_length=200)
     email = forms.EmailField(label="E-mail", max_length=254)
     organization = forms.ModelChoiceField(
-        label="Órgão",
+        label="Escolha na lista",
         queryset=Organization.objects.none(),
         required=False,
         empty_label="Selecione o seu órgão",
@@ -51,7 +51,7 @@ class SelfSignupForm(forms.Form):
         label="Não encontrou? Digite o nome do órgão", max_length=200, required=False
     )
     sector = forms.ModelChoiceField(
-        label="Setor",
+        label="Escolha na lista",
         queryset=Sector.objects.none(),
         required=False,
         empty_label="Selecione o seu setor",
@@ -227,9 +227,9 @@ def create_self_signup(form, request):
     data = form.cleaned_data
     organization, organization_created = _organization_for(data)
     sector, sector_created = _sector_for(data, organization)
-    user = User.objects.create_user(
+    # Mesmo padrão do cadastro pelo Google (Sprint 27): sem senha até o link do e-mail.
+    user = User(
         email=data["email"],
-        password=None,
         full_name=data["full_name"],
         organization=organization,
         sector=sector,
@@ -239,6 +239,9 @@ def create_self_signup(form, request):
         status=AccountStatus.ACTIVE,
         must_change_password=False,
     )
+    user.set_unusable_password()
+    user.full_clean(exclude={"password"})
+    user.save()
     if organization_created:
         OrganizationEvent.objects.create(
             event_type=OrganizationEvent.EventType.ORGANIZATION_CREATED,
